@@ -73,14 +73,6 @@ exports.handler = async (event) => {
       customFields.push({ id: FIELDS.email, value: data.email.trim() });
     }
 
-     // Phone (phone field - requires object format)
- if (data.phone) {
- var cleanPhone = data.phone.replace(/[^0-9+]/g, "");
- if (cleanPhone.length >= 10) {
- customFields.push({ id: FIELDS.phone, value: { phone: cleanPhone } });
- }
- }
-
     // Event Type (dropdown - requires UUID)
     if (data.event_type && EVENT_TYPE_MAP[data.event_type]) {
       customFields.push({ id: FIELDS.eventType, value: EVENT_TYPE_MAP[data.event_type] });
