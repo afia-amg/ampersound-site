@@ -410,7 +410,27 @@ document.querySelectorAll('[data-page]').forEach(el => { el.addEventListener('cl
 function initReveals() { const r=document.querySelectorAll('.page-view.active .reveal'); const o=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('visible');o.unobserve(x.target);}});},{threshold:0.12,rootMargin:'0px 0px -40px 0px'}); r.forEach(el=>{el.classList.remove('visible');o.observe(el);}); }
 function initCounters() { document.querySelectorAll('.page-view.active [data-count]').forEach(el=>{ const t=parseInt(el.dataset.count); const o=new IntersectionObserver(e=>{if(e[0].isIntersecting){const d=1200;const s=performance.now();function tick(n){const p=Math.min((n-s)/d,1);const ea=1-Math.pow(1-p,4);el.textContent=Math.round(ea*t)+(t===100?'%':'+');if(p<1)requestAnimationFrame(tick);}requestAnimationFrame(tick);o.unobserve(el);}},{threshold:0.5}); o.observe(el); }); }
 
-document.getElementById('testimonialForm').addEventListener('submit',function(e){e.preventDefault();document.getElementById('testimonial-form-wrap').style.display='none';document.getElementById('testimonialSuccess').classList.add('visible');});
+document.getElementById('testimonialForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData.entries());
+
+  try {
+    const res = await fetch('/.netlify/functions/testimonial-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      document.getElementById('testimonial-form-wrap').style.display = 'none';
+      document.getElementById('testimonialSuccess').classList.add('visible');
+    } else {
+      alert('Something went wrong. Please try again.');
+    }
+  } catch (err) {
+    alert('Connection error. Please try again.');
+  }
+});
 document.getElementById('intakeForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   if (!this.querySelector('[name="name"]').value || !this.querySelector('[name="email"]').value) return;
