@@ -188,4 +188,6 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, taskId: task.id }) };
   } catch (err) {
     console.error("Function error:", err);
-    return { statusCode: 500, headers, body: JSON.stringify({ err
+       return { statusCode: 500, headers, body: JSON.stringify({ error: "Server error" }) };
+  }
+};
