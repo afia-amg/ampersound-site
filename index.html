@@ -38,6 +38,355 @@
 
 </style>
 <script>
+(function () {
+    // Design-ui pages are single compositions, so the whole body is editable.
+    function markEditable() {
+        document.body.classList.add('artifact-editable');
+    }
+
+    // Credit badge with idle-fade. Hover devices only.
+    function initChromeUI() {
+        if (!matchMedia('(hover: hover)').matches) return;
+
+        var credit = document.createElement('div');
+        credit.className = 'design-ui-credit';
+        credit.setAttribute('aria-hidden', 'true');
+        credit.innerHTML = '\u{1F49C} by ClickUp Brain';
+        document.body.appendChild(credit);
+
+        var timer = null;
+        var fade = function (out) { credit.style.opacity = out ? '0' : ''; };
+        fade(true);
+        var show = function () {
+            fade(false);
+            clearTimeout(timer);
+            timer = setTimeout(function () { fade(true); }, 3000);
+        };
+        document.addEventListener('mousemove', show);
+        show();
+    }
+
+    function init() {
+        markEditable();
+        initChromeUI();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chrome -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ampersound Media Group | Sound. Presence. Atmosphere.</title>
+<meta name="description" content="Boutique entertainment and live event production. DJ, emceeing, moderation, and full sound design for events that matter.">
+<link rel="icon" href="https://lh3.googleusercontent.com/d/1Uz1btQc6SB1x1d1vcKD-9xF0aTwBB4XC" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1114; --bg-warm: #131619; --surface: #181c21; --surface-2: #1f2429;
+  --border: rgba(201, 169, 110, 0.1); --border-hover: rgba(201, 169, 110, 0.3);
+  --text: #f0ebe4; --text-dim: rgba(240, 235, 228, 0.65); --text-muted: rgba(240, 235, 228, 0.35);
+  --gold: #c9a96e; --gold-bright: #e0c48a; --gold-dim: rgba(201, 169, 110, 0.08);
+  --violet: #5C4DFF; --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+html { font-size: 16px; }
+body { font-family: 'Open Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+.mouse-glow { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(201,169,110,0.045) 0%, rgba(92,77,255,0.015) 35%, transparent 65%); pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); opacity: 0; transition: opacity 0.4s; }
+.mouse-glow.active { opacity: 1; }
+
+/* SPLASH */
+.splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); cursor: pointer; transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+.splash.exit { opacity: 0; transform: scale(1.05); pointer-events: none; }
+.splash-ambient { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(201,169,110,0.06) 0%, rgba(92,77,255,0.02) 40%, transparent 70%); animation: ambientBreathe 6s ease-in-out infinite; }
+@keyframes ambientBreathe { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.6; } 50% { transform: translate(-50%,-50%) scale(1.4); opacity: 1; } }
+.splash-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 50%; border: 1px solid var(--gold); opacity: 0; animation: ringExpand 4s ease-out infinite; }
+.splash-ring:nth-child(1) { width: 280px; height: 280px; animation-delay: 0s; }
+.splash-ring:nth-child(2) { width: 400px; height: 400px; animation-delay: 0.7s; }
+.splash-ring:nth-child(3) { width: 540px; height: 540px; animation-delay: 1.4s; }
+.splash-ring:nth-child(4) { width: 700px; height: 700px; animation-delay: 2.1s; }
+.splash-ring:nth-child(5) { width: 880px; height: 880px; animation-delay: 2.8s; }
+@keyframes ringExpand { 0% { opacity: 0; transform: translate(-50%,-50%) scale(0.88); } 12% { opacity: 0.45; } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.12); } }
+.splash-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.particle { position: absolute; width: 2px; height: 2px; background: var(--gold); border-radius: 50%; opacity: 0; animation: particleDrift 7s ease-in-out infinite; }
+.particle:nth-child(1) { top: 20%; left: 15%; animation-delay: 0s; }
+.particle:nth-child(2) { top: 70%; left: 25%; animation-delay: 1.2s; }
+.particle:nth-child(3) { top: 30%; left: 78%; animation-delay: 2.4s; }
+.particle:nth-child(4) { top: 80%; left: 80%; animation-delay: 0.6s; }
+.particle:nth-child(5) { top: 12%; left: 60%; animation-delay: 3.2s; }
+.particle:nth-child(6) { top: 65%; left: 8%; animation-delay: 1.8s; }
+.particle:nth-child(7) { top: 42%; left: 92%; animation-delay: 2.8s; }
+.particle:nth-child(8) { top: 88%; left: 48%; animation-delay: 0.9s; }
+@keyframes particleDrift { 0%,100% { opacity: 0; transform: translateY(0) scale(1); } 25% { opacity: 0.7; transform: translateY(-15px) scale(1.5); } 75% { opacity: 0.2; transform: translateY(-35px) scale(0.8); } }
+.splash-logo-wrap { position: relative; z-index: 2; width: clamp(280px, 45vw, 440px); height: clamp(280px, 45vw, 440px); display: flex; align-items: center; justify-content: center; }
+.orbit-dot { position: absolute; top: 50%; left: 50%; width: 5px; height: 5px; background: var(--gold-bright); border-radius: 50%; box-shadow: 0 0 10px var(--gold); animation: orbitSpin 10s linear infinite; }
+@keyframes orbitSpin { 0% { transform: rotate(0deg) translateX(clamp(130px, 20vw, 200px)); } 100% { transform: rotate(360deg) translateX(clamp(130px, 20vw, 200px)); } }
+.orbit-dot-2 { position: absolute; top: 50%; left: 50%; width: 3px; height: 3px; background: var(--violet); border-radius: 50%; box-shadow: 0 0 8px var(--violet); animation: orbitSpin2 14s linear infinite reverse; }
+@keyframes orbitSpin2 { 0% { transform: rotate(0deg) translateX(clamp(150px, 22vw, 210px)); } 100% { transform: rotate(360deg) translateX(clamp(150px, 22vw, 210px)); } }
+.logo-pulse-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; border-radius: 50%; border: 1px solid rgba(201,169,110,0.2); animation: logoPulseRing 3s ease-in-out infinite; }
+@keyframes logoPulseRing { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.3; } 50% { transform: translate(-50%,-50%) scale(1.12); opacity: 0.6; } }
+.splash-logo { position: relative; z-index: 3; width: clamp(180px, 32vw, 320px); height: auto; opacity: 0; animation: logoReveal 1.5s var(--ease) 0.4s forwards; filter: drop-shadow(0 4px 20px rgba(201,169,110,0.3)) drop-shadow(0 0 60px rgba(201,169,110,0.1)); transition: transform 0.5s var(--ease), filter 0.5s; }
+@keyframes logoReveal { from { opacity: 0; transform: scale(0.85) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.splash-tagline { position: relative; z-index: 2; font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.72rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); margin-top: 44px; opacity: 0; animation: fadeUp 800ms var(--ease) 1.4s forwards; }
+.splash-enter { position: relative; z-index: 2; margin-top: 48px; font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0; animation: fadeUp 800ms var(--ease) 2.2s forwards; }
+.enter-line { width: 1px; height: 36px; background: linear-gradient(to bottom, var(--gold), transparent); animation: scrollPulse 2s ease-in-out infinite; }
+@keyframes scrollPulse { 0%,100% { opacity: 0.3; transform: scaleY(0.7); } 50% { opacity: 1; transform: scaleY(1); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* NAV */
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; background: rgba(15,17,20,0.88); backdrop-filter: blur(16px) saturate(1.2); border-bottom: 1px solid var(--border); opacity: 0; transition: opacity 0.5s; }
+.nav.visible { opacity: 1; }
+.nav-logo { height: 26px; cursor: pointer; transition: opacity 0.2s; }
+.nav-logo:hover { opacity: 0.8; }
+.nav-links { display: flex; gap: 8px; }
+.nav-link { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 18px; border-radius: 6px; color: var(--text-dim); text-decoration: none; transition: color 0.2s, background 0.2s; cursor: pointer; }
+.nav-link:hover { color: var(--text); background: var(--surface); }
+.nav-link.active { color: var(--gold); background: var(--gold-dim); }
+.nav-cta { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 20px; border-radius: 6px; background: var(--gold); color: var(--bg); text-decoration: none; cursor: pointer; transition: transform 0.2s var(--ease), box-shadow 0.2s; }
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,169,110,0.25); }
+.mobile-menu { display: none; cursor: pointer; padding: 8px; }
+.mobile-menu span { display: block; width: 20px; height: 2px; background: var(--text-dim); margin: 4px 0; }
+@media (max-width: 800px) { .nav { padding: 14px 20px; } .nav-links { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--bg-warm); border-bottom: 1px solid var(--border); padding: 16px; gap: 4px; } .nav-links.open { display: flex; } .mobile-menu { display: block; } }
+
+/* PAGES */
+.site-content { opacity: 0; transition: opacity 0.6s var(--ease); }
+.site-content.visible { opacity: 1; }
+.page-view { min-height: 100vh; opacity: 0; transform: translateY(30px); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); display: none; position: relative; }
+.page-view.active { display: block; opacity: 1; transform: translateY(0); }
+.page-view.entering { display: block; animation: pageEnter 0.6s var(--ease) forwards; }
+@keyframes pageEnter { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+/* SHARED */
+.section { padding: 120px 24px; max-width: 960px; margin: 0 auto; }
+.section-label { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+.section h2 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: clamp(1.6rem, 3.5vw, 2.4rem); line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 20px; }
+.section h2 em { font-style: normal; color: var(--gold); }
+.section > p { color: var(--text-dim); max-width: 52ch; margin: 0 auto 16px; font-weight: 300; }
+
+/* Buttons (clickable, hover OK) */
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 18px 36px; text-decoration: none; cursor: pointer; transition: transform 0.25s var(--ease), box-shadow 0.25s, background 0.2s, border-color 0.2s; border-radius: 6px; }
+.btn:hover { transform: translateY(-3px); }
+.btn-gold { background: var(--gold); color: var(--bg); border: 1px solid var(--gold); }
+.btn-gold:hover { box-shadow: 0 12px 40px rgba(201,169,110,0.25); background: var(--gold-bright); }
+.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border-hover); }
+.btn-outline:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 8px 30px rgba(201,169,110,0.1); }
+
+/* Reveal */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* HOME Hero */
+.hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 120px 24px 80px; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; top: 50%; left: 50%; width: 900px; height: 900px; transform: translate(-50%,-50%); background: radial-gradient(ellipse, rgba(201,169,110,0.04) 0%, rgba(92,77,255,0.02) 40%, transparent 70%); pointer-events: none; animation: heroGlow 10s ease-in-out infinite alternate; }
+@keyframes heroGlow { 0% { transform: translate(-50%,-50%) scale(0.9); opacity: 0.6; } 100% { transform: translate(-50%,-50%) scale(1.2); opacity: 1; } }
+.hero h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: clamp(2.8rem, 7vw, 5rem); line-height: 1.02; letter-spacing: -0.03em; max-width: 750px; }
+.hero .subtitle { margin-top: 24px; font-size: 1.1rem; font-weight: 300; color: var(--text-dim); max-width: 500px; line-height: 1.7; }
+.hero-buttons { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+
+/* Service cards (now clickable, link to intake) */
+.services-grid { margin-top: 48px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: left; }
+@media (max-width: 800px) { .services-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 500px) { .services-grid { grid-template-columns: 1fr; } }
+.service-card { padding: 32px 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; position: relative; overflow: hidden; text-decoration: none; color: var(--text); cursor: pointer; transition: border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s; display: block; }
+.service-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; transition: opacity 0.3s; }
+.service-card:hover { border-color: var(--border-hover); transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
+.service-card:hover::before { opacity: 1; }
+.service-card .number { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 2rem; color: var(--gold-dim); position: absolute; top: 16px; right: 20px; }
+.service-card h3 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; }
+.service-card p { font-size: 0.82rem; color: var(--text-dim); font-weight: 300; margin: 0; line-height: 1.6; }
+
+/* Partner section photo (not clickable, no hover) */
+.partner-section { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; text-align: left; }
+@media (max-width: 700px) { .partner-section { grid-template-columns: 1fr; text-align: center; } }
+.partner-photo-wrap { position: relative; }
+.partner-photo-wrap img { width: 100%; aspect-ratio: 4/5; object-fit: cover; border-radius: 12px; filter: brightness(0.95) contrast(1.05); }
+.partner-photo-wrap::before { content: ''; position: absolute; inset: -6px; border-radius: 16px; border: 1px solid var(--gold); opacity: 0.4; animation: frameGlow 4s ease-in-out infinite alternate; }
+.partner-photo-wrap::after { content: ''; position: absolute; inset: -14px; border-radius: 20px; border: 1px solid var(--border); opacity: 0; animation: frameOuter 4s ease-in-out infinite alternate; }
+@keyframes frameGlow { 0% { inset: -6px; opacity: 0.3; } 100% { inset: -10px; opacity: 0.7; } }
+@keyframes frameOuter { 0% { inset: -14px; opacity: 0; } 100% { inset: -18px; opacity: 0.3; } }
+.photo-accent { position: absolute; bottom: -12px; right: -12px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, rgba(201,169,110,0.15), transparent 70%); animation: accentPulse 3s ease-in-out infinite; }
+@keyframes accentPulse { 0%,100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.3); opacity: 1; } }
+
+/* Stats (not clickable, no hover) */
+.stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; background: var(--border); border-radius: 12px; overflow: hidden; margin-top: 56px; }
+@media (max-width: 600px) { .stats-bar { grid-template-columns: 1fr 1fr; } }
+.stat-cell { background: var(--surface); padding: 32px 20px; text-align: center; }
+.stat-cell .val { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 2rem; color: var(--gold); }
+.stat-cell .label { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+
+/* Event chips (clickable, link to intake) */
+.event-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 32px; }
+.event-chip { padding: 11px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; font-family: 'Montserrat', sans-serif; font-weight: 500; font-size: 0.78rem; color: var(--text); text-decoration: none; cursor: pointer; transition: border-color 0.25s, transform 0.25s var(--ease), background 0.25s; }
+.event-chip:hover { border-color: var(--gold); transform: translateY(-2px); background: var(--gold-dim); }
+
+/* SPEAKING */
+.speaking-hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 120px 24px 80px; }
+.speaking-photo { width: 200px; height: 200px; border-radius: 50%; overflow: hidden; margin-bottom: 36px; box-shadow: 0 0 0 3px var(--gold), 0 0 0 6px var(--gold-dim), 0 20px 60px rgba(0,0,0,0.5); animation: photoFloat 6s ease-in-out infinite; }
+@keyframes photoFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.speaking-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Notable cards (clickable, link to booking) */
+.notable-grid { margin-top: 48px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 700px) { .notable-grid { grid-template-columns: 1fr; } }
+.notable-card { padding: 32px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; text-align: center; text-decoration: none; color: var(--text); cursor: pointer; transition: transform 0.3s var(--ease), border-color 0.3s; display: block; }
+.notable-card:hover { transform: translateY(-4px); border-color: var(--border-hover); }
+.notable-card .icon { font-size: 1.5rem; margin-bottom: 12px; }
+.notable-card h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+.notable-card p { font-size: 0.78rem; color: var(--text-dim); margin: 0; }
+
+/* BOOKING */
+.booking-hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 24px; text-align: center; }
+.booking-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 48px 0; max-width: 800px; }
+@media (max-width: 700px) { .booking-steps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 450px) { .booking-steps { grid-template-columns: 1fr; } }
+/* Booking steps: not clickable, no hover */
+.bk-step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px 16px; text-align: center; }
+.bk-step .step-icon { font-size: 1.4rem; margin-bottom: 10px; }
+.bk-step h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; }
+.bk-step p { font-size: 0.72rem; color: var(--text-dim); margin: 0; }
+.booking-cta-card { background: var(--surface); border: 1px solid var(--border-hover); border-radius: 14px; padding: 56px 48px; max-width: 560px; position: relative; overflow: hidden; }
+.booking-cta-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), var(--violet), var(--gold)); }
+.booking-cta-card h3 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.3rem; margin-bottom: 12px; }
+.booking-cta-card p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 32px; }
+.booking-details { display: flex; gap: 20px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.booking-detail { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); }
+.booking-detail .dot { width: 5px; height: 5px; background: var(--gold); border-radius: 50%; }
+
+/* TESTIMONIALS */
+.testimonial-hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 24px; text-align: center; }
+.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 48px 40px; text-align: left; max-width: 560px; width: 100%; margin-top: 40px; }
+@media (max-width: 600px) { .form-card { padding: 32px 20px; } }
+.form-group { margin-bottom: 24px; }
+.form-group label { display: block; font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Open Sans', sans-serif; font-size: 0.9rem; transition: border-color 0.2s; outline: none; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gold); }
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-muted); }
+.form-group select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9a96e' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+.form-group select option { background: var(--surface); }
+.form-group textarea { resize: vertical; min-height: 120px; }
+.star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 4px; }
+.star-rating input { display: none; }
+.star-rating label { font-size: 1.8rem; cursor: pointer; color: var(--text-muted); transition: color 0.15s, transform 0.15s; }
+.star-rating label:hover, .star-rating label:hover ~ label, .star-rating input:checked ~ label { color: var(--gold); }
+.star-rating label:hover { transform: scale(1.15); }
+
+/* INTAKE */
+.intake-page { padding-top: 100px; }
+.intake-layout { display: grid; grid-template-columns: 1fr 1.2fr; min-height: calc(100vh - 100px); }
+@media (max-width: 900px) { .intake-layout { grid-template-columns: 1fr; } }
+.intake-info { padding: 60px 48px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
+.intake-info::before { content: ''; position: absolute; top: -30%; left: -30%; width: 160%; height: 160%; background: radial-gradient(ellipse at 30% 50%, rgba(92,77,255,0.04) 0%, transparent 55%); pointer-events: none; }
+.intake-form-panel { padding: 60px 48px; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; max-height: calc(100vh - 70px); }
+@media (max-width: 900px) { .intake-info { padding: 40px 24px; } .intake-form-panel { padding: 40px 24px; border-left: none; border-top: 1px solid var(--border); max-height: none; } }
+.intake-form-panel .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 500px) { .intake-form-panel .form-row { grid-template-columns: 1fr; } }
+.service-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 500px) { .service-checks { grid-template-columns: 1fr; } }
+.svc-check { position: relative; }
+.svc-check input { position: absolute; opacity: 0; }
+.svc-check label { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: border-color 0.2s, background 0.2s; }
+.svc-check input:checked + label { border-color: var(--gold); background: var(--gold-dim); }
+.svc-check label .ck { width: 16px; height: 16px; border: 2px solid var(--text-muted); border-radius: 3px; flex-shrink: 0; transition: 0.2s; }
+.svc-check input:checked + label .ck { background: var(--gold); border-color: var(--gold); }
+.submit-btn { width: 100%; padding: 18px; margin-top: 20px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; background: var(--gold); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s var(--ease), box-shadow 0.2s; }
+.submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,169,110,0.25); }
+.success-msg { display: none; text-align: center; padding: 60px 20px; }
+.success-msg.visible { display: block; animation: fadeUp 0.5s var(--ease); }
+.success-msg h3 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.3rem; margin-bottom: 8px; }
+.success-msg p { color: var(--text-dim); font-size: 0.9rem; }
+.site-footer { text-align: center; padding: 40px 24px 60px; border-top: 1px solid var(--border); }
+.site-footer img { height: 20px; margin-bottom: 12px; opacity: 0.5; }
+.site-footer p { font-size: 0.7rem; color: var(--text-muted); }
+.site-footer a { color: var(--gold); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="mouse-glow" id="mouseGlow"></div>
+
+<!-- SPLASH -->
+<div class="splash" id="splash">
+  <div class="splash-ambient"></div>
+  <div class="splash-particles"><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div></div>
+  <div class="splash-ring"></div><div class="splash-ring"></div><div class="splash-ring"></div><div class="splash-ring"></div><div class="splash-ring"></div>
+  <div class="splash-logo-wrap">
+    <div class="logo-pulse-ring"></div>
+    <div class="orbit-dot"></div>
+    <div class="orbit-dot-2"></div>
+    <img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group" class="splash-logo" id="splashLogo">
+  </div>
+  <p class="splash-tagline">Sound. Presence. Atmosphere.</p>
+  <div class="splash-enter"><span>Enter</span><div class="enter-line"></div></div>
+</div>
+
+<!-- NAV -->
+<nav class="nav" id="mainNav">
+  <img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG" class="nav-logo" onclick="navigate('home')">
+  <div class="nav-links" id="navLinks"><a class="nav-link active" data-page="home">Home</a><a class="nav-link" data-page="speaking">Speaking</a><a class="nav-link" data-page="testimonials">Testimonials</a><a class="nav-link" data-page="intake">Tell Us About Your Event</a><a class="nav-cta" data-page="booking">Book a Call</a></div>
+  <div class="mobile-menu" onclick="document.getElementById('navLinks').classList.toggle('open')"><span></span><span></span><span></span></div>
+</nav>
+
+<div class="site-content" id="siteContent">
+<!-- HOME -->
+<div class="page-view active" id="page-home">
+  <header class="hero"><h1>Boutique entertainment for events that matter</h1><p class="subtitle">DJ, emceeing, moderation, playlist curation, and full sound design. Based in Sandy & Salt Lake City, Utah.</p><div class="hero-buttons"><a class="btn btn-gold" data-page="booking">Book a Discovery Call</a><a class="btn btn-outline" data-page="intake">Tell Us About Your Event</a><a class="btn btn-outline" data-page="speaking">Speaking & Performance</a><a class="btn btn-outline" data-page="testimonials">Testimonials</a></div></header>
+
+  <section class="section" style="text-align:center"><p class="section-label reveal">What We Do</p><h2 class="reveal">Every detail shapes the <em>atmosphere</em></h2>
+    <div class="services-grid">
+      <a class="service-card reveal" data-page="intake"><span class="number">01</span><h3>DJ & Sound Design</h3><p>Professional live mixing and full sound production. Custom-curated music that reads the room.</p></a>
+      <a class="service-card reveal" data-page="intake"><span class="number">02</span><h3>Emceeing & Hosting</h3><p>Polished event flow with authoritative yet warm presence. Timeline tight, guests engaged.</p></a>
+      <a class="service-card reveal" data-page="intake"><span class="number">03</span><h3>Moderation</h3><p>Panels, keynotes, conferences. Thoughtful moderation that keeps audiences locked in.</p></a>
+      <a class="service-card reveal" data-page="intake"><span class="number">04</span><h3>Playlist Curation</h3><p>Tailored sonic experiences. From single-event playlists to monthly soundtracks.</p></a>
+      <a class="service-card reveal" data-page="intake"><span class="number">05</span><h3>Equipment Rentals</h3><p>Professional speakers, mics, controllers, and complete production packages.</p></a>
+      <a class="service-card reveal" data-page="booking"><span class="number">06</span><h3>Spoken Word</h3><p>Original pieces that set tone, honor moments, and create meaning for your event.</p></a>
+    </div>
+  </section>
+
+  <section class="section"><div class="partner-section reveal"><div class="partner-photo-wrap"><img src="https://lh3.googleusercontent.com/d/1BZN5Z_PuvTT3cz_4yyk0ZU6Q3e6g2p1f" alt="AMG in Action"><div class="photo-accent"></div></div><div><p class="section-label">Who We Are</p><h2>Your partner, not your <em>vendor</em></h2><p style="text-align:left;margin:0 0 16px">We bring hospitality to entertainment. Deep preparation, clear communication, and a genuine investment in making your event feel exactly the way you imagined it.</p><p style="text-align:left;margin:0 0 24px;color:var(--text-dim);font-weight:300">Ampersound is a husband-and-wife team. Afia handles creative direction, emceeing, and event flow. Adam handles all music, sound design, and live mixing.</p><a class="btn btn-outline" data-page="booking" style="font-size:0.7rem;padding:14px 28px">Meet us on a call →</a></div></div></section>
+
+  <section class="section" style="text-align:center"><p class="section-label reveal">Track Record</p><h2 class="reveal">Built on <em>real</em> events</h2><div class="stats-bar reveal"><div class="stat-cell"><div class="val" data-count="18">0</div><div class="label">Years performing</div></div><div class="stat-cell"><div class="val" data-count="250">0</div><div class="label">Events curated</div></div><div class="stat-cell"><div class="val" data-count="2">0</div><div class="label">Founders on site</div></div><div class="stat-cell"><div class="val" data-count="100">0</div><div class="label">% Custom</div></div></div></section>
+
+  <section class="section" style="text-align:center"><p class="section-label reveal">We Work With</p><h2 class="reveal">Events of <em>every</em> scale</h2>
+    <div class="event-chips reveal">
+      <a class="event-chip" data-page="intake">Weddings & Celebrations</a>
+      <a class="event-chip" data-page="intake">Corporate Galas</a>
+      <a class="event-chip" data-page="intake">Multi-Day Conferences</a>
+      <a class="event-chip" data-page="intake">Fundraisers</a>
+      <a class="event-chip" data-page="intake">Community Events</a>
+      <a class="event-chip" data-page="intake">Private Parties</a>
+      <a class="event-chip" data-page="booking">Panels & Keynotes</a>
+      <a class="event-chip" data-page="intake">University Events</a>
+    </div>
+  </section>
+
+  <section class="section" style="text-align:center;padding-bottom:140px"><h2 class="reveal">Let's work <em>together</em></h2><p class="reveal">Every event gets a custom approach. Tell us what you're building.</p><div class="reveal" style="margin-top:36px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap"><a class="btn btn-gold" data-page="booking">Book a Discovery Call</a><a class="btn btn-outline" data-page="intake">Submit Event Details</a></div></section>
+  <footer class="site-footer"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG"><p>Ampersound Media Group · Sandy & Salt Lake City, Utah<br><a href="mailto:contact@ampersoundmediagroup.com">contact@ampersoundmediagroup.com</a></p></footer>
+</div>
+
+<!-- SPEAKING -->
+<div class="page-view" id="page-speaking"><div class="speaking-hero"><div class="speaking-photo"><img src="https://lh3.googleusercontent.com/d/1fjAT8uZBTBofx0q8NmkneRsGhZm4mIal" alt="Afia"></div><p class="section-label">Speaking, Performance & Voice</p><h1 style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:clamp(2rem,5vw,3.5rem);line-height:1.1;letter-spacing:-0.02em;max-width:600px">A voice that moves the room</h1><p style="margin-top:20px;font-size:1.05rem;color:var(--text-dim);max-width:480px;font-weight:300;line-height:1.7">Afia brings 18+ years of live performance, emceeing, and storytelling to stages that need more than a presenter.</p><div style="margin-top:36px;display:flex;gap:14px;flex-wrap:wrap;justify-content:center"><a class="btn btn-gold" data-page="booking">Book Afia</a><a class="btn btn-outline" href="#speaking-services">See Services</a></div></div>
+  <section class="section" style="text-align:center"><p class="section-label reveal">Notable Performances</p><h2 class="reveal">Stages that <em>matter</em></h2><div class="notable-grid reveal"><a class="notable-card" data-page="booking"><div class="icon">✨</div><h4>Opening for Rupi Kaur</h4><p>Spoken word opener for the world-renowned poet</p></a><a class="notable-card" data-page="booking"><div class="icon">🎶</div><h4>Opening for Durand Bernarr</h4><p>Performance opener for the Grammy-winning artist</p></a><a class="notable-card" data-page="booking"><div class="icon">🏟️</div><h4>10,000+ Audience</h4><p>Live spoken word at the Salt Lake Bees stadium</p></a></div></section>
+  <section class="section" style="text-align:center" id="speaking-services"><p class="section-label reveal">Services</p><h2 class="reveal">For your <em>stage</em></h2><div class="services-grid" style="grid-template-columns:1fr 1fr"><a class="service-card reveal" data-page="booking"><h3>Keynote Speaking</h3><p>Custom keynotes. 30 to 60 minutes of presence and connection.</p></a><a class="service-card reveal" data-page="booking"><h3>Spoken Word</h3><p>Original poetry for galas, ceremonies, and cultural events.</p></a><a class="service-card reveal" data-page="booking"><h3>Moderation</h3><p>Panel moderation, fireside chats, workshop facilitation.</p></a><a class="service-card reveal" data-page="booking"><h3>Voiceover</h3><p>Brand campaigns, video narration, podcasts, audiobooks.</p></a></div></section>
+  <section class="section" style="text-align:center;padding-bottom:140px"><h2 class="reveal">Bring Afia to your <em>stage</em></h2><div class="reveal" style="margin-top:36px"><a class="btn btn-gold" data-page="booking">Book a Discovery Call →</a></div></section>
+  <footer class="site-footer"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG"><p>Ampersound Media Group<br><a href="mailto:contact@ampersoundmediagroup.com">contact@ampersoundmediagroup.com</a></p></footer></div>
+
+<!-- BOOKING -->
+<div class="page-view" id="page-booking"><div class="booking-hero"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG" style="height:36px;margin-bottom:40px;opacity:0.8"><h1 style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:clamp(2rem,5vw,3rem);letter-spacing:-0.02em;max-width:550px">Let's Talk About Your Event</h1><p style="margin-top:16px;color:var(--text-dim);font-size:1.05rem;max-width:440px;font-weight:300">15 minutes, zero pressure. Pick a time.</p><div class="booking-steps"><div class="bk-step"><div class="step-icon">🎯</div><h4>Your Vision</h4><p>Event type, date, vibe</p></div><div class="bk-step"><div class="step-icon">🎧</div><h4>Service Fit</h4><p>DJ, MC, full team</p></div><div class="bk-step"><div class="step-icon">💰</div><h4>Pricing</h4><p>Clear package options</p></div><div class="bk-step"><div class="step-icon">✅</div><h4>Next Steps</h4><p>Lock in your date</p></div></div><div class="booking-cta-card"><h3>Ready to Connect?</h3><p>Pick a time. You'll get a Zoom link instantly.</p><a href="https://scheduler.zoom.us/afia-chin-roberts" target="_blank" class="btn btn-gold" style="font-size:0.85rem;padding:20px 44px">Book My Discovery Call →</a><div class="booking-details"><span class="booking-detail"><span class="dot"></span> Free</span><span class="booking-detail"><span class="dot"></span> 15 minutes</span><span class="booking-detail"><span class="dot"></span> Zoom or phone</span></div></div></div><footer class="site-footer"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG"><p>Ampersound Media Group<br><a href="mailto:contact@ampersoundmediagroup.com">contact@ampersoundmediagroup.com</a></p></footer></div>
+
+<!-- TESTIMONIALS -->
+<div class="page-view" id="page-testimonials"><div class="testimonial-hero"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG" style="height:32px;margin-bottom:32px;opacity:0.7"><h1 style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:clamp(1.8rem,4vw,2.5rem)">How was your experience?</h1><p style="margin-top:12px;color:var(--text-dim);font-size:1rem;max-width:400px;font-weight:300">Your words help future clients. Takes about 2 minutes.</p><div class="form-card" id="testimonial-form-wrap"><form id="testimonialForm"><div class="form-group"><label>Your Name</label><input type="text" name="name" placeholder="First and last name" required></div><div class="form-group"><label>Event Type</label><select name="event_type" required><option value="" disabled selected>What kind?</option><option>Wedding</option><option>Corporate</option><option>Conference</option><option>Private Party</option><option>Community</option><option>Speaking</option><option>Other</option></select></div><div class="form-group"><label>Rating</label><div class="star-rating"><input type="radio" id="s5" name="rating" value="5"><label for="s5">★</label><input type="radio" id="s4" name="rating" value="4"><label for="s4">★</label><input type="radio" id="s3" name="rating" value="3"><label for="s3">★</label><input type="radio" id="s2" name="rating" value="2"><label for="s2">★</label><input type="radio" id="s1" name="rating" value="1"><label for="s1">★</label></div></div><div class="form-group"><label>Your Experience</label><textarea name="testimonial" placeholder="What stood out?" required></textarea></div><div class="form-group"><label>Best Part</label><input type="text" name="highlight" placeholder="e.g. 'Dance floor was packed'"></div><button type="submit" class="submit-btn">Submit Testimonial</button></form></div><div class="success-msg" id="testimonialSuccess"><h3>✨ Thank you!</h3><p>Your words mean everything.</p></div></div><footer class="site-footer"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG"><p>Ampersound Media Group<br><a href="mailto:contact@ampersoundmediagroup.com">contact@ampersoundmediagroup.com</a></p></footer></div>
+
+<!-- INTAKE -->
+<div class="page-view intake-page" id="page-intake"><div class="intake-layout"><div class="intake-info"><div style="position:relative;max-width:400px"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG" style="height:32px;margin-bottom:40px;opacity:0.8"><h2 style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;margin-bottom:16px">Tell Us About Your Event</h2><p style="color:var(--text-dim);font-weight:300;margin-bottom:40px">Share the details. Takes about 5 minutes.</p><p class="section-label">Services</p><ul style="list-style:none;padding:0"><li style="padding:10px 0;border-top:1px solid var(--border);font-size:0.88rem;color:var(--text-dim)">🎧 DJ and live sound</li><li style="padding:10px 0;border-top:1px solid var(--border);font-size:0.88rem;color:var(--text-dim)">🎤 Emceeing & hosting</li><li style="padding:10px 0;border-top:1px solid var(--border);font-size:0.88rem;color:var(--text-dim)">🗣️ Spoken word</li><li style="padding:10px 0;border-top:1px solid var(--border);font-size:0.88rem;color:var(--text-dim)">🔊 Equipment rentals</li><li style="padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:0.88rem;color:var(--text-dim)">🎵 Playlist curation</li></ul><a class="btn btn-outline" data-page="booking" style="margin-top:32px;font-size:0.7rem;padding:12px 24px">📞 Book a Call instead</a></div></div><div class="intake-form-panel"><div id="intake-form-content"><h3 style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.2rem;margin-bottom:6px">Your Event Details</h3><p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:32px">Required *</p><form id="intakeForm"><p class="section-label">Contact</p><div class="form-row"><div class="form-group"><label>Name(s) *</label><input type="text" name="name" placeholder="e.g. Brandi & James" required></div><div class="form-group"><label>Email *</label><input type="email" name="email" placeholder="you@email.com" required></div></div><div class="form-row"><div class="form-group"><label>Phone</label><input type="tel" name="phone" placeholder="(801) 555-0123"></div><div class="form-group"><label>Found us via</label><select name="referral"><option value="" disabled selected>Select</option><option>WeddingPro</option><option>Bark</option><option>Google</option><option>Instagram</option><option>Referral</option><option>Venue</option><option>Other</option></select></div></div><p class="section-label" style="margin-top:28px">Event</p><div class="form-row"><div class="form-group"><label>Type *</label><select name="event_type" required><option value="" disabled selected>Select</option><option>Wedding</option><option>Corporate</option><option>Conference</option><option>Community</option><option>Private Party</option><option>Fundraiser</option><option>Other</option></select></div><div class="form-group"><label>Date *</label><input type="date" name="event_date" required></div></div><div class="form-row"><div class="form-group"><label>Venue</label><input type="text" name="venue" placeholder="e.g. The Grand America"></div><div class="form-group"><label>Guests</label><select name="guests"><option value="" disabled selected>Range</option><option>Under 50</option><option>50-100</option><option>100-200</option><option>200-400</option><option>400+</option></select></div></div><p class="section-label" style="margin-top:28px">Services</p><div class="service-checks"><div class="svc-check"><input type="checkbox" id="ck1" name="svc" value="dj"><label for="ck1"><span class="ck"></span>DJ</label></div><div class="svc-check"><input type="checkbox" id="ck2" name="svc" value="mc"><label for="ck2"><span class="ck"></span>MC</label></div><div class="svc-check"><input type="checkbox" id="ck3" name="svc" value="both"><label for="ck3"><span class="ck"></span>DJ + MC</label></div><div class="svc-check"><input type="checkbox" id="ck4" name="svc" value="spoken"><label for="ck4"><span class="ck"></span>Spoken Word</label></div><div class="svc-check"><input type="checkbox" id="ck5" name="svc" value="equip"><label for="ck5"><span class="ck"></span>Equipment</label></div><div class="svc-check"><input type="checkbox" id="ck6" name="svc" value="unsure"><label for="ck6"><span class="ck"></span>Not sure</label></div></div><p class="section-label" style="margin-top:28px">Vibe</p><div class="form-group"><label>Energy</label><textarea name="vibe" placeholder="e.g. Elegant dinner into dance party"></textarea></div><div class="form-row"><div class="form-group"><label>Budget</label><select name="budget"><option value="" disabled selected>Select</option><option>Under $1K</option><option>$1K-$1.5K</option><option>$1.5K-$2.5K</option><option>$2.5K-$4K</option><option>$4K+</option><option>Flexible</option></select></div><div class="form-group"><label>Notes</label><input type="text" name="notes" placeholder="Anything else"></div></div><button type="submit" class="submit-btn">Submit Event Details</button></form></div><div class="success-msg" id="intakeSuccess"><h3>✨ Got it!</h3><p>We'll reach out within 24 hours.</p></div></div></div></div>
+</div>
+
+<script>
 const glow = document.getElementById('mouseGlow');
 let glowActive = false;
 document.addEventListener('mousemove', (e) => { if (!glowActive) { glow.classList.add('active'); glowActive = true; } glow.style.left = e.clientX + 'px'; glow.style.top = e.clientY + 'px'; });
@@ -63,10 +412,11 @@ function initCounters() { document.querySelectorAll('.page-view.active [data-cou
 
 document.getElementById('testimonialForm').addEventListener('submit', async function(e) {
   e.preventDefault();
-  var formData = new FormData(this);
-  var data = Object.fromEntries(formData.entries());
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData.entries());
+
   try {
-    var res = await fetch('/.netlify/functions/testimonial-submit', {
+    const res = await fetch('/.netlify/functions/testimonial-submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -81,15 +431,16 @@ document.getElementById('testimonialForm').addEventListener('submit', async func
     alert('Connection error. Please try again.');
   }
 });
-
 document.getElementById('intakeForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   if (!this.querySelector('[name="name"]').value || !this.querySelector('[name="email"]').value) return;
-  var formData = new FormData(this);
-  var data = Object.fromEntries(formData.entries());
+
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData.entries());
   data.svc = formData.getAll('svc');
+
   try {
-    var res = await fetch('/.netlify/functions/intake-submit', {
+    const res = await fetch('/.netlify/functions/intake-submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -104,7 +455,6 @@ document.getElementById('intakeForm').addEventListener('submit', async function(
     alert('Connection error. Please try again.');
   }
 });
-
 initReveals(); initCounters();
 </script>
 </body>
