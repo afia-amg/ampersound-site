@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- skill:chrome -->
+<style>
+/* Credit line — bottom-right */
+.design-ui-credit {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  font: 11px/1 system-ui, sans-serif;
+  color: rgba(128,128,128,0.5);
+  pointer-events: none;
+  z-index: 2147483647;
+  transition: opacity 0.4s ease;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+/* Hide chrome on touch devices */
+@media (hover: none) {
+  .design-ui-credit { display: none; }
+}
+
+/* Print fixes */
+@media print {
+  * {
+    transition: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .design-ui-credit { display: none !important; }
+}
+
+</style>
+<script>
+(function () {
+    // Design-ui pages are single compositions, so the whole body is editable.
+    function markEditable() {
+        document.body.classList.add('artifact-editable');
+    }
+
+    // Credit badge with idle-fade. Hover devices only.
+    function initChromeUI() {
+        if (!matchMedia('(hover: hover)').matches) return;
+
+        var credit = document.createElement('div');
+        credit.className = 'design-ui-credit';
+        credit.setAttribute('aria-hidden', 'true');
+        credit.innerHTML = '\u{1F49C} by ClickUp Brain';
+        document.body.appendChild(credit);
+
+        var timer = null;
+        var fade = function (out) { credit.style.opacity = out ? '0' : ''; };
+        fade(true);
+        var show = function () {
+            fade(false);
+            clearTimeout(timer);
+            timer = setTimeout(function () { fade(true); }, 3000);
+        };
+        document.addEventListener('mousemove', show);
+        show();
+    }
+
+    function init() {
+        markEditable();
+        initChromeUI();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chrome -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leave a Review | Ampersound Media Group</title>
+<meta name="description" content="Share your experience with Ampersound Media Group.">
+<link rel="icon" href="https://lh3.googleusercontent.com/d/1Uz1btQc6SB1x1d1vcKD-9xF0aTwBB4XC" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --bg: #0f1114; --bg-warm: #131619; --surface: #181c21; --surface-2: #1f2429; --border: rgba(201,169,110,0.1); --border-hover: rgba(201,169,110,0.3); --text: #f0ebe4; --text-dim: rgba(240,235,228,0.65); --text-muted: rgba(240,235,228,0.35); --gold: #c9a96e; --gold-bright: #e0c48a; --gold-dim: rgba(201,169,110,0.08); --violet: #5C4DFF; --ease: cubic-bezier(0.16,1,0.3,1); }
+html { font-size: 16px; }
+body { font-family: 'Open Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.mouse-glow { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(201,169,110,0.045) 0%, rgba(92,77,255,0.015) 35%, transparent 65%); pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); opacity: 0; transition: opacity 0.4s; }
+.mouse-glow.active { opacity: 1; }
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; background: rgba(15,17,20,0.88); backdrop-filter: blur(16px) saturate(1.2); border-bottom: 1px solid var(--border); }
+.nav-logo { height: 26px; } .nav-links { display: flex; gap: 8px; }
+.nav-link { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 18px; border-radius: 6px; color: var(--text-dim); text-decoration: none; transition: color 0.2s, background 0.2s; }
+.nav-link:hover { color: var(--text); background: var(--surface); }
+.nav-link.active { color: var(--gold); background: var(--gold-dim); }
+.nav-cta { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 20px; border-radius: 6px; background: var(--gold); color: var(--bg); text-decoration: none; transition: transform 0.2s var(--ease), box-shadow 0.2s; }
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,169,110,0.25); }
+.mobile-menu { display: none; cursor: pointer; padding: 8px; }
+.mobile-menu span { display: block; width: 20px; height: 2px; background: var(--text-dim); margin: 4px 0; }
+@media (max-width: 800px) { .nav { padding: 14px 20px; } .nav-links { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--bg-warm); border-bottom: 1px solid var(--border); padding: 16px; gap: 4px; } .nav-links.open { display: flex; } .mobile-menu { display: block; } }
+.page { max-width: 720px; margin: 0 auto; padding: 100px 24px 80px; }
+.header { text-align: center; margin-bottom: 48px; }
+.header img { height: 40px; margin-bottom: 24px; }
+.header h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: clamp(1.8rem,4vw,2.4rem); letter-spacing: -0.02em; margin-bottom: 12px; }
+.header h1 em { font-style: normal; color: var(--gold); }
+.header p { font-size: 1rem; color: var(--text-dim); font-weight: 300; max-width: 440px; margin: 0 auto; line-height: 1.7; }
+.section-label { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; text-align: center; }
+.platforms { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 48px; }
+@media (max-width: 600px) { .platforms { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 400px) { .platforms { grid-template-columns: 1fr; } }
+.platform-btn { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: var(--text); transition: transform 0.25s var(--ease), border-color 0.25s, box-shadow 0.25s; }
+.platform-btn:hover { transform: translateY(-4px); border-color: var(--border-hover); box-shadow: 0 12px 32px rgba(0,0,0,0.3); }
+.platform-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; }
+.platform-icon.google { background: rgba(66,133,244,0.12); color: #4285F4; }
+.platform-icon.knot { background: rgba(255,111,97,0.12); color: #FF6F61; }
+.platform-icon.weddingwire { background: rgba(0,191,179,0.12); color: #00BFB3; }
+.platform-icon.bark { background: rgba(46,139,87,0.12); color: #2E8B57; }
+.platform-icon.zola { background: rgba(0,82,136,0.12); color: #005288; }
+.platform-icon.gigsalad { background: rgba(255,165,0,0.12); color: #FFA500; }
+.platform-name { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.75rem; }
+.platform-sub { font-size: 0.65rem; color: var(--text-muted); }
+.preferred { position: relative; }
+.preferred::after { content: 'MOST HELPFUL'; position: absolute; top: -8px; right: -8px; font-family: 'Montserrat', sans-serif; font-size: 0.5rem; font-weight: 700; letter-spacing: 0.06em; background: var(--gold); color: var(--bg); padding: 3px 8px; border-radius: 4px; }
+.divider { display: flex; align-items: center; gap: 16px; margin: 40px 0; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.divider span { font-family: 'Montserrat', sans-serif; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+.form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 40px 32px; }
+@media (max-width: 500px) { .form-card { padding: 28px 20px; } }
+.form-card h3 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+.form-card .form-sub { font-size: 0.82rem; color: var(--text-dim); margin-bottom: 28px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Open Sans', sans-serif; font-size: 0.88rem; transition: border-color 0.2s; outline: none; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gold); }
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-muted); }
+.form-group select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9a96e' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+.form-group select option { background: var(--surface); }
+.form-group textarea { resize: vertical; min-height: 100px; }
+.star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 4px; }
+.star-rating input { display: none; }
+.star-rating label { font-size: 1.8rem; cursor: pointer; color: var(--text-muted); transition: color 0.15s, transform 0.15s; }
+.star-rating label:hover, .star-rating label:hover ~ label, .star-rating input:checked ~ label { color: var(--gold); }
+.star-rating label:hover { transform: scale(1.15); }
+.submit-btn { width: 100%; padding: 16px; margin-top: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.82rem; letter-spacing: 0.06em; background: var(--gold); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s var(--ease), box-shadow 0.2s; }
+.submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,169,110,0.25); }
+.success-msg { display: none; text-align: center; padding: 48px 20px; }
+.success-msg.visible { display: block; animation: fadeUp 0.5s var(--ease); }
+.success-msg h3 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.3rem; margin-bottom: 8px; }
+.success-msg p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 24px; }
+.success-msg .google-nudge { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: var(--surface); border: 1px solid var(--border-hover); border-radius: 8px; color: var(--text); font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.78rem; text-decoration: none; transition: transform 0.2s var(--ease), border-color 0.2s; }
+.success-msg .google-nudge:hover { transform: translateY(-2px); border-color: var(--gold); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.site-footer { text-align: center; padding: 40px 24px 60px; border-top: 1px solid var(--border); margin-top: 48px; }
+.site-footer img { height: 20px; margin-bottom: 12px; opacity: 0.5; }
+.site-footer p { font-size: 0.7rem; color: var(--text-muted); }
+.site-footer a { color: var(--gold); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="mouse-glow" id="mouseGlow"></div>
+<nav class="nav">
+  <a href="/"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG" class="nav-logo"></a>
+  <div class="nav-links" id="navLinks">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/speaking.html">Speaking</a>
+    <a class="nav-link active" href="/testimonials.html">Testimonials</a>
+    <a class="nav-link" href="/intake.html">Tell Us About Your Event</a>
+    <a class="nav-cta" href="/book.html">Book a Call</a>
+  </div>
+  <div class="mobile-menu" onclick="document.getElementById('navLinks').classList.toggle('open')"><span></span><span></span><span></span></div>
+</nav>
+
+<div class="page">
+  <header class="header">
+    <img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG">
+    <h1>How was your <em>experience</em>?</h1>
+    <p>Your words help future clients find the right fit. Pick your preferred platform or tell us directly below.</p>
+  </header>
+
+  <div class="section-label">Leave a Review On Your Platform</div>
+  <div class="platforms">
+    <a href="https://g.page/r/Cd1Ctsiv6egXEAE/review" class="platform-btn preferred"><div class="platform-icon google">G</div><span class="platform-name">Google</span><span class="platform-sub">Best for visibility</span></a>
+    <a href="https://theknot.com/review-wedding-vendors/2106301" class="platform-btn"><div class="platform-icon knot">TK</div><span class="platform-name">The Knot</span><span class="platform-sub">Wedding clients</span></a>
+    <a href="https://www.weddingwire.com/shared/rate/new?vid=5dfb2c1509e376ca" class="platform-btn"><div class="platform-icon weddingwire">WW</div><span class="platform-name">WeddingWire</span><span class="platform-sub">Wedding clients</span></a>
+    <a href="https://www.bark.com/en/us/company/ampersound-media-group/AVXqXl/?show_reviews=true&review_source=share_link" class="platform-btn"><div class="platform-icon bark">B</div><span class="platform-name">Bark</span><span class="platform-sub">All event types</span></a>
+    <a href="https://www.zola.com/inspire/public-recommendations/d07ef8cb-7be3-4be1-a043-f3d024ef5b7e" class="platform-btn"><div class="platform-icon zola">Z</div><span class="platform-name">Zola</span><span class="platform-sub">Wedding clients</span></a>
+    <a href="https://www.gigsalad.com/ampersound_media_group_salt_lake_city/review" class="platform-btn"><div class="platform-icon gigsalad">GS</div><span class="platform-name">GigSalad</span><span class="platform-sub">All event types</span></a>
+  </div>
+
+  <div class="divider"><span>Or tell us directly</span></div>
+
+  <div class="form-card" id="testimonial-form-wrap">
+    <h3>Share Your Experience</h3>
+    <p class="form-sub">This goes directly to our team. We may feature your words (first name only) on our website and social.</p>
+    <form id="testimonialForm">
+      <div class="form-group"><label>Your Name</label><input type="text" name="name" placeholder="First and last name" required></div>
+      <div class="form-group"><label>Event Type</label><select name="event_type" required><option value="" disabled selected>What kind of event?</option><option>Wedding</option><option>Corporate</option><option>Conference</option><option>Private Party</option><option>Community Event</option><option>Speaking/Keynote</option><option>Other</option></select></div>
+      <div class="form-group"><label>Rating</label><div class="star-rating"><input type="radio" id="s5" name="rating" value="5"><label for="s5">★</label><input type="radio" id="s4" name="rating" value="4"><label for="s4">★</label><input type="radio" id="s3" name="rating" value="3"><label for="s3">★</label><input type="radio" id="s2" name="rating" value="2"><label for="s2">★</label><input type="radio" id="s1" name="rating" value="1"><label for="s1">★</label></div></div>
+      <div class="form-group"><label>Your Experience</label><textarea name="testimonial" placeholder="What stood out? How did we make your event feel?" required></textarea></div>
+      <div class="form-group"><label>Best Part</label><input type="text" name="highlight" placeholder="e.g. 'The dance floor was packed all night'"></div>
+      <button type="submit" class="submit-btn">Submit Your Testimonial</button>
+    </form>
+  </div>
+
+  <div class="success-msg" id="testimonialSuccess">
+    <h3>✨ Thank you so much!</h3>
+    <p>Your words mean everything. Want to help even more? A Google review makes a huge difference:</p>
+    <a href="https://g.page/r/Cd1Ctsiv6egXEAE/review" class="google-nudge">⭐ Leave a Google Review Too →</a>
+  </div>
+</div>
+
+<footer class="site-footer"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG"><p>Ampersound Media Group · Sandy & Salt Lake City, Utah<br><a href="mailto:contact@ampersoundmediagroup.com">contact@ampersoundmediagroup.com</a></p></footer>
+
+<script>
+var glow = document.getElementById('mouseGlow');
+document.addEventListener('mousemove', function(e) { glow.classList.add('active'); glow.style.left = e.clientX + 'px'; glow.style.top = e.clientY + 'px'; });
+document.addEventListener('mouseleave', function() { glow.classList.remove('active'); });
+
+document.getElementById('testimonialForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var formData = new FormData(this);
+  var data = Object.fromEntries(formData.entries());
+  try {
+    var res = await fetch('/.netlify/functions/testimonial-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      document.getElementById('testimonial-form-wrap').style.display = 'none';
+      document.getElementById('testimonialSuccess').classList.add('visible');
+    } else {
+      alert('Something went wrong. Please try again.');
+    }
+  } catch (err) {
+    alert('Connection error. Please try again.');
+  }
+});
+</script>
+</body>
+</html>

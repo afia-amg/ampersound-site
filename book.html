@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- skill:chrome -->
+<style>
+/* Credit line — bottom-right */
+.design-ui-credit {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  font: 11px/1 system-ui, sans-serif;
+  color: rgba(128,128,128,0.5);
+  pointer-events: none;
+  z-index: 2147483647;
+  transition: opacity 0.4s ease;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+/* Hide chrome on touch devices */
+@media (hover: none) {
+  .design-ui-credit { display: none; }
+}
+
+/* Print fixes */
+@media print {
+  * {
+    transition: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .design-ui-credit { display: none !important; }
+}
+
+</style>
+<script>
+(function () {
+    // Design-ui pages are single compositions, so the whole body is editable.
+    function markEditable() {
+        document.body.classList.add('artifact-editable');
+    }
+
+    // Credit badge with idle-fade. Hover devices only.
+    function initChromeUI() {
+        if (!matchMedia('(hover: hover)').matches) return;
+
+        var credit = document.createElement('div');
+        credit.className = 'design-ui-credit';
+        credit.setAttribute('aria-hidden', 'true');
+        credit.innerHTML = '\u{1F49C} by ClickUp Brain';
+        document.body.appendChild(credit);
+
+        var timer = null;
+        var fade = function (out) { credit.style.opacity = out ? '0' : ''; };
+        fade(true);
+        var show = function () {
+            fade(false);
+            clearTimeout(timer);
+            timer = setTimeout(function () { fade(true); }, 3000);
+        };
+        document.addEventListener('mousemove', show);
+        show();
+    }
+
+    function init() {
+        markEditable();
+        initChromeUI();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chrome -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book a Discovery Call | Ampersound Media Group</title>
+<meta name="description" content="Book a free 15-minute discovery call with Ampersound Media Group.">
+<link rel="icon" href="https://lh3.googleusercontent.com/d/1Uz1btQc6SB1x1d1vcKD-9xF0aTwBB4XC" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --bg: #0f1114; --bg-warm: #131619; --surface: #181c21; --surface-2: #1f2429; --border: rgba(201,169,110,0.1); --border-hover: rgba(201,169,110,0.3); --text: #f0ebe4; --text-dim: rgba(240,235,228,0.65); --text-muted: rgba(240,235,228,0.35); --gold: #c9a96e; --gold-bright: #e0c48a; --gold-dim: rgba(201,169,110,0.08); --violet: #5C4DFF; --ease: cubic-bezier(0.16,1,0.3,1); }
+html { font-size: 16px; }
+body { font-family: 'Open Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+.mouse-glow { position: fixed; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(201,169,110,0.045) 0%, rgba(92,77,255,0.015) 35%, transparent 65%); pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); opacity: 0; transition: opacity 0.4s; }
+.mouse-glow.active { opacity: 1; }
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; background: rgba(15,17,20,0.88); backdrop-filter: blur(16px) saturate(1.2); border-bottom: 1px solid var(--border); }
+.nav-logo { height: 26px; } .nav-links { display: flex; gap: 8px; }
+.nav-link { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 18px; border-radius: 6px; color: var(--text-dim); text-decoration: none; transition: color 0.2s, background 0.2s; }
+.nav-link:hover { color: var(--text); background: var(--surface); }
+.nav-link.active { color: var(--gold); background: var(--gold-dim); }
+.nav-cta { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 20px; border-radius: 6px; background: var(--gold); color: var(--bg); text-decoration: none; transition: transform 0.2s var(--ease), box-shadow 0.2s; }
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,169,110,0.25); }
+.mobile-menu { display: none; cursor: pointer; padding: 8px; }
+.mobile-menu span { display: block; width: 20px; height: 2px; background: var(--text-dim); margin: 4px 0; }
+@media (max-width: 800px) { .nav { padding: 14px 20px; } .nav-links { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: var(--bg-warm); border-bottom: 1px solid var(--border); padding: 16px; gap: 4px; } .nav-links.open { display: flex; } .mobile-menu { display: block; } }
+.booking-hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 24px; text-align: center; }
+.booking-steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin: 48px 0; max-width: 800px; }
+@media (max-width: 700px) { .booking-steps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 450px) { .booking-steps { grid-template-columns: 1fr; } }
+.bk-step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px 16px; text-align: center; }
+.bk-step .step-icon { font-size: 1.4rem; margin-bottom: 10px; }
+.bk-step h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.8rem; margin-bottom: 4px; }
+.bk-step p { font-size: 0.72rem; color: var(--text-dim); margin: 0; }
+.booking-cta-card { background: var(--surface); border: 1px solid var(--border-hover); border-radius: 14px; padding: 56px 48px; max-width: 560px; position: relative; overflow: hidden; }
+.booking-cta-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), var(--violet), var(--gold)); }
+.booking-cta-card h3 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.3rem; margin-bottom: 12px; }
+.booking-cta-card p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 32px; }
+.btn-gold { display: inline-flex; align-items: center; gap: 8px; padding: 20px 44px; background: var(--gold); color: var(--bg); font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; border-radius: 6px; border: 1px solid var(--gold); transition: transform 0.25s var(--ease), box-shadow 0.25s, background 0.2s; }
+.btn-gold:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(201,169,110,0.25); background: var(--gold-bright); }
+.booking-details { display: flex; gap: 20px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.booking-detail { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); }
+.booking-detail .dot { width: 5px; height: 5px; background: var(--gold); border-radius: 50%; }
+.site-footer { text-align: center; padding: 40px 24px 60px; border-top: 1px solid var(--border); }
+.site-footer img { height: 20px; margin-bottom: 12px; opacity: 0.5; }
+.site-footer p { font-size: 0.7rem; color: var(--text-muted); }
+.site-footer a { color: var(--gold); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="mouse-glow" id="mouseGlow"></div>
+<nav class="nav">
+  <a href="/"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG" class="nav-logo"></a>
+  <div class="nav-links" id="navLinks">
+    <a class="nav-link" href="/">Home</a>
+    <a class="nav-link" href="/speaking.html">Speaking</a>
+    <a class="nav-link" href="/testimonials.html">Testimonials</a>
+    <a class="nav-link" href="/intake.html">Tell Us About Your Event</a>
+    <a class="nav-cta active" href="/book.html">Book a Call</a>
+  </div>
+  <div class="mobile-menu" onclick="document.getElementById('navLinks').classList.toggle('open')"><span></span><span></span><span></span></div>
+</nav>
+
+<div class="booking-hero">
+  <img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG" style="height:36px;margin-bottom:40px;opacity:0.8">
+  <h1 style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:clamp(2rem,5vw,3rem);letter-spacing:-0.02em;max-width:550px">Let's Talk About Your Event</h1>
+  <p style="margin-top:16px;color:var(--text-dim);font-size:1.05rem;max-width:440px;font-weight:300">15 minutes, zero pressure. Pick a time.</p>
+  <div class="booking-steps">
+    <div class="bk-step"><div class="step-icon">🎯</div><h4>Your Vision</h4><p>Event type, date, vibe</p></div>
+    <div class="bk-step"><div class="step-icon">🎧</div><h4>Service Fit</h4><p>DJ, MC, full team</p></div>
+    <div class="bk-step"><div class="step-icon">💰</div><h4>Pricing</h4><p>Clear package options</p></div>
+    <div class="bk-step"><div class="step-icon">✅</div><h4>Next Steps</h4><p>Lock in your date</p></div>
+  </div>
+  <div class="booking-cta-card">
+    <h3>Ready to Connect?</h3>
+    <p>Pick a time. You'll get a Zoom link instantly.</p>
+    <a href="https://scheduler.zoom.us/afia-chin-roberts" class="btn-gold">Book My Discovery Call →</a>
+    <div class="booking-details">
+      <span class="booking-detail"><span class="dot"></span> Free</span>
+      <span class="booking-detail"><span class="dot"></span> 15 minutes</span>
+      <span class="booking-detail"><span class="dot"></span> Zoom or phone</span>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG"><p>Ampersound Media Group · Sandy & Salt Lake City, Utah<br><a href="mailto:contact@ampersoundmediagroup.com">contact@ampersoundmediagroup.com</a></p></footer>
+
+<script>
+var glow = document.getElementById('mouseGlow');
+document.addEventListener('mousemove', function(e) { glow.classList.add('active'); glow.style.left = e.clientX + 'px'; glow.style.top = e.clientY + 'px'; });
+document.addEventListener('mouseleave', function() { glow.classList.remove('active'); });
+</script>
+</body>
+</html>
