@@ -37,12 +37,6 @@ exports.handler = async (event) => {
     const customFields = [];
 
     if (data.email) customFields.push({ id: FIELDS.email, value: data.email });
-if (data.phone) {
-  var cleanPhone = data.phone.replace(/[^0-9+]/g, '');
-  if (cleanPhone.length >= 10) {
-    customFields.push({ id: FIELDS.phone, value: { phone: cleanPhone } });
-  }
-}
     if (data.event_type) customFields.push({ id: FIELDS.eventType, value: data.event_type });
     if (data.event_date) customFields.push({ id: FIELDS.eventDate, value: new Date(data.event_date).getTime() });
     if (data.venue) customFields.push({ id: FIELDS.venue, value: data.venue });
