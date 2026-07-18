@@ -64,7 +64,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           name: (data.name || "Anonymous") + " | " + (data.event_type || "Review"),
           description: description,
-          status: "to do",
+status: "qualified prospect",
           custom_fields: customFields,
         }),
       }
