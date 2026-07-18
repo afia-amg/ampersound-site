@@ -2,7 +2,6 @@ const LIST_ID = "901417290253";
 
 const FIELDS = {
   email: "a32a6928-ba34-4d2f-8792-d2f63d739f90",
-  phone: "2b1bdcbd-3cf9-4d03-89c6-ba4854340ae4",
   eventType: "786532a3-73ff-4ff5-8d78-f49a66670bea",
   eventDate: "e8b8ef29-f447-4bd9-affc-8a39bfcd718f",
   venue: "a1b16a05-e8cf-48e0-b284-0695a9f88744",
@@ -55,7 +54,6 @@ exports.handler = async (event) => {
       "",
       "Name: " + (data.name || "Not provided"),
       "Email: " + (data.email || "Not provided"),
-      "Phone: " + (data.phone || "Not provided"),
       "Event Type: " + (data.event_type || "Not specified"),
       "Event Date: " + (data.event_date || "TBD"),
       "Venue: " + (data.venue || "TBD"),
