@@ -73,13 +73,13 @@ exports.handler = async (event) => {
       customFields.push({ id: FIELDS.email, value: data.email.trim() });
     }
 
-    // Phone (phone field - requires object format)
-    if (data.phone) {
-      var cleanPhone = data.phone.replace(/[^0-9+]/g, "");
-      if (cleanPhone.length >= 10) {
-        customFields.push({ id: FIELDS.phone, value: { phone: cleanPhone } });
-      }
-    }
+     // Phone (phone field - requires object format)
+ if (data.phone) {
+ var cleanPhone = data.phone.replace(/[^0-9+]/g, "");
+ if (cleanPhone.length >= 10) {
+ customFields.push({ id: FIELDS.phone, value: { phone: cleanPhone } });
+ }
+ }
 
     // Event Type (dropdown - requires UUID)
     if (data.event_type && EVENT_TYPE_MAP[data.event_type]) {
@@ -188,6 +188,6 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, taskId: task.id }) };
   } catch (err) {
     console.error("Function error:", err);
-       return { statusCode: 500, headers, body: JSON.stringify({ error: "Server error" }) };
+           return { statusCode: 500, headers, body: JSON.stringify({ error: "Server error" }) };
   }
 };
