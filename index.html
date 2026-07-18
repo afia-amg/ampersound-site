@@ -411,7 +411,30 @@ function initReveals() { const r=document.querySelectorAll('.page-view.active .r
 function initCounters() { document.querySelectorAll('.page-view.active [data-count]').forEach(el=>{ const t=parseInt(el.dataset.count); const o=new IntersectionObserver(e=>{if(e[0].isIntersecting){const d=1200;const s=performance.now();function tick(n){const p=Math.min((n-s)/d,1);const ea=1-Math.pow(1-p,4);el.textContent=Math.round(ea*t)+(t===100?'%':'+');if(p<1)requestAnimationFrame(tick);}requestAnimationFrame(tick);o.unobserve(el);}},{threshold:0.5}); o.observe(el); }); }
 
 document.getElementById('testimonialForm').addEventListener('submit',function(e){e.preventDefault();document.getElementById('testimonial-form-wrap').style.display='none';document.getElementById('testimonialSuccess').classList.add('visible');});
-document.getElementById('intakeForm').addEventListener('submit',function(e){e.preventDefault();if(!this.querySelector('[name="name"]').value||!this.querySelector('[name="email"]').value)return;document.getElementById('intake-form-content').style.display='none';document.getElementById('intakeSuccess').classList.add('visible');});
+document.getElementById('intakeForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  if (!this.querySelector('[name="name"]').value || !this.querySelector('[name="email"]').value) return;
+
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData.entries());
+  data.svc = formData.getAll('svc');
+
+  try {
+    const res = await fetch('/.netlify/functions/intake-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      document.getElementById('intake-form-content').style.display = 'none';
+      document.getElementById('intakeSuccess').classList.add('visible');
+    } else {
+      alert('Something went wrong. Please email us at contact@ampersoundmediagroup.com');
+    }
+  } catch (err) {
+    alert('Connection error. Please try again.');
+  }
+});
 initReveals(); initCounters();
 </script>
 </body>
