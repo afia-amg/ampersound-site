@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Portal | Ampersound Media Group</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:oklch(13% 0.01 250);--surface:oklch(16% 0.008 250);--surface-raised:oklch(19% 0.008 250);--border:oklch(35% 0.02 70/0.2);--border-strong:oklch(55% 0.08 70/0.35);--text:oklch(94% 0.008 70);--text-dim:oklch(78% 0.008 70);--text-muted:oklch(55% 0.01 70);--gold:oklch(72% 0.1 70);--gold-bright:oklch(80% 0.1 70);--field-bg:oklch(14% 0.008 250);--field-border:oklch(30% 0.03 70/0.3);--success:oklch(65% 0.15 145);--error:oklch(60% 0.2 25);--warning:oklch(72% 0.12 85); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var(--text);background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:3rem 1rem;-webkit-font-smoothing:antialiased}
+.portal-container{width:100%;max-width:560px}
+.portal-header{text-align:center;margin-bottom:2.5rem}
+.portal-header img{height:38px;margin-bottom:1.25rem}
+.portal-header h1{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:-0.03em;color:var(--text);margin-bottom:0.5rem}
+.portal-header p{color:var(--text-dim);font-size:0.9rem;max-width:380px;margin:0 auto}
+.lookup-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem 2.25rem}
+.lookup-card label{display:block;font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:0.4rem}
+.lookup-card input{width:100%;font-family:'Open Sans',sans-serif;font-size:0.95rem;padding:0.75rem 1rem;border:1px solid var(--field-border);border-radius:8px;background:var(--field-bg);color:var(--text);outline:none;transition:border-color 200ms,box-shadow 200ms}
+.lookup-card input:focus{border-color:var(--gold);box-shadow:0 0 0 3px oklch(72% 0.1 70/0.1)}
+.lookup-card input.invalid{border-color:var(--error)}
+.lookup-btn{width:100%;margin-top:1.25rem;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.85rem;letter-spacing:0.03em;padding:0.85rem;background:var(--gold);color:var(--bg);border:none;border-radius:8px;cursor:pointer;transition:background 200ms,transform 100ms}
+.lookup-btn:hover{background:var(--gold-bright)}
+.lookup-btn:active{transform:scale(0.97)}
+.lookup-btn:disabled{opacity:0.5;cursor:not-allowed}
+.lookup-btn.loading{position:relative;color:transparent;pointer-events:none}
+.lookup-btn.loading::after{content:'';position:absolute;top:50%;left:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--bg);border-top-color:transparent;border-radius:50%;animation:spin 600ms linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lookup-error{display:none;margin-top:1rem;padding:0.75rem 1rem;border-radius:8px;font-size:0.82rem;background:oklch(60% 0.2 25/0.08);border:1px solid var(--error);color:var(--error)}
+.lookup-error.visible{display:block}
+.results-section{display:none;margin-top:2rem}
+.results-section.visible{display:block}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.results-header h2{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1rem;color:var(--text)}
+.results-header button{font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:600;color:var(--gold);background:none;border:none;cursor:pointer}
+.results-header button:hover{color:var(--gold-bright)}
+.agreement-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem 1.75rem;margin-bottom:1rem;transition:border-color 200ms}
+.agreement-card:hover{border-color:var(--border-strong)}
+.agreement-card .event-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text);margin-bottom:0.2rem}
+.agreement-card .event-date{font-size:0.8rem;color:var(--text-dim);margin-bottom:1rem}
+.agreement-meta{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.meta-item label{display:block;font-family:'Montserrat',sans-serif;font-size:0.6rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.15rem}
+.meta-item span{font-size:0.82rem;color:var(--text-dim)}
+.agreement-status{display:inline-flex;align-items:center;gap:0.4rem;margin-top:1rem;padding:0.35rem 0.75rem;border-radius:20px;font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
+.agreement-status.signed{background:oklch(65% 0.15 145/0.1);color:var(--success)}
+.agreement-status.pending{background:oklch(72% 0.12 85/0.1);color:var(--warning)}
+.agreement-status .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.agreement-actions{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:1rem}
+.agreement-actions a{font-family:'Montserrat',sans-serif;font-size:0.72rem;font-weight:600;color:var(--gold);text-decoration:none;letter-spacing:0.02em;transition:color 150ms}
+.agreement-actions a:hover{color:var(--gold-bright)}
+.empty-state{text-align:center;padding:2.5rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.empty-state p{color:var(--text-dim);font-size:0.88rem}
+.empty-state .icon{font-size:2rem;margin-bottom:0.75rem;opacity:0.5}
+.portal-footer{margin-top:3rem;text-align:center;font-size:0.7rem;color:var(--text-muted)}
+.portal-footer a{color:var(--gold);text-decoration:none}
+.portal-footer a:hover{color:var(--gold-bright)}
+@media(max-width:640px){.lookup-card{padding:1.5rem 1.25rem}.agreement-meta{grid-template-columns:1fr}.agreement-card{padding:1.25rem}}
+</style>
+</head>
+<body>
+<div class="portal-container">
+  <header class="portal-header"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group"><h1>Client Portal</h1><p>View your agreements, check event details, and access signed documents.</p></header>
+  <div class="lookup-card" id="lookupCard"><label for="lookupEmail">Email Address</label><input type="email" id="lookupEmail" placeholder="Enter the email associated with your booking" autocomplete="email"><button class="lookup-btn" id="lookupBtn" onclick="lookupAgreements()">Find My Agreements</button><div class="lookup-error" id="lookupError"></div></div>
+  <div class="results-section" id="resultsSection"><div class="results-header"><h2 id="resultsTitle">Your Agreements</h2><button onclick="resetLookup()">Search again</button></div><div id="resultsContainer"></div></div>
+  <footer class="portal-footer"><a href="https://ampersoundmediagroup.com">ampersoundmediagroup.com</a> &middot; contact@ampersoundmediagroup.com<br>Sound. Presence. Atmosphere.</footer>
+</div>
+<script>
+const LOOKUP_URL='/.netlify/functions/lookup-agreement';
+async function lookupAgreements(){const ei=document.getElementById('lookupEmail'),email=ei.value.trim(),err=document.getElementById('lookupError'),btn=document.getElementById('lookupBtn');err.classList.remove('visible');ei.classList.remove('invalid');if(!email||!email.includes('@')){ei.classList.add('invalid');err.textContent='Please enter a valid email address.';err.classList.add('visible');return}btn.classList.add('loading');btn.disabled=true;try{const res=await fetch(LOOKUP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.message||'Lookup failed')}const{agreements}=await res.json();renderResults(agreements,email)}catch(e){err.textContent=e.message||'Something went wrong.';err.classList.add('visible')}finally{btn.classList.remove('loading');btn.disabled=false}}
+function renderResults(agreements,email){const c=document.getElementById('resultsContainer'),s=document.getElementById('resultsSection'),l=document.getElementById('lookupCard');l.style.display='none';s.classList.add('visible');if(!agreements||!agreements.length){c.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div><p>No agreements found for <strong>'+email+'</strong>.<br>If you recently signed, it may take a moment to appear.</p></div>';return}document.getElementById('resultsTitle').textContent='Your Agreements ('+agreements.length+')';c.innerHTML=agreements.map(a=>{const sc=a.status==='signed'?'signed':'pending',sl=a.status==='signed'?'Signed':'Pending Signature';return '<div class="agreement-card"><div class="event-name">'+a.eventName+'</div><div class="event-date">'+a.eventDate+(a.venue?' &middot; '+a.venue:'')+'</div><div class="agreement-meta"><div class="meta-item"><label>Services</label><span>'+(a.services||'See agreement')+'</span></div><div class="meta-item"><label>Total Fee</label><span>'+(a.totalFee?'$'+Number(a.totalFee).toLocaleString():'See agreement')+'</span></div><div class="meta-item"><label>Deposit</label><span>'+(a.deposit?'$'+Number(a.deposit).toLocaleString():'See agreement')+'</span></div><div class="meta-item"><label>Event Type</label><span>'+(a.eventType||'N/A')+'</span></div></div><div class="agreement-status '+sc+'"><span class="dot"></span>'+sl+'</div>'+(a.actions?'<div class="agreement-actions">'+a.actions+'</div>':'')+'</div>'}).join('')}
+function resetLookup(){document.getElementById('lookupCard').style.display='block';document.getElementById('resultsSection').classList.remove('visible');document.getElementById('resultsContainer').innerHTML='';document.getElementById('lookupEmail').value=''}
+document.getElementById('lookupEmail').addEventListener('keydown',e=>{if(e.key==='Enter')lookupAgreements()});
+</script>
+</body>
+</html>
