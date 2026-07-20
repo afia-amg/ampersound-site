@@ -1,7 +1,21 @@
+// netlify/functions/submit-agreement.js
+// Routes agreement submissions to ClickUp + sends email via Gmail API + Chat notification
+//
+// ENV VARS:
+//   CLICKUP_API_TOKEN
+//   CLICKUP_CHAT_CHANNEL_ID (optional)
+//   GMAIL_CLIENT_ID        - Google OAuth client ID
+//   GMAIL_CLIENT_SECRET    - Google OAuth client secret
+//   GMAIL_REFRESH_TOKEN    - OAuth refresh token for contact@ampersoundmediagroup.com
+//   FROM_EMAIL             - contact@ampersoundmediagroup.com
+//   SITE_URL               - https://ampersoundmediagroup.com
+
 const CLICKUP_API_TOKEN = process.env.CLICKUP_API_TOKEN;
 const LIST_ID = '4027438415107101193';
 const CHAT_CHANNEL_ID = process.env.CLICKUP_CHAT_CHANNEL_ID;
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID;
+const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;
+const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'contact@ampersoundmediagroup.com';
 const SITE_URL = process.env.SITE_URL || 'https://ampersoundmediagroup.com';
 
@@ -15,21 +29,90 @@ const SERVICES_OPTIONS = { 'DJ / Sound Direction':'d09d1ebc-e33f-4fe5-80a5-5cd98
 
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
+// ============================================
+// GMAIL API: Get access token via refresh token
+// ============================================
+async function getGmailAccessToken() {
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: GMAIL_CLIENT_ID,
+      client_secret: GMAIL_CLIENT_SECRET,
+      refresh_token: GMAIL_REFRESH_TOKEN,
+      grant_type: 'refresh_token',
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to refresh Gmail token');
+  const data = await res.json();
+  return data.access_token;
+}
+
+// ============================================
+// GMAIL API: Send email
+// ============================================
 async function sendClientEmail(data) {
-  if (!RESEND_API_KEY || !data.clientEmail) return;
+  if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET || !GMAIL_REFRESH_TOKEN || !data.clientEmail) return;
+
   const fee = data.totalFee ? `$${Number(data.totalFee).toLocaleString()}` : 'See agreement';
   const deposit = data.depositAmount ? `$${Number(data.depositAmount).toLocaleString()}` : 'See agreement';
   const services = (data.services || []).join(', ') || 'See agreement';
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#0f1114;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1114;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#181c21;border:1px solid rgba(201,169,110,0.15);border-radius:12px;overflow:hidden;"><tr><td style="padding:32px 40px 24px;border-bottom:2px solid #c9a96e;"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group" height="36" style="display:block;"></td></tr><tr><td style="padding:32px 40px;"><h1 style="font-size:22px;color:#f0ebe4;margin:0 0 8px;font-weight:700;">Agreement Confirmed</h1><p style="color:rgba(240,235,228,0.65);font-size:15px;line-height:1.6;margin:0 0 24px;">Hi ${data.clientName},<br><br>Thank you for signing your service agreement with Ampersound Media Group. This email confirms your booking. Below is a summary of the agreement details.</p><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr><td style="padding:12px 16px;background:#141719;border-radius:8px 8px 0 0;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Event</span><br><span style="color:#f0ebe4;font-size:14px;">${data.eventName} &mdash; ${data.eventDate}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Venue</span><br><span style="color:#f0ebe4;font-size:14px;">${data.venueName}${data.venueAddress ? ', ' + data.venueAddress : ''}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Services</span><br><span style="color:#f0ebe4;font-size:14px;">${services}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Total Fee</span><br><span style="color:#f0ebe4;font-size:14px;font-weight:600;">${fee}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Deposit Due</span><br><span style="color:#f0ebe4;font-size:14px;">${deposit}${data.depositDueDate ? ' by ' + data.depositDueDate : ' upon signing'}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-radius:0 0 8px 8px;"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Signed By</span><br><span style="color:#f0ebe4;font-size:14px;">${data.signedName} on ${data.signedDate}</span></td></tr></table><p style="color:rgba(240,235,228,0.65);font-size:14px;line-height:1.6;margin:0 0 24px;"><strong style="color:#f0ebe4;">What happens next:</strong><br>1. Submit your deposit to secure the date<br>2. We'll reach out to schedule a planning consultation<br>3. Final timeline and details are due 72 hours before the event</p><p style="color:rgba(240,235,228,0.65);font-size:14px;line-height:1.6;margin:0 0 8px;">Access your agreement anytime from the client portal:</p><a href="${SITE_URL}/client-portal" style="display:inline-block;padding:12px 24px;background:#c9a96e;color:#0f1114;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;margin-top:8px;">View My Agreement</a></td></tr><tr><td style="padding:24px 40px;border-top:1px solid rgba(201,169,110,0.1);text-align:center;"><p style="color:rgba(240,235,228,0.35);font-size:12px;margin:0;line-height:1.5;">Ampersound Media Group &bull; North Salt Lake, Utah<br>contact@ampersoundmediagroup.com<br><span style="color:#c9a96e;">Sound. Presence. Atmosphere.</span></p></td></tr></table></td></tr></table></body></html>`;
-  try { await fetch('https://api.resend.com/emails', { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${RESEND_API_KEY}`}, body:JSON.stringify({ from:`Ampersound Media Group <${FROM_EMAIL}>`, to:[data.clientEmail], subject:`Your Service Agreement with Ampersound Media Group - ${data.eventName}`, html, reply_to:FROM_EMAIL }) }); } catch(e) { console.error('Email error:', e.message); }
+
+  const htmlBody = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#0f1114;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1114;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#181c21;border:1px solid rgba(201,169,110,0.15);border-radius:12px;overflow:hidden;"><tr><td style="padding:32px 40px 24px;border-bottom:2px solid #c9a96e;"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group" height="36" style="display:block;"></td></tr><tr><td style="padding:32px 40px;"><h1 style="font-size:22px;color:#f0ebe4;margin:0 0 8px;font-weight:700;">Agreement Confirmed</h1><p style="color:rgba(240,235,228,0.65);font-size:15px;line-height:1.6;margin:0 0 24px;">Hi ${data.clientName},<br><br>Thank you for signing your service agreement with Ampersound Media Group. This email confirms your booking. Below is a summary of the agreement details.</p><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr><td style="padding:12px 16px;background:#141719;border-radius:8px 8px 0 0;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Event</span><br><span style="color:#f0ebe4;font-size:14px;">${data.eventName} &mdash; ${data.eventDate}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Venue</span><br><span style="color:#f0ebe4;font-size:14px;">${data.venueName}${data.venueAddress ? ', ' + data.venueAddress : ''}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Services</span><br><span style="color:#f0ebe4;font-size:14px;">${services}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Total Fee</span><br><span style="color:#f0ebe4;font-size:14px;font-weight:600;">${fee}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Deposit Due</span><br><span style="color:#f0ebe4;font-size:14px;">${deposit}${data.depositDueDate ? ' by ' + data.depositDueDate : ' upon signing'}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-radius:0 0 8px 8px;"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Signed By</span><br><span style="color:#f0ebe4;font-size:14px;">${data.signedName} on ${data.signedDate}</span></td></tr></table><p style="color:rgba(240,235,228,0.65);font-size:14px;line-height:1.6;margin:0 0 24px;"><strong style="color:#f0ebe4;">What happens next:</strong><br>1. Submit your deposit to secure the date<br>2. We'll reach out to schedule a planning consultation<br>3. Final timeline and details are due 72 hours before the event</p><p style="color:rgba(240,235,228,0.65);font-size:14px;line-height:1.6;margin:0 0 8px;">Access your agreement anytime from the client portal:</p><a href="${SITE_URL}/client-portal" style="display:inline-block;padding:12px 24px;background:#c9a96e;color:#0f1114;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;margin-top:8px;">View My Agreement</a></td></tr><tr><td style="padding:24px 40px;border-top:1px solid rgba(201,169,110,0.1);text-align:center;"><p style="color:rgba(240,235,228,0.35);font-size:12px;margin:0;line-height:1.5;">Ampersound Media Group &bull; North Salt Lake, Utah<br>contact@ampersoundmediagroup.com<br><span style="color:#c9a96e;">Sound. Presence. Atmosphere.</span></p></td></tr></table></td></tr></table></body></html>`;
+
+  const subject = `Your Service Agreement with Ampersound Media Group - ${data.eventName}`;
+
+  // Build RFC 2822 email message
+  const emailLines = [
+    `From: Ampersound Media Group <${FROM_EMAIL}>`,
+    `To: ${data.clientName} <${data.clientEmail}>`,
+    `Subject: ${subject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/html; charset=UTF-8`,
+    ``,
+    htmlBody,
+  ];
+  const rawMessage = emailLines.join('\r\n');
+
+  // Base64url encode the message
+  const encodedMessage = Buffer.from(rawMessage)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  try {
+    const accessToken = await getGmailAccessToken();
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ raw: encodedMessage }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('Gmail send failed:', res.status, err);
+    }
+  } catch (err) {
+    console.error('Email error:', err.message);
+  }
 }
 
+// ============================================
+// CHAT NOTIFICATION
+// ============================================
 async function notifyChat(data, taskUrl) {
   if (!CHAT_CHANNEL_ID) return;
   const msg = `\ud83d\udcdd **New Agreement Signed**\n\n**Client:** ${data.clientName}${data.organization?' ('+data.organization+')':''}\n**Event:** ${data.eventName} - ${data.eventDate}\n**Type:** ${data.eventType}\n**Venue:** ${data.venueName}\n**Services:** ${(data.services||[]).join(', ')||'Not specified'}\n**Total Fee:** ${data.totalFee?'$'+Number(data.totalFee).toLocaleString():'TBD'}\n\n[View Agreement Task](${taskUrl})`;
   try { await fetch(`https://api.clickup.com/api/v3/chat/${CHAT_CHANNEL_ID}/message`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':CLICKUP_API_TOKEN}, body:JSON.stringify({content:msg}) }); } catch(e) { console.error('Chat error:', e.message); }
 }
 
+// ============================================
+// HANDLER
+// ============================================
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode:204, headers, body:'' };
   if (event.httpMethod !== 'POST') return { statusCode:405, headers, body:JSON.stringify({message:'Method not allowed'}) };
