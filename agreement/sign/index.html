@@ -103,11 +103,22 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
 .success-overlay h2 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--text); }
 .success-overlay p { color: var(--text-dim); max-width: 420px; line-height: 1.6; }
 .success-check { width: 64px; height: 64px; border-radius: 50%; background: oklch(65% 0.15 145 / 0.15); border: 2px solid var(--success); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+.loading-overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+.loading-overlay.visible { display: flex; }
+.loading-overlay p { color: var(--text-dim); font-size: 0.9rem; }
+.loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 800ms linear infinite; }
 @media (max-width: 640px) { .page-wrapper { padding: 1.5rem 1.25rem; } .field-row, .field-row.triple { grid-template-columns: 1fr; } .checkbox-grid { grid-template-columns: 1fr; } .sig-grid { grid-template-columns: 1fr; gap: 1.5rem; } .doc-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; } .doc-header-text { text-align: left; } }
 @media print { body { background: #fff; color: #111; padding: 0; } .page-wrapper { background: #fff; box-shadow: none; border: none; padding: 0; max-width: none; } .terms-body { display: block !important; } .terms-toggle .arrow { display: none; } .submit-wrap, .sig-clear { display: none; } }
 </style>
 </head>
 <body>
+
+<!-- Loading state for token-based loads -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <p>Loading your agreement...</p>
+</div>
+
 <div class="page-wrapper">
   <header class="doc-header">
     <img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group">
@@ -156,20 +167,107 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
   <footer class="doc-footer"><span>Ampersound Media Group</span> &middot; North Salt Lake, Utah &middot; contact@ampersoundmediagroup.com<br>This agreement is valid for 30 days from the date of issue.</footer>
 </div>
 <div class="success-overlay" id="successOverlay"><div class="success-check">&#10003;</div><h2>Agreement Signed</h2><p>Your signed agreement has been submitted successfully. A copy has been sent to your email for your records. We'll be in touch soon to begin planning.</p><p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;">You may close this window.</p></div>
+
 <script>
 const NETLIFY_FUNCTION_URL = '/.netlify/functions/submit-agreement';
-(function prefill() {
+const LOAD_AGREEMENT_URL = '/.netlify/functions/load-agreement';
+
+// Store token if present (for submission)
+let agreementToken = null;
+
+// ==========================================
+// LOAD FROM TOKEN OR URL PARAMS
+// ==========================================
+(async function init() {
   const params = new URLSearchParams(window.location.search);
-  const map = { client:'clientName',org:'organization',email:'clientEmail',phone:'clientPhone',address:'mailingAddress',event:'eventName',eventType:'eventType',date:'eventDate',start:'startTime',end:'endTime',venue:'venueName',venueAddress:'venueAddress',guests:'guestCount',indoor:'indoorOutdoor',notes:'eventNotes',fee:'totalFee',deposit:'depositAmount',balance:'balanceDue',depositDue:'depositDueDate',balanceDue:'balanceDueDate',booking:'bookingType',payment:'paymentMethod',serviceNotes:'serviceNotes' };
-  for (const [param, fieldId] of Object.entries(map)) { const v = params.get(param); if (v) { const el = document.getElementById(fieldId); if (el) el.value = decodeURIComponent(v); } }
-  const services = params.get('services');
-  if (services) services.split(',').map(s => s.trim()).forEach(svc => { document.querySelectorAll('input[name="services"]').forEach(cb => { if (cb.value === svc) cb.checked = true; }); });
+  const token = params.get('token');
+
+  if (token) {
+    // Token-based: load from ClickUp
+    agreementToken = token;
+    document.getElementById('loadingOverlay').classList.add('visible');
+
+    try {
+      const res = await fetch(LOAD_AGREEMENT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!res.ok) throw new Error('Could not load agreement');
+      const data = await res.json();
+
+      // Check if already signed
+      if (data.status === 'signed' && !params.get('view')) {
+        document.getElementById('loadingOverlay').classList.remove('visible');
+        document.getElementById('successOverlay').classList.add('visible');
+        document.querySelector('.success-overlay h2').textContent = 'Already Signed';
+        document.querySelector('.success-overlay p').textContent = 'This agreement has already been signed. Check your email for the confirmation, or visit the client portal to view your agreement details.';
+        return;
+      }
+
+      // Prefill fields from loaded data
+      prefillFromData(data);
+    } catch (err) {
+      console.error('Load error:', err);
+      // Fall through to empty form
+    }
+
+    document.getElementById('loadingOverlay').classList.remove('visible');
+  } else {
+    // URL param based (legacy/manual)
+    prefillFromParams(params);
+  }
+
+  // Set defaults
   const amgDate = params.get('issued') || new Date().toISOString().split('T')[0];
   document.querySelector('#amgSignDate span').textContent = amgDate;
   if (!document.getElementById('sigDate').value) document.getElementById('sigDate').value = new Date().toISOString().split('T')[0];
   const cn = document.getElementById('clientName').value;
   if (cn && !document.getElementById('sigName').value) document.getElementById('sigName').value = cn;
 })();
+
+function prefillFromData(data) {
+  const fieldMap = {
+    clientName: 'clientName', organization: 'organization', clientEmail: 'clientEmail',
+    clientPhone: 'clientPhone', mailingAddress: 'mailingAddress', eventName: 'eventName',
+    eventDate: 'eventDate', eventType: 'eventType', startTime: 'startTime', endTime: 'endTime',
+    venueName: 'venueName', venueAddress: 'venueAddress', guestCount: 'guestCount',
+    indoorOutdoor: 'indoorOutdoor', eventNotes: 'eventNotes', serviceNotes: 'serviceNotes',
+    depositDueDate: 'depositDueDate', balanceDueDate: 'balanceDueDate',
+    bookingType: 'bookingType', paymentMethod: 'paymentMethod',
+  };
+
+  for (const [key, fieldId] of Object.entries(fieldMap)) {
+    if (data[key]) {
+      const el = document.getElementById(fieldId);
+      if (el) el.value = data[key];
+    }
+  }
+
+  // Currency fields
+  if (data.totalFee) document.getElementById('totalFee').value = '$' + Number(data.totalFee).toFixed(2);
+  if (data.depositAmount) document.getElementById('depositAmount').value = '$' + Number(data.depositAmount).toFixed(2);
+  if (data.balanceDue) document.getElementById('balanceDue').value = '$' + Number(data.balanceDue).toFixed(2);
+
+  // Services (labels)
+  if (data.services && Array.isArray(data.services)) {
+    document.querySelectorAll('input[name="services"]').forEach(cb => {
+      if (data.services.includes(cb.value)) cb.checked = true;
+    });
+  }
+}
+
+function prefillFromParams(params) {
+  const map = { client:'clientName',org:'organization',email:'clientEmail',phone:'clientPhone',address:'mailingAddress',event:'eventName',eventType:'eventType',date:'eventDate',start:'startTime',end:'endTime',venue:'venueName',venueAddress:'venueAddress',guests:'guestCount',indoor:'indoorOutdoor',notes:'eventNotes',fee:'totalFee',deposit:'depositAmount',balance:'balanceDue',depositDue:'depositDueDate',balanceDue:'balanceDueDate',booking:'bookingType',payment:'paymentMethod',serviceNotes:'serviceNotes' };
+  for (const [param, fieldId] of Object.entries(map)) { const v = params.get(param); if (v) { const el = document.getElementById(fieldId); if (el) el.value = decodeURIComponent(v); } }
+  const services = params.get('services');
+  if (services) services.split(',').map(s => s.trim()).forEach(svc => { document.querySelectorAll('input[name="services"]').forEach(cb => { if (cb.value === svc) cb.checked = true; }); });
+}
+
+// ==========================================
+// SIGNATURE PAD
+// ==========================================
 const canvas = document.getElementById('sigCanvas'), ctx = canvas.getContext('2d'), sigWrap = document.getElementById('sigWrap');
 let isDrawing = false, hasSignature = false;
 function resizeCanvas() { const r = canvas.getBoundingClientRect(); canvas.width = r.width * devicePixelRatio; canvas.height = r.height * devicePixelRatio; ctx.scale(devicePixelRatio, devicePixelRatio); ctx.strokeStyle = '#f0ebe4'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
@@ -184,19 +282,33 @@ canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!isDrawing) 
 canvas.addEventListener('touchend', () => { isDrawing = false; sigWrap.classList.remove('active'); });
 function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); hasSignature = false; sigWrap.classList.remove('has-signature'); }
 function getSignatureData() { return hasSignature ? canvas.toDataURL('image/png') : null; }
+
+// ==========================================
+// TERMS TOGGLE
+// ==========================================
 function toggleTerms(el) { el.classList.toggle('open'); el.nextElementSibling.classList.toggle('open'); }
+
+// ==========================================
+// AUTO-CALC BALANCE
+// ==========================================
 document.getElementById('totalFee').addEventListener('input', calcBalance);
 document.getElementById('depositAmount').addEventListener('input', calcBalance);
 function calcBalance() { const t = parseFloat(document.getElementById('totalFee').value.replace(/[^0-9.]/g,''))||0, d = parseFloat(document.getElementById('depositAmount').value.replace(/[^0-9.]/g,''))||0; if (t&&d) document.getElementById('balanceDue').value = '$'+(t-d).toFixed(2); }
+
+// ==========================================
+// VALIDATION & SUBMIT
+// ==========================================
 function validateForm() { let v = true; document.querySelectorAll('[required]').forEach(el => { el.classList.remove('invalid'); if (!el.value.trim()) { el.classList.add('invalid'); v = false; } }); if (!document.getElementById('agreeTerms').checked) v = false; if (!hasSignature) { sigWrap.style.borderColor = 'var(--error)'; v = false; } else { sigWrap.style.borderColor = ''; } return v; }
+
 document.getElementById('agreementForm').addEventListener('submit', async function(e) {
   e.preventDefault(); if (!validateForm()) { showStatus('Please complete all required fields, agree to the terms, and sign the agreement.','error'); return; }
   const btn = document.getElementById('submitBtn'); btn.classList.add('loading'); btn.disabled = true; hideStatus();
   const services = []; document.querySelectorAll('input[name="services"]:checked').forEach(cb => services.push(cb.value));
   const pc = v => v ? parseFloat(v.replace(/[^0-9.]/g,''))||null : null;
-  const payload = { clientName:document.getElementById('clientName').value, organization:document.getElementById('organization').value, clientEmail:document.getElementById('clientEmail').value, clientPhone:document.getElementById('clientPhone').value, mailingAddress:document.getElementById('mailingAddress').value, eventName:document.getElementById('eventName').value, eventType:document.getElementById('eventType').value, eventDate:document.getElementById('eventDate').value, startTime:document.getElementById('startTime').value, endTime:document.getElementById('endTime').value, venueName:document.getElementById('venueName').value, venueAddress:document.getElementById('venueAddress').value, guestCount:parseInt(document.getElementById('guestCount').value)||null, indoorOutdoor:document.getElementById('indoorOutdoor').value, eventNotes:document.getElementById('eventNotes').value, services, serviceNotes:document.getElementById('serviceNotes').value, totalFee:pc(document.getElementById('totalFee').value), depositAmount:pc(document.getElementById('depositAmount').value), balanceDue:pc(document.getElementById('balanceDue').value), depositDueDate:document.getElementById('depositDueDate').value, balanceDueDate:document.getElementById('balanceDueDate').value, bookingType:document.getElementById('bookingType').value, paymentMethod:document.getElementById('paymentMethod').value, signedName:document.getElementById('sigName').value, signedDate:document.getElementById('sigDate').value, signatureImage:getSignatureData(), agreedToTerms:document.getElementById('agreeTerms').checked, sendCopyToClient:true };
+  const payload = { clientName:document.getElementById('clientName').value, organization:document.getElementById('organization').value, clientEmail:document.getElementById('clientEmail').value, clientPhone:document.getElementById('clientPhone').value, mailingAddress:document.getElementById('mailingAddress').value, eventName:document.getElementById('eventName').value, eventType:document.getElementById('eventType').value, eventDate:document.getElementById('eventDate').value, startTime:document.getElementById('startTime').value, endTime:document.getElementById('endTime').value, venueName:document.getElementById('venueName').value, venueAddress:document.getElementById('venueAddress').value, guestCount:parseInt(document.getElementById('guestCount').value)||null, indoorOutdoor:document.getElementById('indoorOutdoor').value, eventNotes:document.getElementById('eventNotes').value, services, serviceNotes:document.getElementById('serviceNotes').value, totalFee:pc(document.getElementById('totalFee').value), depositAmount:pc(document.getElementById('depositAmount').value), balanceDue:pc(document.getElementById('balanceDue').value), depositDueDate:document.getElementById('depositDueDate').value, balanceDueDate:document.getElementById('balanceDueDate').value, bookingType:document.getElementById('bookingType').value, paymentMethod:document.getElementById('paymentMethod').value, signedName:document.getElementById('sigName').value, signedDate:document.getElementById('sigDate').value, signatureImage:getSignatureData(), agreedToTerms:document.getElementById('agreeTerms').checked, sendCopyToClient:true, token: agreementToken };
   try { const res = await fetch(NETLIFY_FUNCTION_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); if (!res.ok) throw new Error((await res.json().catch(()=>({}))).message||'Submission failed'); document.getElementById('successOverlay').classList.add('visible'); } catch(err) { showStatus('Something went wrong. Please try again or contact us at contact@ampersoundmediagroup.com.','error'); btn.classList.remove('loading'); btn.disabled = false; }
 });
+
 function showStatus(msg,type) { const el = document.getElementById('statusMsg'); el.textContent = msg; el.className = 'status-msg '+type; }
 function hideStatus() { document.getElementById('statusMsg').className = 'status-msg'; }
 </script>
