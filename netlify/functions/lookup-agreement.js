@@ -1,6 +1,5 @@
 const CLICKUP_API_TOKEN = process.env.CLICKUP_API_TOKEN;
 const LIST_ID = '901418268145';
-const SITE_URL = process.env.SITE_URL || 'https://ampersoundmediagroup.com';
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
@@ -66,8 +65,8 @@ function formatAgreements(tasks) {
     const status = isSigned ? 'signed' : 'pending';
 
     let actions = '';
-    if (status === 'pending') actions += `<a href="${SITE_URL}/agreement/sign?token=${task.id}">Sign Agreement</a>`;
-    actions += `<a href="${SITE_URL}/agreement/sign?token=${task.id}&view=true">View Agreement</a>`;
+    if (status === 'pending') actions += `<a href="/agreement/sign?token=${task.id}">Sign Agreement</a>`;
+    actions += `<a href="/agreement/sign?token=${task.id}&view=true">View Agreement</a>`;
 
     return { id: task.id, eventName: getField(CF.eventName) || task.name, eventDate: getField(CF.eventDate) || 'TBD', eventType: getField(CF.eventType), venue: getField(CF.venueName), services: getField(CF.services), totalFee: getField(CF.totalFee), deposit: getField(CF.depositAmount), status, actions };
   });
