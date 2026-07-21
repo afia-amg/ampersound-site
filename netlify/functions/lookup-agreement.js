@@ -1,6 +1,6 @@
-const CLICKUP_API_TOKEN = 'pk_106271316_6VJ0QV1GZIQ5ONRMYT1U9H0SVVBG8NVU';
+const CLICKUP_API_TOKEN = process.env.CLICKUP_API_TOKEN;
 const LIST_ID = '901418268145';
-const SITE_URL = 'https://ampersoundmediagroup.com';
+const SITE_URL = process.env.SITE_URL || 'https://ampersoundmediagroup.com';
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
@@ -10,6 +10,7 @@ exports.handler = async (event) => {
   let body; try { body = JSON.parse(event.body); } catch { return { statusCode:400, headers, body:JSON.stringify({message:'Invalid request'}) }; }
   const email = (body.email||'').trim().toLowerCase();
   if (!email || !email.includes('@')) return { statusCode:400, headers, body:JSON.stringify({message:'Valid email required'}) };
+  if (!CLICKUP_API_TOKEN) return { statusCode:500, headers, body:JSON.stringify({message:'Server configuration error'}) };
 
   try {
     const res = await fetch(`https://api.clickup.com/api/v2/list/${LIST_ID}/task?archived=false&include_closed=true&subtasks=false&page=0`, {
@@ -19,16 +20,13 @@ exports.handler = async (event) => {
 
     if (!res.ok) {
       const errBody = await res.text();
-      return { statusCode: res.status, headers, body: JSON.stringify({ message: 'ClickUp API failed', httpStatus: res.status, error: errBody }) };
+      console.error('ClickUp API error:', res.status, errBody);
+      return { statusCode:502, headers, body:JSON.stringify({message:'Unable to retrieve agreements'}) };
     }
 
     const data = await res.json();
 
-    if (!data.tasks) {
-      return { statusCode: 200, headers, body: JSON.stringify({ agreements: [], debug: 'No tasks property', keys: Object.keys(data) }) };
-    }
-
-    const tasks = data.tasks.filter(task => {
+    const tasks = (data.tasks||[]).filter(task => {
       const emailField = (task.custom_fields||[]).find(f => f.id === CF.clientEmail);
       if (!emailField) return false;
       let fieldValue = '';
@@ -38,9 +36,10 @@ exports.handler = async (event) => {
       return fieldValue.toLowerCase() === email;
     });
 
-    return { statusCode: 200, headers, body: JSON.stringify({ agreements: formatAgreements(tasks), totalInList: data.tasks.length, matched: tasks.length }) };
+    return { statusCode:200, headers, body:JSON.stringify({agreements:formatAgreements(tasks)}) };
   } catch(err) {
-    return { statusCode: 500, headers, body: JSON.stringify({ message: 'Function crashed', error: err.message }) };
+    console.error('Lookup error:', err.message);
+    return { statusCode:500, headers, body:JSON.stringify({message:'Internal error'}) };
   }
 };
 
