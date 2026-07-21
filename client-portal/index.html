@@ -6,7 +6,7 @@
 <title>Client Portal | Ampersound Media Group</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root { --bg:oklch(13% 0.01 250);--surface:oklch(16% 0.008 250);--surface-raised:oklch(19% 0.008 250);--border:oklch(35% 0.02 70/0.2);--border-strong:oklch(55% 0.08 70/0.35);--text:oklch(94% 0.008 70);--text-dim:oklch(78% 0.008 70);--text-muted:oklch(55% 0.01 70);--gold:oklch(72% 0.1 70);--gold-bright:oklch(80% 0.1 70);--field-bg:oklch(14% 0.008 250);--field-border:oklch(30% 0.03 70/0.3);--success:oklch(65% 0.15 145);--error:oklch(60% 0.2 25);--warning:oklch(72% 0.12 85); }
+:root{--bg:oklch(13% 0.01 250);--surface:oklch(16% 0.008 250);--surface-raised:oklch(19% 0.008 250);--border:oklch(35% 0.02 70/0.2);--border-strong:oklch(55% 0.08 70/0.35);--text:oklch(94% 0.008 70);--text-dim:oklch(78% 0.008 70);--text-muted:oklch(55% 0.01 70);--gold:oklch(72% 0.1 70);--gold-bright:oklch(80% 0.1 70);--field-bg:oklch(14% 0.008 250);--field-border:oklch(30% 0.03 70/0.3);--success:oklch(65% 0.15 145);--error:oklch(60% 0.2 25);--warning:oklch(72% 0.12 85)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var(--text);background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:3rem 1rem;-webkit-font-smoothing:antialiased}
 .portal-container{width:100%;max-width:560px}
@@ -44,10 +44,13 @@ body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var
 .agreement-status{display:inline-flex;align-items:center;gap:0.4rem;margin-top:1rem;padding:0.35rem 0.75rem;border-radius:20px;font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
 .agreement-status.signed{background:oklch(65% 0.15 145/0.1);color:var(--success)}
 .agreement-status.pending{background:oklch(72% 0.12 85/0.1);color:var(--warning)}
+.agreement-status.paid{background:oklch(65% 0.15 145/0.1);color:var(--success)}
 .agreement-status .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-.agreement-actions{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:1rem}
+.agreement-actions{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:1rem;flex-wrap:wrap}
 .agreement-actions a{font-family:'Montserrat',sans-serif;font-size:0.72rem;font-weight:600;color:var(--gold);text-decoration:none;letter-spacing:0.02em;transition:color 150ms}
 .agreement-actions a:hover{color:var(--gold-bright)}
+.agreement-actions a.pay-action{padding:0.45rem 1rem;background:var(--gold);color:var(--bg);border-radius:6px;transition:background 200ms}
+.agreement-actions a.pay-action:hover{background:var(--gold-bright);color:var(--bg)}
 .empty-state{text-align:center;padding:2.5rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
 .empty-state p{color:var(--text-dim);font-size:0.88rem}
 .empty-state .icon{font-size:2rem;margin-bottom:0.75rem;opacity:0.5}
@@ -59,7 +62,7 @@ body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var
 </head>
 <body>
 <div class="portal-container">
-  <header class="portal-header"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group"><h1>Client Portal</h1><p>View your agreements, check event details, and access signed documents.</p></header>
+  <header class="portal-header"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group"><h1>Client Portal</h1><p>View your agreements, check event details, and manage payments.</p></header>
   <div class="lookup-card" id="lookupCard"><label for="lookupEmail">Email Address</label><input type="email" id="lookupEmail" placeholder="Enter the email associated with your booking" autocomplete="email"><button class="lookup-btn" id="lookupBtn" onclick="lookupAgreements()">Find My Agreements</button><div class="lookup-error" id="lookupError"></div></div>
   <div class="results-section" id="resultsSection"><div class="results-header"><h2 id="resultsTitle">Your Agreements</h2><button onclick="resetLookup()">Search again</button></div><div id="resultsContainer"></div></div>
   <footer class="portal-footer"><a href="https://ampersoundmediagroup.com">ampersoundmediagroup.com</a> &middot; contact@ampersoundmediagroup.com<br>Sound. Presence. Atmosphere.</footer>
@@ -67,9 +70,29 @@ body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var
 <script>
 const LOOKUP_URL='/.netlify/functions/lookup-agreement';
 async function lookupAgreements(){const ei=document.getElementById('lookupEmail'),email=ei.value.trim(),err=document.getElementById('lookupError'),btn=document.getElementById('lookupBtn');err.classList.remove('visible');ei.classList.remove('invalid');if(!email||!email.includes('@')){ei.classList.add('invalid');err.textContent='Please enter a valid email address.';err.classList.add('visible');return}btn.classList.add('loading');btn.disabled=true;try{const res=await fetch(LOOKUP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.message||'Lookup failed')}const{agreements}=await res.json();renderResults(agreements,email)}catch(e){err.textContent=e.message||'Something went wrong.';err.classList.add('visible')}finally{btn.classList.remove('loading');btn.disabled=false}}
-function renderResults(agreements,email){const c=document.getElementById('resultsContainer'),s=document.getElementById('resultsSection'),l=document.getElementById('lookupCard');l.style.display='none';s.classList.add('visible');if(!agreements||!agreements.length){c.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div><p>No agreements found for <strong>'+email+'</strong>.<br>If you recently signed, it may take a moment to appear.</p></div>';return}document.getElementById('resultsTitle').textContent='Your Agreements ('+agreements.length+')';c.innerHTML=agreements.map(a=>{const sc=a.status==='signed'?'signed':'pending',sl=a.status==='signed'?'Signed':'Pending Signature';return '<div class="agreement-card"><div class="event-name">'+a.eventName+'</div><div class="event-date">'+a.eventDate+(a.venue?' &middot; '+a.venue:'')+'</div><div class="agreement-meta"><div class="meta-item"><label>Services</label><span>'+(a.services||'See agreement')+'</span></div><div class="meta-item"><label>Total Fee</label><span>'+(a.totalFee?'$'+Number(a.totalFee).toLocaleString():'See agreement')+'</span></div><div class="meta-item"><label>Deposit</label><span>'+(a.deposit?'$'+Number(a.deposit).toLocaleString():'See agreement')+'</span></div><div class="meta-item"><label>Event Type</label><span>'+(a.eventType||'N/A')+'</span></div></div><div class="agreement-status '+sc+'"><span class="dot"></span>'+sl+'</div>'+(a.actions?'<div class="agreement-actions">'+a.actions+'</div>':'')+'</div>'}).join('')}
+
+function renderResults(agreements,email){
+  const c=document.getElementById('resultsContainer'),s=document.getElementById('resultsSection'),l=document.getElementById('lookupCard');
+  l.style.display='none';s.classList.add('visible');
+  if(!agreements||!agreements.length){c.innerHTML='<div class="empty-state"><div class="icon">&#128203;</div><p>No agreements found for <strong>'+email+'</strong>.<br>If you recently signed, it may take a moment to appear.</p></div>';return}
+  document.getElementById('resultsTitle').textContent='Your Agreements ('+agreements.length+')';
+  c.innerHTML=agreements.map(a=>{
+    // Status badge
+    let badgeClass='pending',badgeLabel='Pending Signature';
+    if(a.status==='signed'&&a.paymentStatus==='paid'){badgeClass='paid';badgeLabel='Signed & Paid';}
+    else if(a.status==='signed'){badgeClass='signed';badgeLabel='Signed';}
+
+    return `<div class="agreement-card"><div class="event-name">${a.eventName}</div><div class="event-date">${a.eventDate}${a.venue?' &middot; '+a.venue:''}</div><div class="agreement-meta"><div class="meta-item"><label>Services</label><span>${a.services||'See agreement'}</span></div><div class="meta-item"><label>Total Fee</label><span>${a.totalFee?'$'+Number(a.totalFee).toLocaleString():'See agreement'}</span></div><div class="meta-item"><label>Deposit</label><span>${a.deposit?'$'+Number(a.deposit).toLocaleString():'See agreement'}</span></div><div class="meta-item"><label>Event Type</label><span>${a.eventType||'N/A'}</span></div></div><div class="agreement-status ${badgeClass}"><span class="dot"></span>${badgeLabel}</div><div class="agreement-actions">${a.actions}</div></div>`;
+  }).join('');
+}
+
 function resetLookup(){document.getElementById('lookupCard').style.display='block';document.getElementById('resultsSection').classList.remove('visible');document.getElementById('resultsContainer').innerHTML='';document.getElementById('lookupEmail').value=''}
 document.getElementById('lookupEmail').addEventListener('keydown',e=>{if(e.key==='Enter')lookupAgreements()});
+
+// Check if redirected after payment
+if(new URLSearchParams(window.location.search).get('paid')==='true'){
+  setTimeout(()=>alert('Payment received! Thank you. Your booking is confirmed.'),500);
+}
 </script>
 </body>
 </html>

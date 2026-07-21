@@ -3,14 +3,6 @@ const LIST_ID = '901418268145';
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791', paymentLink:'959cae43-8c7a-43b4-b0ce-2513b311b227', paymentStatus:'96105ecf-6396-4fb1-90aa-93b37c9dfc48' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
-const PAYMENT_STATUS_OPTIONS = {
-  'e0a9494c-4e0e-4bfb-be0b-cdaa22eed246': 'Sent Request',
-  '90f0ee01-2a5e-4a57-9dcf-1b38e9dd33d2': 'Quote sent',
-  '9a1bc76a-867d-4b41-9c07-1e1cbc060c04': 'Pending',
-  '7601cdf4-5cee-49ef-a8bf-802350a5bdcc': 'Payment Recieved',
-  '7570175a-d7a1-4d91-b82a-b4d9f7823244': 'n/a',
-};
-
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode:204, headers, body:'' };
   if (event.httpMethod !== 'POST') return { statusCode:405, headers, body:JSON.stringify({message:'Method not allowed'}) };
@@ -72,31 +64,40 @@ function formatAgreements(tasks) {
     let paymentStatus = null;
     if (paymentStatusField && paymentStatusField.type_config && paymentStatusField.type_config.options && typeof paymentStatusField.value === 'number') {
       const opt = paymentStatusField.type_config.options.find(o => o.orderindex === paymentStatusField.value);
-      paymentStatus = opt ? opt.name : null;
+      if (opt) paymentStatus = opt.name;
     }
 
     const isPaid = paymentStatus === 'Payment Recieved';
+    const paymentLink = getField(CF.paymentLink);
 
     const statusType = task.status ? (task.status.type || '') : '';
     const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
     const isSigned = statusType === 'done' || statusType === 'closed' || statusName === 'signed' || statusName === 'closed';
     const status = isSigned ? 'signed' : 'pending';
 
-    const paymentLink = getField(CF.paymentLink);
-
-    // Build actions
+    // Build actions based on state
     let actions = '';
     if (status === 'pending') {
       actions += `<a href="/agreement/sign?token=${task.id}">Sign Agreement</a>`;
     }
-    if (isSigned && paymentLink && !isPaid) {
-      actions += `<a href="${paymentLink}" style="color:#c9a96e;font-weight:700;">Pay Deposit</a>`;
-    }
-    if (isPaid) {
-      actions += `<span style="color:#4ade80;font-weight:600;font-size:0.72rem;">&#10003; Paid</span>`;
+    if (isSigned && !isPaid && paymentLink) {
+      actions += `<a href="${paymentLink}" class="pay-action">Pay Deposit</a>`;
     }
     actions += `<a href="/agreement/sign?token=${task.id}&view=true">View Agreement</a>`;
 
-    return { id: task.id, eventName: getField(CF.eventName) || task.name, eventDate: getField(CF.eventDate) || 'TBD', eventType: getField(CF.eventType), venue: getField(CF.venueName), services: getField(CF.services), totalFee: getField(CF.totalFee), deposit: getField(CF.depositAmount), status, paymentStatus: isPaid ? 'paid' : (paymentLink ? 'awaiting' : null), actions };
+    return {
+      id: task.id,
+      eventName: getField(CF.eventName) || task.name,
+      eventDate: getField(CF.eventDate) || 'TBD',
+      eventType: getField(CF.eventType),
+      venue: getField(CF.venueName),
+      services: getField(CF.services),
+      totalFee: getField(CF.totalFee),
+      deposit: getField(CF.depositAmount),
+      status,
+      paymentStatus: isPaid ? 'paid' : (paymentLink ? 'unpaid' : 'no_link'),
+      paymentLink,
+      actions,
+    };
   });
 }
