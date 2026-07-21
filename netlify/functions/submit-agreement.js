@@ -7,7 +7,7 @@ const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'contact@ampersoundmediagroup.com';
 const SITE_URL = process.env.SITE_URL || 'https://ampersoundmediagroup.com';
 
-const FIELDS = { clientName:'01b694ba-6da6-4e4c-a3d3-af4b96a7a0c5', organization:'aeeee479-3136-47c0-b10e-a2512f92a065', clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', clientPhone:'c76029af-56b9-4079-aef8-7af4c6d87a1e', mailingAddress:'fdba9ebc-a9da-4273-941f-1f61a7492c47', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', startTime:'c694927d-9f80-45bc-a99f-5ba5b2b1929c', endTime:'ac7880e0-051f-4208-a7b5-819243839076', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', venueAddress:'bde68d62-d513-4406-b65b-23923f723c37', guestCount:'a0aae2d5-a1b1-4a81-aaa0-fdbbd0294d48', indoorOutdoor:'087e8d6a-f58e-4fff-8589-328bab2e2a36', eventNotes:'c0d6e105-1e95-4553-b269-b4af4af28826', serviceNotes:'cf2c16a3-ae59-4246-88b1-8783e0267458', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791', balanceDue:'61d4c0c8-2f98-46ba-9c6e-fec7ca31981c', depositDueDate:'66f05f1f-175f-4227-ad48-544f22923d3b', balanceDueDate:'c74c04b1-9999-48b1-a885-819166b664ad', bookingType:'e70b1c01-e9f9-4608-8742-39b933395cae', paymentMethod:'81020cc8-bdad-4008-9507-db8c8a520b87', agreementDoc:'b4a7de8c-d2d2-4f2b-b26e-8353d94f00b4' };
+const FIELDS = { clientName:'01b694ba-6da6-4e4c-a3d3-af4b96a7a0c5', organization:'aeeee479-3136-47c0-b10e-a2512f92a065', clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', clientPhone:'c76029af-56b9-4079-aef8-7af4c6d87a1e', mailingAddress:'fdba9ebc-a9da-4273-941f-1f61a7492c47', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', startTime:'c694927d-9f80-45bc-a99f-5ba5b2b1929c', endTime:'ac7880e0-051f-4208-a7b5-819243839076', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', venueAddress:'bde68d62-d513-4406-b65b-23923f723c37', guestCount:'a0aae2d5-a1b1-4a81-aaa0-fdbbd0294d48', indoorOutdoor:'087e8d6a-f58e-4fff-8589-328bab2e2a36', eventNotes:'c0d6e105-1e95-4553-b269-b4af4af28826', serviceNotes:'cf2c16a3-ae59-4246-88b1-8783e0267458', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791', balanceDue:'61d4c0c8-2f98-46ba-9c6e-fec7ca31981c', depositDueDate:'66f05f1f-175f-4227-ad48-544f22923d3b', balanceDueDate:'c74c04b1-9999-48b1-a885-819166b664ad', bookingType:'e70b1c01-e9f9-4608-8742-39b933395cae', paymentMethod:'81020cc8-bdad-4008-9507-db8c8a520b87', paymentLink:'959cae43-8c7a-43b4-b0ce-2513b311b227', agreementDoc:'b4a7de8c-d2d2-4f2b-b26e-8353d94f00b4' };
 
 const EVENT_TYPE_OPTIONS = { 'Wedding':'c88b6010-905c-4c74-87c5-d8fdae52209c','Corporate Event':'a58d4eda-03a5-4fc7-ab18-048b16320c25','Convention / Conference':'63ecbd18-04a0-48ad-8f4e-68c8b2a8f254','Private Party':'70780adc-17c1-4add-b1bc-8f5a926b9a38','Community Event':'03de6fb0-6283-427d-a5b7-0fdf2df91705','Concert / Show':'e8fdc1b9-453c-45f0-a45a-2dea0070f9f6','Other':'f02ab28b-21e9-44c8-b6bf-21c4babed292' };
 const INDOOR_OUTDOOR_OPTIONS = { 'Indoor':'c5799b8d-2dfd-4fa3-822e-9259a556824b','Outdoor':'d7f93389-49df-4715-afc5-7b1d68212145','Both':'27461c5b-fabe-4bd4-ba76-86db2a46db0b' };
@@ -23,23 +23,28 @@ async function getGmailAccessToken() {
   return (await res.json()).access_token;
 }
 
-async function sendClientEmail(data) {
+// Fetch payment link from task if it exists
+async function getPaymentLinkFromTask(taskId) {
+  if (!taskId || !CLICKUP_API_TOKEN) return null;
+  try {
+    const res = await fetch(`https://api.clickup.com/api/v2/task/${taskId}`, { headers:{'Authorization':CLICKUP_API_TOKEN} });
+    if (!res.ok) return null;
+    const task = await res.json();
+    const plField = (task.custom_fields||[]).find(f => f.id === FIELDS.paymentLink);
+    return plField && plField.value ? plField.value : null;
+  } catch { return null; }
+}
+
+async function sendClientEmail(data, paymentLink) {
   if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET || !GMAIL_REFRESH_TOKEN || !data.clientEmail) return;
   const fee = data.totalFee ? `$${Number(data.totalFee).toLocaleString()}` : 'See agreement';
   const deposit = data.depositAmount ? `$${Number(data.depositAmount).toLocaleString()}` : 'See agreement';
   const services = (data.services || []).join(', ') || 'See agreement';
-  const paymentLink = data.paymentLink || '';
 
-  // Build CTA buttons: Pay Deposit (primary) + View Agreement (secondary)
-  let ctaButtons = '';
-  if (paymentLink) {
-    ctaButtons = `<a href="${paymentLink}" style="display:inline-block;padding:14px 28px;background:#c9a96e;color:#0f1114;text-decoration:none;border-radius:6px;font-weight:700;font-size:15px;margin-right:12px;">Pay Deposit (${deposit})</a><a href="${SITE_URL}/client-portal" style="display:inline-block;padding:14px 28px;background:transparent;color:#c9a96e;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;border:1px solid rgba(201,169,110,0.4);">View Agreement</a>`;
-  } else {
-    ctaButtons = `<a href="${SITE_URL}/client-portal" style="display:inline-block;padding:14px 28px;background:#c9a96e;color:#0f1114;text-decoration:none;border-radius:6px;font-weight:700;font-size:15px;">View My Agreement</a>`;
-  }
+  // Build Pay Deposit button HTML (only if link exists)
+  const payButton = paymentLink ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td align="center"><a href="${paymentLink}" style="display:inline-block;padding:16px 40px;background:#c9a96e;color:#0f1114;text-decoration:none;border-radius:8px;font-weight:700;font-size:16px;letter-spacing:0.02em;">Pay Deposit (${deposit})</a></td></tr><tr><td align="center" style="padding-top:8px;"><span style="font-size:12px;color:rgba(240,235,228,0.4);">Secure payment via Stripe. Cards and bank transfers accepted.</span></td></tr></table>` : '';
 
-  const htmlBody = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#0f1114;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1114;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#181c21;border:1px solid rgba(201,169,110,0.15);border-radius:12px;overflow:hidden;"><tr><td style="padding:32px 40px 24px;border-bottom:2px solid #c9a96e;"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group" height="36" style="display:block;"></td></tr><tr><td style="padding:32px 40px;"><h1 style="font-size:22px;color:#f0ebe4;margin:0 0 8px;font-weight:700;">Agreement Confirmed</h1><p style="color:rgba(240,235,228,0.65);font-size:15px;line-height:1.6;margin:0 0 24px;">Hi ${data.clientName},<br><br>Thank you for signing your service agreement with Ampersound Media Group. This email confirms your booking.</p><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr><td style="padding:12px 16px;background:#141719;border-radius:8px 8px 0 0;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Event</span><br><span style="color:#f0ebe4;font-size:14px;">${data.eventName} - ${data.eventDate || 'TBD'}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Venue</span><br><span style="color:#f0ebe4;font-size:14px;">${data.venueName || ''}${data.venueAddress ? ', ' + data.venueAddress : ''}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Services</span><br><span style="color:#f0ebe4;font-size:14px;">${services}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Total Fee</span><br><span style="color:#f0ebe4;font-size:14px;font-weight:600;">${fee}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Deposit Due</span><br><span style="color:#f0ebe4;font-size:14px;">${deposit}${data.depositDueDate ? ' by ' + data.depositDueDate : ' upon signing'}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-radius:0 0 8px 8px;"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Signed By</span><br><span style="color:#f0ebe4;font-size:14px;">${data.signedName} on ${data.signedDate}</span></td></tr></table><p style="color:rgba(240,235,228,0.65);font-size:14px;line-height:1.6;margin:0 0 24px;"><strong style="color:#f0ebe4;">What happens next:</strong><br>1. Submit your deposit to secure the date<br>2. We'll reach out to schedule a planning consultation<br>3. Final timeline and details are due 72 hours before the event</p><div style="margin-top:24px;">${ctaButtons}</div></td></tr><tr><td style="padding:24px 40px;border-top:1px solid rgba(201,169,110,0.1);text-align:center;"><p style="color:rgba(240,235,228,0.35);font-size:12px;margin:0;line-height:1.5;">Ampersound Media Group &bull; North Salt Lake, Utah<br>contact@ampersoundmediagroup.com<br><span style="color:#c9a96e;">Sound. Presence. Atmosphere.</span></p></td></tr></table></td></tr></table></body></html>`;
-
+  const htmlBody = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#0f1114;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1114;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#181c21;border:1px solid rgba(201,169,110,0.15);border-radius:12px;overflow:hidden;"><tr><td style="padding:32px 40px 24px;border-bottom:2px solid #c9a96e;"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group" height="36" style="display:block;"></td></tr><tr><td style="padding:32px 40px;"><h1 style="font-size:22px;color:#f0ebe4;margin:0 0 8px;font-weight:700;">Agreement Confirmed</h1><p style="color:rgba(240,235,228,0.65);font-size:15px;line-height:1.6;margin:0 0 24px;">Hi ${data.clientName},<br><br>Thank you for signing your service agreement with Ampersound Media Group. This email confirms your booking.</p><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr><td style="padding:12px 16px;background:#141719;border-radius:8px 8px 0 0;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Event</span><br><span style="color:#f0ebe4;font-size:14px;">${data.eventName} - ${data.eventDate || 'TBD'}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Venue</span><br><span style="color:#f0ebe4;font-size:14px;">${data.venueName || ''}${data.venueAddress ? ', ' + data.venueAddress : ''}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Services</span><br><span style="color:#f0ebe4;font-size:14px;">${services}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Total Fee</span><br><span style="color:#f0ebe4;font-size:14px;font-weight:600;">${fee}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-radius:0 0 8px 8px;"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Deposit Due</span><br><span style="color:#f0ebe4;font-size:14px;">${deposit}${data.depositDueDate ? ' by ' + data.depositDueDate : ' upon signing'}</span></td></tr></table>${payButton}<p style="color:rgba(240,235,228,0.65);font-size:14px;line-height:1.6;margin:0 0 24px;"><strong style="color:#f0ebe4;">What happens next:</strong><br>1. ${paymentLink ? '<s>Submit your deposit</s> ✓ Use the button above' : 'Submit your deposit to secure the date'}<br>2. We'll reach out to schedule a planning consultation<br>3. Final timeline and details are due 72 hours before the event</p><a href="${SITE_URL}/client-portal" style="display:inline-block;padding:12px 24px;background:rgba(201,169,110,0.15);color:#c9a96e;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px;border:1px solid rgba(201,169,110,0.3);margin-top:8px;">View My Agreement</a></td></tr><tr><td style="padding:24px 40px;border-top:1px solid rgba(201,169,110,0.1);text-align:center;"><p style="color:rgba(240,235,228,0.35);font-size:12px;margin:0;line-height:1.5;">Ampersound Media Group &bull; North Salt Lake, Utah<br>contact@ampersoundmediagroup.com<br><span style="color:#c9a96e;">Sound. Presence. Atmosphere.</span></p></td></tr></table></td></tr></table></body></html>`;
   const subject = `Your Service Agreement with Ampersound Media Group - ${data.eventName}`;
   const emailLines = [`From: Ampersound Media Group <${FROM_EMAIL}>`,`To: ${data.clientName} <${data.clientEmail}>`,`Subject: ${subject}`,`MIME-Version: 1.0`,`Content-Type: text/html; charset=UTF-8`,``,htmlBody];
   const raw = Buffer.from(emailLines.join('\r\n')).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -53,7 +58,7 @@ async function sendClientEmail(data) {
 
 async function notifyChat(data, taskUrl) {
   if (!CHAT_CHANNEL_ID) return;
-  const msg = `\ud83d\udcdd **New Agreement Signed**\n\n**Client:** ${data.clientName}${data.organization?' ('+data.organization+')':''}\n**Event:** ${data.eventName} - ${data.eventDate || 'TBD'}\n**Type:** ${data.eventType || 'N/A'}\n**Venue:** ${data.venueName || 'N/A'}\n**Services:** ${(data.services||[]).join(', ')||'Not specified'}\n**Total Fee:** ${data.totalFee?'$'+Number(data.totalFee).toLocaleString():'TBD'}\n\n[View Agreement Task](${taskUrl})`;
+  const msg = `\ud83d\udcdd **New Agreement Signed**\n\n**Client:** ${data.clientName}${data.organization?' ('+data.organization+')':''}\n**Event:** ${data.eventName} - ${data.eventDate || 'TBD'}\n**Type:** ${data.eventType||'N/A'}\n**Venue:** ${data.venueName||'N/A'}\n**Services:** ${(data.services||[]).join(', ')||'Not specified'}\n**Total Fee:** ${data.totalFee?'$'+Number(data.totalFee).toLocaleString():'TBD'}\n\n[View Agreement Task](${taskUrl})`;
   try { await fetch(`https://api.clickup.com/api/v3/chat/${CHAT_CHANNEL_ID}/message`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':CLICKUP_API_TOKEN}, body:JSON.stringify({content:msg}) }); } catch(e) { console.error('Chat error:', e.message); }
 }
 
@@ -64,7 +69,7 @@ function buildCustomFields(data) {
   if (data.eventNotes) customFields.push({id:FIELDS.eventNotes,value:data.eventNotes});
   if (data.serviceNotes) customFields.push({id:FIELDS.serviceNotes,value:data.serviceNotes});
   if (data.clientEmail) customFields.push({id:FIELDS.clientEmail,value:data.clientEmail});
-  if (data.clientPhone) { let ph = data.clientPhone; if (ph && !ph.startsWith('+')) ph = '+1' + ph.replace(/\D/g,''); customFields.push({id:FIELDS.clientPhone,value:ph}); }
+  if (data.clientPhone) { let ph=data.clientPhone; if(ph&&!ph.startsWith('+'))ph='+1'+ph.replace(/\D/g,''); customFields.push({id:FIELDS.clientPhone,value:ph}); }
   if (data.guestCount) customFields.push({id:FIELDS.guestCount,value:Number(data.guestCount)});
   if (data.totalFee) customFields.push({id:FIELDS.totalFee,value:Number(data.totalFee)});
   if (data.depositAmount) customFields.push({id:FIELDS.depositAmount,value:Number(data.depositAmount)});
@@ -77,7 +82,7 @@ function buildCustomFields(data) {
   if (data.indoorOutdoor && INDOOR_OUTDOOR_OPTIONS[data.indoorOutdoor]) customFields.push({id:FIELDS.indoorOutdoor,value:INDOOR_OUTDOOR_OPTIONS[data.indoorOutdoor]});
   if (data.bookingType && BOOKING_TYPE_OPTIONS[data.bookingType]) customFields.push({id:FIELDS.bookingType,value:BOOKING_TYPE_OPTIONS[data.bookingType]});
   if (data.paymentMethod && PAYMENT_METHOD_OPTIONS[data.paymentMethod]) customFields.push({id:FIELDS.paymentMethod,value:PAYMENT_METHOD_OPTIONS[data.paymentMethod]});
-  if (data.services && data.services.length) { const ids = data.services.map(s=>SERVICES_OPTIONS[s]).filter(Boolean); if (ids.length) customFields.push({id:FIELDS.services,value:ids}); }
+  if (data.services && data.services.length) { const ids=data.services.map(s=>SERVICES_OPTIONS[s]).filter(Boolean); if(ids.length)customFields.push({id:FIELDS.services,value:ids}); }
   return customFields;
 }
 
@@ -104,33 +109,51 @@ exports.handler = async (event) => {
     const token = data.token;
 
     if (token) {
-      const res = await fetch(`https://api.clickup.com/api/v2/task/${token}`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':CLICKUP_API_TOKEN}, body:JSON.stringify({name:taskName,description,status:'signed',custom_fields:customFields}) });
-      if (!res.ok) { const err = await res.text(); console.error('ClickUp update error:', res.status, err); return { statusCode:502, headers, body:JSON.stringify({message:'Failed to update agreement',detail:err}) }; }
+      const res = await fetch(`https://api.clickup.com/api/v2/task/${token}`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json', 'Authorization':CLICKUP_API_TOKEN },
+        body: JSON.stringify({ name:taskName, description, status:'signed', custom_fields:customFields }),
+      });
+      if (!res.ok) { const err=await res.text(); console.error('ClickUp update error:',res.status,err); return { statusCode:502, headers, body:JSON.stringify({message:'Failed to update agreement',detail:err}) }; }
       task = await res.json();
     } else {
-      const res = await fetch(`https://api.clickup.com/api/v2/list/${LIST_ID}/task`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':CLICKUP_API_TOKEN}, body:JSON.stringify({name:taskName,description,status:'signed',custom_fields:customFields}) });
-      if (!res.ok) { const err = await res.text(); console.error('ClickUp create error:', res.status, err); return { statusCode:502, headers, body:JSON.stringify({message:'Failed to create agreement',detail:err}) }; }
+      const res = await fetch(`https://api.clickup.com/api/v2/list/${LIST_ID}/task`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':CLICKUP_API_TOKEN },
+        body: JSON.stringify({ name:taskName, description, status:'signed', custom_fields:customFields }),
+      });
+      if (!res.ok) { const err=await res.text(); console.error('ClickUp create error:',res.status,err); return { statusCode:502, headers, body:JSON.stringify({message:'Failed to create agreement',detail:err}) }; }
       task = await res.json();
     }
 
+    // Upload signature
     if (data.signatureImage) {
       try {
-        const b64 = data.signatureImage.replace(/^data:image\/png;base64,/,'');
-        const buf = Buffer.from(b64,'base64');
-        const boundary = '----Boundary'+Date.now().toString(36);
-        const fn = `signature-${data.clientName.replace(/[^a-zA-Z0-9]/g,'-')}.png`;
-        const start = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="attachment"; filename="${fn}"\r\nContent-Type: image/png\r\n\r\n`);
-        const end = Buffer.from(`\r\n--${boundary}--\r\n`);
-        await fetch(`https://api.clickup.com/api/v2/task/${task.id}/attachment`, { method:'POST', headers:{'Authorization':CLICKUP_API_TOKEN,'Content-Type':`multipart/form-data; boundary=${boundary}`}, body:Buffer.concat([start,buf,end]) });
-      } catch(e) { console.error('Sig upload failed:', e.message); }
+        const b64=data.signatureImage.replace(/^data:image\/png;base64,/,'');
+        const buf=Buffer.from(b64,'base64');
+        const boundary='----Boundary'+Date.now().toString(36);
+        const fn=`signature-${data.clientName.replace(/[^a-zA-Z0-9]/g,'-')}.png`;
+        const start=Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="attachment"; filename="${fn}"\r\nContent-Type: image/png\r\n\r\n`);
+        const end=Buffer.from(`\r\n--${boundary}--\r\n`);
+        await fetch(`https://api.clickup.com/api/v2/task/${task.id}/attachment`, {
+          method:'POST', headers:{'Authorization':CLICKUP_API_TOKEN,'Content-Type':`multipart/form-data; boundary=${boundary}`},
+          body:Buffer.concat([start,buf,end]),
+        });
+      } catch(e) { console.error('Sig upload failed:',e.message); }
     }
 
-    await sendClientEmail(data);
+    // Get payment link from task (if set before sending)
+    const paymentLink = await getPaymentLinkFromTask(token || task.id);
+
+    // Send confirmation email with payment button
+    await sendClientEmail(data, paymentLink);
+
+    // Notify Chat
     await notifyChat(data, task.url);
 
     return { statusCode:200, headers, body:JSON.stringify({message:'Agreement submitted',taskId:task.id,taskUrl:task.url}) };
   } catch(err) {
-    console.error('Error:', err);
-    return { statusCode:500, headers, body:JSON.stringify({message:'Internal server error'}) };
+    console.error('Error:',err);
+    return { statusCode:500, headers, body:JSON.stringify({message:'Internal server error',detail:err.message}) };
   }
 };
