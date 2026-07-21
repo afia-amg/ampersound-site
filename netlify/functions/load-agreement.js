@@ -33,6 +33,18 @@ const CF = {
   paymentMethod: '81020cc8-bdad-4008-9507-db8c8a520b87',
 };
 
+// Label ID to name mapping for Services Retained
+const SERVICES_ID_TO_NAME = {
+  'd09d1ebc-e33f-4fe5-80a5-5cd985a9926c': 'DJ / Sound Direction',
+  '13205b3f-8122-4df9-9776-8b89114915b2': 'MC / Event Hosting',
+  '41fc8fe2-043f-4bcd-b8f5-ef4d7819cf7b': 'Moderation',
+  'd0035ae8-d097-47b2-bc18-3274d789093e': 'Spoken Word',
+  '072d3d89-20bd-46c5-b309-c8417b3c1944': 'Speaker / Keynote',
+  'd4a63bb3-5d0a-4c79-916c-81426a95d682': 'Audio / AV Production',
+  '09a8604f-584a-4a13-89fa-f55cf97a2221': 'Custom Playlist Curation',
+  '6e74f9c6-6740-4786-b389-93f9b71b922f': 'Equipment Rental',
+};
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ message: 'Method not allowed' }) };
@@ -60,11 +72,20 @@ exports.handler = async (event) => {
     const getField = (id) => {
       const f = fields.find(cf => cf.id === id);
       if (!f || f.value === null || f.value === undefined) return null;
+
       switch (f.type) {
-        case 'short_text': case 'text': case 'email': case 'phone': case 'url': return f.value || null;
-        case 'number': return f.value;
-        case 'currency': return f.value;
-        case 'date': return f.value ? new Date(Number(f.value)).toISOString().split('T')[0] : null;
+        case 'short_text':
+        case 'text':
+        case 'email':
+        case 'phone':
+        case 'url':
+          return f.value || null;
+        case 'number':
+          return f.value;
+        case 'currency':
+          return f.value;
+        case 'date':
+          return f.value ? new Date(Number(f.value)).toISOString().split('T')[0] : null;
         case 'drop_down':
           if (f.type_config && f.type_config.options) {
             const opt = f.type_config.options.find(o => o.orderindex === f.value);
@@ -72,9 +93,26 @@ exports.handler = async (event) => {
           }
           return null;
         case 'labels':
-          if (Array.isArray(f.value)) return f.value.map(v => v.label || v.name || v).filter(Boolean);
+          // ClickUp returns labels as array of selected option objects or IDs
+          if (Array.isArray(f.value)) {
+            return f.value.map(v => {
+              // v might be a string (ID), or an object with label/name
+              if (typeof v === 'string') return SERVICES_ID_TO_NAME[v] || v;
+              if (v.label) return v.label;
+              if (v.name) return v.name;
+              if (v.id) return SERVICES_ID_TO_NAME[v.id] || v.id;
+              return String(v);
+            }).filter(Boolean);
+          }
+          // Sometimes value is from type_config options selected
+          if (f.type_config && f.type_config.options) {
+            return f.type_config.options
+              .filter(opt => f.value.includes(opt.id) || f.value.includes(opt.name))
+              .map(opt => opt.label || opt.name);
+          }
           return [];
-        default: return f.value;
+        default:
+          return f.value;
       }
     };
 
