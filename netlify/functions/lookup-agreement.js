@@ -1,4 +1,4 @@
-const CLICKUP_API_TOKEN = process.env.CLICKUP_API_TOKEN;
+const CLICKUP_API_TOKEN = 'pk_106271316_6VJ0QV1GZIQ5ONRMYT1U9H0SVVBG8NVU';
 const LIST_ID = '4027438415107101193';
 const SITE_URL = process.env.SITE_URL || 'https://ampersoundmediagroup.com';
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791' };
@@ -10,28 +10,19 @@ exports.handler = async (event) => {
   let body; try { body = JSON.parse(event.body); } catch { return { statusCode:400, headers, body:JSON.stringify({message:'Invalid request'}) }; }
   const email = (body.email||'').trim().toLowerCase();
   if (!email || !email.includes('@')) return { statusCode:400, headers, body:JSON.stringify({message:'Valid email required'}) };
-  if (!CLICKUP_API_TOKEN) {
-    console.error('CLICKUP_API_TOKEN is not set');
-    return { statusCode:500, headers, body:JSON.stringify({message:'Server configuration error'}) };
-  }
 
   try {
     const url = `https://api.clickup.com/api/v2/list/${LIST_ID}/task?include_closed=true&subtasks=false&custom_fields=[]`;
-    console.log('Fetching tasks from ClickUp list:', LIST_ID);
-    console.log('Using token starting with:', CLICKUP_API_TOKEN.substring(0, 10) + '...');
-
     const res = await fetch(url, { headers:{'Authorization': CLICKUP_API_TOKEN} });
-
-    console.log('ClickUp API response status:', res.status);
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error('ClickUp API error response:', res.status, errText);
-      return { statusCode:502, headers, body:JSON.stringify({message:'Unable to retrieve agreements', debug: `API returned ${res.status}`}) };
+      console.error('ClickUp API error:', res.status, errText);
+      return { statusCode:502, headers, body:JSON.stringify({message:'Unable to retrieve agreements', status: res.status, detail: errText}) };
     }
 
     const data = await res.json();
-    console.log('Total tasks in list:', (data.tasks||[]).length);
+    console.log('Total tasks found:', (data.tasks||[]).length);
 
     const tasks = (data.tasks||[]).filter(task => {
       const emailField = (task.custom_fields||[]).find(f => f.id === CF.clientEmail);
@@ -43,12 +34,12 @@ exports.handler = async (event) => {
       return fieldValue.toLowerCase() === email;
     });
 
-    console.log('Tasks matching email', email, ':', tasks.length);
+    console.log('Matching tasks for', email, ':', tasks.length);
 
     return { statusCode:200, headers, body:JSON.stringify({agreements:formatAgreements(tasks)}) };
   } catch(err) {
-    console.error('Lookup error:', err.message, err.stack);
-    return { statusCode:500, headers, body:JSON.stringify({message:'Internal error'}) };
+    console.error('Lookup error:', err.message);
+    return { statusCode:500, headers, body:JSON.stringify({message:'Internal error', detail: err.message}) };
   }
 };
 
