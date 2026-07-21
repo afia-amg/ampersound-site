@@ -1,5 +1,5 @@
 const CLICKUP_API_TOKEN = 'pk_106271316_6VJ0QV1GZIQ5ONRMYT1U9H0SVVBG8NVU';
-const LIST_ID = '4027438415107101193';
+const LIST_ID = '901418268145';
 const SITE_URL = 'https://ampersoundmediagroup.com';
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
@@ -25,7 +25,7 @@ exports.handler = async (event) => {
     const data = await res.json();
 
     if (!data.tasks) {
-      return { statusCode: 200, headers, body: JSON.stringify({ agreements: [], debug: 'No tasks property in response', keys: Object.keys(data) }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ agreements: [], debug: 'No tasks property', keys: Object.keys(data) }) };
     }
 
     const tasks = data.tasks.filter(task => {
@@ -40,7 +40,7 @@ exports.handler = async (event) => {
 
     return { statusCode: 200, headers, body: JSON.stringify({ agreements: formatAgreements(tasks), totalInList: data.tasks.length, matched: tasks.length }) };
   } catch(err) {
-    return { statusCode: 500, headers, body: JSON.stringify({ message: 'Function crashed', error: err.message, stack: err.stack }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ message: 'Function crashed', error: err.message }) };
   }
 };
 
