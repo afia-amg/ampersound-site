@@ -31,6 +31,7 @@ const CF = {
   balanceDueDate: 'c74c04b1-9999-48b1-a885-819166b664ad',
   bookingType: 'e70b1c01-e9f9-4608-8742-39b933395cae',
   paymentMethod: '81020cc8-bdad-4008-9507-db8c8a520b87',
+  paymentLink: '959cae43-8c7a-43b4-b0ce-2513b311b227',
 };
 
 const SERVICES_ID_TO_NAME = {
@@ -61,9 +62,7 @@ exports.handler = async (event) => {
       headers: { 'Authorization': CLICKUP_API_TOKEN },
     });
 
-    if (!res.ok) {
-      return { statusCode: 404, headers, body: JSON.stringify({ message: 'Agreement not found' }) };
-    }
+    if (!res.ok) return { statusCode: 404, headers, body: JSON.stringify({ message: 'Agreement not found' }) };
 
     const task = await res.json();
     const fields = task.custom_fields || [];
@@ -101,15 +100,12 @@ exports.handler = async (event) => {
     const statusType = task.status ? (task.status.type || '') : '';
     const isSigned = statusType === 'done' || statusType === 'closed' || status === 'signed' || status === 'closed';
 
-    // Get client signature attachment URL if signed
     let clientSignatureUrl = null;
     let signedDate = null;
     if (isSigned && task.attachments && task.attachments.length > 0) {
       const sigAttachment = task.attachments.find(a => a.title && a.title.startsWith('signature-'));
       if (sigAttachment) clientSignatureUrl = sigAttachment.url;
     }
-
-    // Try to get signed date from description
     if (isSigned && task.description) {
       const dateMatch = task.description.match(/Date signed:\*\*\s*(\S+)/);
       if (dateMatch) signedDate = dateMatch[1];
@@ -142,6 +138,7 @@ exports.handler = async (event) => {
       balanceDueDate: getField(CF.balanceDueDate),
       bookingType: getField(CF.bookingType),
       paymentMethod: getField(CF.paymentMethod),
+      paymentLink: getField(CF.paymentLink),
       clientSignatureUrl,
       signedDate,
     };
