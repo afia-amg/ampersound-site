@@ -33,7 +33,6 @@ const CF = {
   paymentMethod: '81020cc8-bdad-4008-9507-db8c8a520b87',
 };
 
-// Label ID to name mapping for Services Retained
 const SERVICES_ID_TO_NAME = {
   'd09d1ebc-e33f-4fe5-80a5-5cd985a9926c': 'DJ / Sound Direction',
   '13205b3f-8122-4df9-9776-8b89114915b2': 'MC / Event Hosting',
@@ -72,20 +71,11 @@ exports.handler = async (event) => {
     const getField = (id) => {
       const f = fields.find(cf => cf.id === id);
       if (!f || f.value === null || f.value === undefined) return null;
-
       switch (f.type) {
-        case 'short_text':
-        case 'text':
-        case 'email':
-        case 'phone':
-        case 'url':
-          return f.value || null;
-        case 'number':
-          return f.value;
-        case 'currency':
-          return f.value;
-        case 'date':
-          return f.value ? new Date(Number(f.value)).toISOString().split('T')[0] : null;
+        case 'short_text': case 'text': case 'email': case 'phone': case 'url': return f.value || null;
+        case 'number': return f.value;
+        case 'currency': return f.value;
+        case 'date': return f.value ? new Date(Number(f.value)).toISOString().split('T')[0] : null;
         case 'drop_down':
           if (f.type_config && f.type_config.options) {
             const opt = f.type_config.options.find(o => o.orderindex === f.value);
@@ -93,10 +83,8 @@ exports.handler = async (event) => {
           }
           return null;
         case 'labels':
-          // ClickUp returns labels as array of selected option objects or IDs
           if (Array.isArray(f.value)) {
             return f.value.map(v => {
-              // v might be a string (ID), or an object with label/name
               if (typeof v === 'string') return SERVICES_ID_TO_NAME[v] || v;
               if (v.label) return v.label;
               if (v.name) return v.name;
@@ -104,21 +92,28 @@ exports.handler = async (event) => {
               return String(v);
             }).filter(Boolean);
           }
-          // Sometimes value is from type_config options selected
-          if (f.type_config && f.type_config.options) {
-            return f.type_config.options
-              .filter(opt => f.value.includes(opt.id) || f.value.includes(opt.name))
-              .map(opt => opt.label || opt.name);
-          }
           return [];
-        default:
-          return f.value;
+        default: return f.value;
       }
     };
 
-    const status = task.status ? task.status.status.toLowerCase() : 'to do';
+    const status = task.status ? task.status.status.toLowerCase() : 'draft';
     const statusType = task.status ? (task.status.type || '') : '';
-    const isSigned = statusType === 'done' || statusType === 'closed' || status === 'complete' || status === 'closed';
+    const isSigned = statusType === 'done' || statusType === 'closed' || status === 'signed' || status === 'closed';
+
+    // Get client signature attachment URL if signed
+    let clientSignatureUrl = null;
+    let signedDate = null;
+    if (isSigned && task.attachments && task.attachments.length > 0) {
+      const sigAttachment = task.attachments.find(a => a.title && a.title.startsWith('signature-'));
+      if (sigAttachment) clientSignatureUrl = sigAttachment.url;
+    }
+
+    // Try to get signed date from description
+    if (isSigned && task.description) {
+      const dateMatch = task.description.match(/Date signed:\*\*\s*(\S+)/);
+      if (dateMatch) signedDate = dateMatch[1];
+    }
 
     const agreement = {
       taskId: task.id,
@@ -147,6 +142,8 @@ exports.handler = async (event) => {
       balanceDueDate: getField(CF.balanceDueDate),
       bookingType: getField(CF.bookingType),
       paymentMethod: getField(CF.paymentMethod),
+      clientSignatureUrl,
+      signedDate,
     };
 
     return { statusCode: 200, headers, body: JSON.stringify(agreement) };

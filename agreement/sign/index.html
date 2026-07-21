@@ -6,114 +6,120 @@
 <title>Service Agreement | Ampersound Media Group</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: oklch(13% 0.01 250);
-  --surface: oklch(16% 0.008 250);
-  --surface-raised: oklch(19% 0.008 250);
-  --border: oklch(35% 0.02 70 / 0.2);
-  --border-strong: oklch(55% 0.08 70 / 0.35);
-  --text: oklch(94% 0.008 70);
-  --text-dim: oklch(78% 0.008 70);
-  --text-muted: oklch(55% 0.01 70);
-  --gold: oklch(72% 0.1 70);
-  --gold-bright: oklch(80% 0.1 70);
-  --violet: oklch(52% 0.2 280);
-  --field-bg: oklch(14% 0.008 250);
-  --field-border: oklch(30% 0.03 70 / 0.3);
-  --success: oklch(65% 0.15 145);
-  --error: oklch(60% 0.2 25);
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; color: var(--text); background: var(--bg); padding: 2rem 1rem 4rem; -webkit-font-smoothing: antialiased; }
-.page-wrapper { max-width: 780px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3rem 3.5rem; }
-.doc-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1.75rem; border-bottom: 2px solid var(--gold); margin-bottom: 2.5rem; }
-.doc-header img { height: 42px; }
-.doc-header-text { text-align: right; }
-.doc-header-text h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.35rem; letter-spacing: -0.03em; color: var(--text); }
-.doc-header-text p { font-size: 0.7rem; color: var(--gold); margin-top: 3px; letter-spacing: 0.14em; text-transform: uppercase; font-family: 'Montserrat', sans-serif; font-weight: 600; }
-.section { margin-bottom: 2.5rem; }
-.section-label { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet); margin-bottom: 0.4rem; }
-.section-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--text); margin-bottom: 1.2rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border); }
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-.detail-item .label { font-family: 'Montserrat', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.2rem; }
-.detail-item .value { font-size: 0.9rem; color: var(--text); font-weight: 500; }
-.detail-item .value.empty { color: var(--text-muted); font-style: italic; font-weight: 400; }
-.services-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
-.service-tag { padding: 0.4rem 0.85rem; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 6px; font-family: 'Montserrat', sans-serif; font-size: 0.75rem; font-weight: 600; color: var(--text-dim); }
-.comp-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
-.comp-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
-.comp-table td:first-child { color: var(--text-dim); }
-.comp-table td:last-child { text-align: right; font-weight: 600; color: var(--text); font-feature-settings: 'tnum'; }
-.terms-toggle { display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1rem; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; margin-bottom: 0.5rem; transition: border-color 200ms; }
-.terms-toggle:hover { border-color: var(--border-strong); }
-.terms-toggle h4 { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.82rem; color: var(--text-dim); flex: 1; }
-.terms-toggle .arrow { color: var(--gold); transition: transform 300ms cubic-bezier(0.25, 1, 0.5, 1); font-size: 0.75rem; }
-.terms-toggle.open .arrow { transform: rotate(180deg); }
-.terms-body { display: none; font-size: 0.78rem; line-height: 1.8; color: var(--text-dim); padding: 1rem 1.25rem; background: var(--field-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1rem; }
-.terms-body.open { display: block; }
-.terms-body h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.8rem; color: var(--text); margin-top: 1rem; margin-bottom: 0.3rem; }
-.terms-body h4:first-child { margin-top: 0; }
-.terms-body p { margin-bottom: 0.5rem; }
-.terms-body ul { margin: 0.3rem 0 0.7rem 1.2rem; }
-.terms-body li { margin-bottom: 0.25rem; }
-.cancel-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.78rem; }
-.cancel-table th { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase; text-align: left; padding: 0.5rem 0.7rem; background: var(--surface-raised); color: var(--gold); border-bottom: 1px solid var(--border); }
-.cancel-table td { padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--border); color: var(--text-dim); }
-.sig-section { margin-top: 2.5rem; }
-.sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 1.5rem; }
-.sig-party h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem; }
-.amg-signed { padding: 1.5rem; background: var(--field-bg); border: 1px solid var(--border); border-radius: 8px; }
-.amg-signed .sig-image { width: 100%; max-width: 240px; height: auto; margin-bottom: 1rem; filter: brightness(1.1); }
-.amg-signed .sig-meta { font-size: 0.78rem; color: var(--text-dim); line-height: 1.5; }
-.amg-signed .sig-meta strong { color: var(--text); font-weight: 600; }
-.amg-signed .sig-date { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem; }
-.sig-canvas-wrap { border: 1px solid var(--field-border); border-radius: 8px; background: var(--field-bg); padding: 4px; position: relative; margin-bottom: 0.5rem; }
-.sig-canvas-wrap canvas { display: block; width: 100%; height: 140px; border-radius: 6px; cursor: crosshair; touch-action: none; }
-.sig-canvas-wrap.active { border-color: var(--gold); }
-.sig-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 0.8rem; pointer-events: none; transition: opacity 200ms; }
-.sig-canvas-wrap.has-signature .sig-placeholder { opacity: 0; }
-.sig-clear { font-size: 0.72rem; color: var(--gold); cursor: pointer; font-family: 'Montserrat', sans-serif; font-weight: 600; background: none; border: none; padding: 0; }
-.sig-clear:hover { color: var(--gold-bright); }
-.consent-check { display: flex; align-items: flex-start; gap: 0.75rem; margin: 1.5rem 0; padding: 1rem 1.25rem; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 8px; }
-.consent-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--gold); flex-shrink: 0; }
-.consent-check label { font-size: 0.82rem; color: var(--text-dim); line-height: 1.5; }
-.submit-wrap { margin-top: 2rem; text-align: center; }
-.submit-btn { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.04em; padding: 1rem 3rem; background: var(--gold); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; transition: background 200ms, transform 100ms; }
-.submit-btn:hover { background: var(--gold-bright); }
-.submit-btn:active { transform: scale(0.97); }
-.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.submit-btn.loading { pointer-events: none; position: relative; color: transparent; }
-.submit-btn.loading::after { content: ''; position: absolute; top: 50%; left: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid var(--bg); border-top-color: transparent; border-radius: 50%; animation: spin 600ms linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.status-msg { display: none; text-align: center; padding: 1rem; border-radius: 8px; margin-top: 1rem; font-size: 0.85rem; font-weight: 500; }
-.status-msg.error { display: block; background: oklch(60% 0.2 25 / 0.1); border: 1px solid var(--error); color: var(--error); }
-.doc-footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); text-align: center; font-size: 0.68rem; color: var(--text-muted); }
-.doc-footer span { color: var(--gold); font-weight: 600; }
-.success-overlay { display: none; position: fixed; inset: 0; background: oklch(13% 0.01 250 / 0.94); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; gap: 1.5rem; text-align: center; padding: 2rem; }
-.success-overlay.visible { display: flex; }
-.success-overlay h2 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--text); }
-.success-overlay p { color: var(--text-dim); max-width: 420px; line-height: 1.6; }
-.success-check { width: 64px; height: 64px; border-radius: 50%; background: oklch(65% 0.15 145 / 0.15); border: 2px solid var(--success); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-.loading-overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
-.loading-overlay.visible { display: flex; }
-.loading-overlay p { color: var(--text-dim); font-size: 0.9rem; }
-.loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 800ms linear infinite; }
-@media (max-width: 640px) { .page-wrapper { padding: 1.5rem 1.25rem; } .detail-grid { grid-template-columns: 1fr; } .sig-grid { grid-template-columns: 1fr; gap: 1.5rem; } .doc-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; } .doc-header-text { text-align: left; } }
-@media print { body { background: #fff; color: #111; padding: 0; } .page-wrapper { background: #fff; box-shadow: none; border: none; padding: 0; max-width: none; } .terms-body { display: block !important; } .submit-wrap, .sig-clear { display: none; } }
+:root{--bg:oklch(13% 0.01 250);--surface:oklch(16% 0.008 250);--surface-raised:oklch(19% 0.008 250);--border:oklch(35% 0.02 70/0.2);--border-strong:oklch(55% 0.08 70/0.35);--text:oklch(94% 0.008 70);--text-dim:oklch(78% 0.008 70);--text-muted:oklch(55% 0.01 70);--gold:oklch(72% 0.1 70);--gold-bright:oklch(80% 0.1 70);--violet:oklch(52% 0.2 280);--field-bg:oklch(14% 0.008 250);--field-border:oklch(30% 0.03 70/0.3);--success:oklch(65% 0.15 145);--error:oklch(60% 0.2 25)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var(--text);background:var(--bg);padding:2rem 1rem 4rem;-webkit-font-smoothing:antialiased}
+.page-wrapper{max-width:780px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:3rem 3.5rem}
+.doc-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:1.75rem;border-bottom:2px solid var(--gold);margin-bottom:2.5rem}
+.doc-header img{height:42px}
+.doc-header-text{text-align:right}
+.doc-header-text h1{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.35rem;letter-spacing:-0.03em;color:var(--text)}
+.doc-header-text p{font-size:0.7rem;color:var(--gold);margin-top:3px;letter-spacing:0.14em;text-transform:uppercase;font-family:'Montserrat',sans-serif;font-weight:600}
+.section{margin-bottom:2.5rem}
+.section-label{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--violet);margin-bottom:0.4rem}
+.section-title{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1.05rem;color:var(--text);margin-bottom:1.2rem;padding-bottom:0.6rem;border-bottom:1px solid var(--border)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.detail-item .label{font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.2rem}
+.detail-item .value{font-size:0.9rem;color:var(--text);font-weight:500}
+.services-list{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.5rem}
+.service-tag{padding:0.4rem 0.85rem;background:var(--surface-raised);border:1px solid var(--border);border-radius:6px;font-family:'Montserrat',sans-serif;font-size:0.75rem;font-weight:600;color:var(--text-dim)}
+.comp-table{width:100%;border-collapse:collapse;margin-top:0.5rem}
+.comp-table td{padding:0.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.88rem}
+.comp-table td:first-child{color:var(--text-dim)}
+.comp-table td:last-child{text-align:right;font-weight:600;color:var(--text);font-feature-settings:'tnum'}
+.terms-toggle{display:flex;align-items:center;gap:0.6rem;padding:0.85rem 1rem;background:var(--surface-raised);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:0.5rem}
+.terms-toggle:hover{border-color:var(--border-strong)}
+.terms-toggle h4{font-family:'Montserrat',sans-serif;font-weight:600;font-size:0.82rem;color:var(--text-dim);flex:1}
+.terms-toggle .arrow{color:var(--gold);transition:transform 300ms cubic-bezier(0.25,1,0.5,1);font-size:0.75rem}
+.terms-toggle.open .arrow{transform:rotate(180deg)}
+.terms-body{display:none;font-size:0.78rem;line-height:1.8;color:var(--text-dim);padding:1rem 1.25rem;background:var(--field-bg);border:1px solid var(--border);border-radius:8px;margin-bottom:1rem}
+.terms-body.open{display:block}
+.terms-body h4{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.8rem;color:var(--text);margin-top:1rem;margin-bottom:0.3rem}
+.terms-body h4:first-child{margin-top:0}
+.terms-body p{margin-bottom:0.5rem}
+.terms-body ul{margin:0.3rem 0 0.7rem 1.2rem}
+.terms-body li{margin-bottom:0.25rem}
+.cancel-table{width:100%;border-collapse:collapse;margin:0.75rem 0;font-size:0.78rem}
+.cancel-table th{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.65rem;letter-spacing:0.06em;text-transform:uppercase;text-align:left;padding:0.5rem 0.7rem;background:var(--surface-raised);color:var(--gold);border-bottom:1px solid var(--border)}
+.cancel-table td{padding:0.5rem 0.7rem;border-bottom:1px solid var(--border);color:var(--text-dim)}
+.sig-section{margin-top:2.5rem}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;margin-top:1.5rem}
+.sig-party h4{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem}
+.amg-signed{padding:1.5rem;background:var(--field-bg);border:1px solid var(--border);border-radius:8px}
+.amg-signed .sig-image{width:100%;max-width:240px;height:auto;margin-bottom:1rem;filter:brightness(1.1)}
+.amg-signed .sig-meta{font-size:0.78rem;color:var(--text-dim);line-height:1.5}
+.amg-signed .sig-meta strong{color:var(--text);font-weight:600}
+.amg-signed .sig-date{font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem}
+.client-signed{padding:1.5rem;background:var(--field-bg);border:1px solid var(--border);border-radius:8px}
+.client-signed img{width:100%;max-width:240px;height:auto;margin-bottom:0.75rem}
+.client-signed .sig-meta{font-size:0.78rem;color:var(--text-dim);line-height:1.5}
+.client-signed .sig-meta strong{color:var(--text);font-weight:600}
+.client-signed .sig-date{font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem}
+.sig-canvas-wrap{border:1px solid var(--field-border);border-radius:8px;background:var(--field-bg);padding:4px;position:relative;margin-bottom:0.5rem}
+.sig-canvas-wrap canvas{display:block;width:100%;height:140px;border-radius:6px;cursor:crosshair;touch-action:none}
+.sig-canvas-wrap.active{border-color:var(--gold)}
+.sig-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-muted);font-size:0.8rem;pointer-events:none;transition:opacity 200ms}
+.sig-canvas-wrap.has-signature .sig-placeholder{opacity:0}
+.sig-clear{font-size:0.72rem;color:var(--gold);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600;background:none;border:none;padding:0}
+.sig-clear:hover{color:var(--gold-bright)}
+.consent-check{display:flex;align-items:flex-start;gap:0.75rem;margin:1.5rem 0;padding:1rem 1.25rem;background:var(--surface-raised);border:1px solid var(--border);border-radius:8px}
+.consent-check input{margin-top:3px;width:18px;height:18px;accent-color:var(--gold);flex-shrink:0}
+.consent-check label{font-size:0.82rem;color:var(--text-dim);line-height:1.5}
+.submit-wrap{margin-top:2rem;text-align:center}
+.submit-btn{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.9rem;letter-spacing:0.04em;padding:1rem 3rem;background:var(--gold);color:var(--bg);border:none;border-radius:8px;cursor:pointer;transition:background 200ms,transform 100ms}
+.submit-btn:hover{background:var(--gold-bright)}
+.submit-btn:active{transform:scale(0.97)}
+.submit-btn:disabled{opacity:0.5;cursor:not-allowed}
+.submit-btn.loading{pointer-events:none;position:relative;color:transparent}
+.submit-btn.loading::after{content:'';position:absolute;top:50%;left:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--bg);border-top-color:transparent;border-radius:50%;animation:spin 600ms linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-msg{display:none;text-align:center;padding:1rem;border-radius:8px;margin-top:1rem;font-size:0.85rem;font-weight:500}
+.status-msg.error{display:block;background:oklch(60% 0.2 25/0.1);border:1px solid var(--error);color:var(--error)}
+.doc-footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;font-size:0.68rem;color:var(--text-muted)}
+.doc-footer span{color:var(--gold);font-weight:600}
+.signed-badge{display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;background:oklch(65% 0.15 145/0.1);border:1px solid var(--success);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:0.75rem;font-weight:700;color:var(--success);margin-bottom:2rem}
+.success-overlay{display:none;position:fixed;inset:0;background:oklch(13% 0.01 250/0.94);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;text-align:center;padding:2rem}
+.success-overlay.visible{display:flex}
+.success-overlay h2{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.5rem;color:var(--text)}
+.success-overlay p{color:var(--text-dim);max-width:420px;line-height:1.6}
+.success-check{width:64px;height:64px;border-radius:50%;background:oklch(65% 0.15 145/0.15);border:2px solid var(--success);display:flex;align-items:center;justify-content:center;font-size:1.5rem}
+.loading-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+.loading-overlay.visible{display:flex}
+.loading-overlay p{color:var(--text-dim);font-size:0.9rem}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 800ms linear infinite}
+@media(max-width:640px){.page-wrapper{padding:1.5rem 1.25rem}.detail-grid{grid-template-columns:1fr}.sig-grid{grid-template-columns:1fr;gap:1.5rem}.doc-header{flex-direction:column;align-items:flex-start;gap:0.75rem}.doc-header-text{text-align:left}}
+@media print{body{background:#fff;color:#111;padding:0}.page-wrapper{background:#fff;box-shadow:none;border:none;padding:0;max-width:none}.terms-body{display:block!important}.submit-wrap,.sig-clear{display:none}}
 </style>
 </head>
 <body>
 <div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div><p>Loading your agreement...</p></div>
 <div class="page-wrapper" id="agreementPage" style="display:none;">
   <header class="doc-header"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group"><div class="doc-header-text"><h1>Service Agreement</h1><p>Sound. Presence. Atmosphere.</p></div></header>
+  <div id="signedBadge" style="display:none;"><div class="signed-badge">&#10003; Agreement Signed</div></div>
   <section class="section"><div class="section-label">Section 1</div><div class="section-title">Client Information</div><div class="detail-grid"><div class="detail-item"><div class="label">Full Name</div><div class="value" id="dClientName"></div></div><div class="detail-item"><div class="label">Organization</div><div class="value" id="dOrganization"></div></div><div class="detail-item"><div class="label">Email</div><div class="value" id="dEmail"></div></div><div class="detail-item"><div class="label">Phone</div><div class="value" id="dPhone"></div></div></div></section>
   <section class="section"><div class="section-label">Section 2</div><div class="section-title">Event Details</div><div class="detail-grid"><div class="detail-item"><div class="label">Event Name</div><div class="value" id="dEventName"></div></div><div class="detail-item"><div class="label">Event Type</div><div class="value" id="dEventType"></div></div><div class="detail-item"><div class="label">Event Date</div><div class="value" id="dEventDate"></div></div><div class="detail-item"><div class="label">Time</div><div class="value" id="dTime"></div></div><div class="detail-item"><div class="label">Venue</div><div class="value" id="dVenue"></div></div><div class="detail-item"><div class="label">Guest Count</div><div class="value" id="dGuests"></div></div></div></section>
   <section class="section"><div class="section-label">Section 3</div><div class="section-title">Services Retained</div><div class="services-list" id="dServices"></div><div id="dServiceNotes" style="margin-top:1rem;font-size:0.85rem;color:var(--text-dim);"></div></section>
-  <section class="section"><div class="section-label">Section 4</div><div class="section-title">Compensation &amp; Payment</div><table class="comp-table"><tr><td>Total Fee</td><td id="dTotalFee"></td></tr><tr><td>Deposit (due <span id="dDepositDate">upon signing</span>)</td><td id="dDeposit"></td></tr><tr><td>Balance (due <span id="dBalanceDate">14 days before event</span>)</td><td id="dBalance"></td></tr><tr><td>Payment Method</td><td id="dPayment"></td></tr></table><div style="margin-top:1.25rem;"><div class="terms-toggle" onclick="toggleTerms(this)"><h4>Payment Terms</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Standard Booking (14+ days before event)</h4><p>A non-refundable deposit of 30% is due upon signing to secure the date. The remaining balance is due no later than 14 days before the event date.</p><h4>Late Booking (within 14 days of event)</h4><p>Late bookings require full payment at the time of signing.</p><h4>Additional Charges</h4><p>Extended hours, travel beyond 50 miles of Salt Lake City, and add-on services will be quoted separately. Day-of overtime is invoiced within 5 business days and due upon receipt.</p></div></div></section>
-  <section class="section"><div class="section-label">Section 5</div><div class="section-title">Terms &amp; Conditions</div><div class="terms-toggle" onclick="toggleTerms(this)"><h4>View Full Terms &amp; Conditions</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Scope of Services</h4><p>Ampersound Media Group ("Provider") agrees to perform the services listed in Section 3 for the event in Section 2. Any changes must be agreed to in writing.</p><h4>Client Responsibilities</h4><p>Client shall provide accurate event details, timely venue access (minimum 90 minutes before start), adequate power supply, and a secure area for equipment.</p><h4>Timeline &amp; Communication</h4><p>A planning consultation will be scheduled at least 7 days prior. Final timelines and playlists are due from Client 72 hours before the event.</p><h4>Equipment &amp; Technical</h4><p>Provider supplies all necessary equipment unless specified. Client assumes liability for damage caused by guests, venue conditions, or negligence.</p><h4>Intellectual Property</h4><p>Provider retains the right to use event content for portfolio purposes unless Client objects in writing prior.</p><h4>Limitation of Liability</h4><p>Provider's total liability shall not exceed the total fee paid. Provider is not liable for indirect or consequential damages.</p><h4>Indemnification</h4><p>Client agrees to indemnify Provider from claims arising from Client's event, venue conditions, or guest behavior.</p><h4>Governing Law</h4><p>Governed by Utah law. Disputes resolved through mediation first, venue in Salt Lake County.</p></div></section>
-  <section class="section"><div class="section-label">Section 6</div><div class="section-title">Cancellation Policy</div><div class="terms-toggle" onclick="toggleTerms(this)"><h4>View Cancellation Policy</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Standard Booking Cancellations</h4><p>Written cancellation to contact@ampersoundmediagroup.com. Deposit is always non-refundable.</p><table class="cancel-table"><thead><tr><th>Notice Period</th><th>Refund</th><th>Retained</th></tr></thead><tbody><tr><td>60+ days</td><td>Full balance refunded</td><td>Deposit only</td></tr><tr><td>30-59 days</td><td>50% of total</td><td>50% of total</td></tr><tr><td>15-29 days</td><td>25% of total</td><td>75% of total</td></tr><tr><td>14 days or fewer</td><td>No refund</td><td>100% of total</td></tr></tbody></table><h4>Rescheduling</h4><p><strong>Standard:</strong> One reschedule with 30+ days notice, $150 admin fee, new date within 6 months.</p><h4>Provider Cancellation</h4><p>Full refund of all fees. Reasonable efforts to secure qualified replacement at no cost.</p><h4>Force Majeure</h4><p>Neither party liable for circumstances beyond reasonable control. Good faith rescheduling; if impossible, full refund minus documented non-recoverable expenses.</p></div></section>
-  <section class="section sig-section"><div class="section-label">Section 7</div><div class="section-title">Acknowledgment &amp; Signatures</div><div class="consent-check"><input type="checkbox" id="agreeTerms" required><label for="agreeTerms">I, <strong id="dSignerName"></strong>, have read, understand, and agree to all terms in this Service Agreement including Payment (Section 4), Terms &amp; Conditions (Section 5), and Cancellation Policy (Section 6). This constitutes the entire agreement between both parties.</label></div><div class="sig-grid"><div class="sig-party"><h4>Ampersound Media Group</h4><div class="amg-signed"><img src="https://lh3.googleusercontent.com/d/1d_IcL7IwP48HmtbeAb1C7sBulRsfoVJw" alt="Afia Chin-Roberts Signature" class="sig-image"><div class="sig-meta"><strong>Afia Chin-Roberts</strong><br>Founder &amp; Creative Director</div><div class="sig-date" id="amgSignDate">Signed: <span></span></div></div></div><div class="sig-party"><h4>Client Signature</h4><div class="sig-canvas-wrap" id="sigWrap"><canvas id="sigCanvas"></canvas><span class="sig-placeholder">Sign here</span></div><button type="button" class="sig-clear" onclick="clearSignature()">Clear signature</button></div></div></section>
-  <div class="submit-wrap"><button class="submit-btn" id="submitBtn" onclick="submitAgreement()">Sign &amp; Submit Agreement</button><div class="status-msg" id="statusMsg"></div></div>
+  <section class="section"><div class="section-label">Section 4</div><div class="section-title">Compensation &amp; Payment</div><table class="comp-table"><tr><td>Total Fee</td><td id="dTotalFee"></td></tr><tr><td>Deposit (due <span id="dDepositDate">upon signing</span>)</td><td id="dDeposit"></td></tr><tr><td>Balance (due <span id="dBalanceDate">14 days before event</span>)</td><td id="dBalance"></td></tr><tr><td>Payment Method</td><td id="dPayment"></td></tr></table><div style="margin-top:1.25rem;"><div class="terms-toggle" onclick="toggleTerms(this)"><h4>Payment Terms</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Standard Booking (14+ days before event)</h4><p>A non-refundable deposit of 30% is due upon signing to secure the date. The remaining balance is due no later than 14 days before the event date.</p><h4>Late Booking (within 14 days of event)</h4><p>Late bookings require full payment at the time of signing.</p><h4>Additional Charges</h4><p>Extended hours, travel beyond 50 miles of Salt Lake City, and add-on services will be quoted separately.</p></div></div></section>
+  <section class="section"><div class="section-label">Section 5</div><div class="section-title">Terms &amp; Conditions</div><div class="terms-toggle" onclick="toggleTerms(this)"><h4>View Full Terms &amp; Conditions</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Scope of Services</h4><p>Ampersound Media Group ("Provider") agrees to perform the services listed in Section 3 for the event in Section 2. Any changes must be agreed to in writing.</p><h4>Client Responsibilities</h4><p>Client shall provide accurate event details, timely venue access (minimum 90 minutes before start), adequate power supply, and a secure area for equipment.</p><h4>Timeline &amp; Communication</h4><p>A planning consultation will be scheduled at least 7 days prior. Final timelines and playlists are due from Client 72 hours before the event.</p><h4>Equipment &amp; Technical</h4><p>Provider supplies all necessary equipment unless specified. Client assumes liability for damage caused by guests, venue conditions, or negligence.</p><h4>Limitation of Liability</h4><p>Provider's total liability shall not exceed the total fee paid. Provider is not liable for indirect or consequential damages.</p><h4>Indemnification</h4><p>Client agrees to indemnify Provider from claims arising from Client's event, venue conditions, or guest behavior.</p><h4>Governing Law</h4><p>Governed by Utah law. Disputes resolved through mediation first, venue in Salt Lake County.</p></div></section>
+  <section class="section"><div class="section-label">Section 6</div><div class="section-title">Cancellation Policy</div><div class="terms-toggle" onclick="toggleTerms(this)"><h4>View Cancellation Policy</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Standard Booking Cancellations</h4><p>Written cancellation to contact@ampersoundmediagroup.com. Deposit is always non-refundable.</p><table class="cancel-table"><thead><tr><th>Notice Period</th><th>Refund</th><th>Retained</th></tr></thead><tbody><tr><td>60+ days</td><td>Full balance refunded</td><td>Deposit only</td></tr><tr><td>30-59 days</td><td>50% of total</td><td>50% of total</td></tr><tr><td>15-29 days</td><td>25% of total</td><td>75% of total</td></tr><tr><td>14 days or fewer</td><td>No refund</td><td>100% of total</td></tr></tbody></table><h4>Rescheduling</h4><p><strong>Standard:</strong> One reschedule with 30+ days notice, $150 admin fee, new date within 6 months.</p><h4>Provider Cancellation</h4><p>Full refund of all fees. Reasonable efforts to secure qualified replacement at no cost.</p><h4>Force Majeure</h4><p>Neither party liable for circumstances beyond reasonable control.</p></div></section>
+  <!-- Signature section: signing mode -->
+  <section class="section sig-section" id="sigSectionSign">
+    <div class="section-label">Section 7</div><div class="section-title">Acknowledgment &amp; Signatures</div>
+    <div class="consent-check"><input type="checkbox" id="agreeTerms" required><label for="agreeTerms">I, <strong id="dSignerName"></strong>, have read, understand, and agree to all terms in this Service Agreement including Payment (Section 4), Terms &amp; Conditions (Section 5), and Cancellation Policy (Section 6). This constitutes the entire agreement between both parties.</label></div>
+    <div class="sig-grid">
+      <div class="sig-party"><h4>Ampersound Media Group</h4><div class="amg-signed"><img src="https://lh3.googleusercontent.com/d/1d_IcL7IwP48HmtbeAb1C7sBulRsfoVJw" alt="Afia Chin-Roberts Signature" class="sig-image"><div class="sig-meta"><strong>Afia Chin-Roberts</strong><br>Founder &amp; Creative Director</div><div class="sig-date" id="amgSignDate">Signed: <span></span></div></div></div>
+      <div class="sig-party"><h4>Client Signature</h4><div class="sig-canvas-wrap" id="sigWrap"><canvas id="sigCanvas"></canvas><span class="sig-placeholder">Sign here</span></div><button type="button" class="sig-clear" onclick="clearSignature()">Clear signature</button></div>
+    </div>
+  </section>
+  <!-- Signature section: view mode (signed) -->
+  <section class="section sig-section" id="sigSectionView" style="display:none;">
+    <div class="section-label">Section 7</div><div class="section-title">Signatures</div>
+    <div class="sig-grid">
+      <div class="sig-party"><h4>Ampersound Media Group</h4><div class="amg-signed"><img src="https://lh3.googleusercontent.com/d/1d_IcL7IwP48HmtbeAb1C7sBulRsfoVJw" alt="Afia Chin-Roberts Signature" class="sig-image"><div class="sig-meta"><strong>Afia Chin-Roberts</strong><br>Founder &amp; Creative Director</div><div class="sig-date" id="amgSignDateView">Signed: <span></span></div></div></div>
+      <div class="sig-party"><h4>Client</h4><div class="client-signed" id="clientSignedBlock"><img id="clientSigImg" src="" alt="Client Signature"><div class="sig-meta"><strong id="clientSignedName"></strong></div><div class="sig-date" id="clientSignedDate"></div></div></div>
+    </div>
+  </section>
+  <div class="submit-wrap" id="submitWrap"><button class="submit-btn" id="submitBtn" onclick="submitAgreement()">Sign &amp; Submit Agreement</button><div class="status-msg" id="statusMsg"></div></div>
   <footer class="doc-footer"><span>Ampersound Media Group</span> &middot; North Salt Lake, Utah &middot; contact@ampersoundmediagroup.com<br>This agreement is valid for 30 days from the date of issue.</footer>
 </div>
 <div class="success-overlay" id="successOverlay"><div class="success-check">&#10003;</div><h2>Agreement Signed</h2><p>Your signed agreement has been submitted successfully. A confirmation has been sent to your email. We'll be in touch soon to begin planning your event.</p></div>
@@ -132,31 +138,45 @@ let agreementData=null;
     if(!res.ok)throw new Error('Could not load agreement');
     agreementData=await res.json();
     agreementData.token=token;
-    if(agreementData.status==='signed'&&!params.get('view')){
-      document.getElementById('loadingOverlay').classList.remove('visible');
-      document.getElementById('successOverlay').classList.add('visible');
-      document.querySelector('.success-overlay h2').textContent='Already Signed';
-      document.querySelector('.success-overlay p').textContent='This agreement has already been signed. A confirmation was sent to your email.';
-      return;
-    }
+
     renderAgreement(agreementData);
+
+    // Determine mode: signed (view) or pending (sign)
+    if(agreementData.status==='signed'){
+      // View mode: show both signatures, hide signing UI
+      document.getElementById('sigSectionSign').style.display='none';
+      document.getElementById('sigSectionView').style.display='block';
+      document.getElementById('submitWrap').style.display='none';
+      document.getElementById('signedBadge').style.display='block';
+
+      // AMG sign date
+      document.querySelector('#amgSignDateView span').textContent=params.get('issued')||agreementData.signedDate||'';
+
+      // Client signature
+      if(agreementData.clientSignatureUrl){
+        document.getElementById('clientSigImg').src=agreementData.clientSignatureUrl;
+      } else {
+        document.getElementById('clientSigImg').style.display='none';
+      }
+      document.getElementById('clientSignedName').textContent=agreementData.clientName||'Client';
+      document.getElementById('clientSignedDate').textContent=agreementData.signedDate?'Signed: '+agreementData.signedDate:'Signed';
+    } else {
+      // Sign mode
+      document.getElementById('sigSectionSign').style.display='block';
+      document.getElementById('sigSectionView').style.display='none';
+      setTimeout(initSignaturePad,50);
+    }
+
     document.getElementById('loadingOverlay').classList.remove('visible');
     document.getElementById('agreementPage').style.display='block';
-    // Initialize canvas AFTER page is visible
-    setTimeout(initSignaturePad, 50);
   }catch(err){
     document.getElementById('loadingOverlay').innerHTML='<p style="color:var(--error)">Unable to load agreement. Please contact us at contact@ampersoundmediagroup.com.</p>';
   }
 })();
 
 function renderAgreement(d){
-  setText('dClientName',d.clientName);
-  setText('dOrganization',d.organization);
-  setText('dEmail',d.clientEmail);
-  setText('dPhone',d.clientPhone);
-  setText('dEventName',d.eventName);
-  setText('dEventType',d.eventType);
-  setText('dEventDate',d.eventDate);
+  setText('dClientName',d.clientName);setText('dOrganization',d.organization);setText('dEmail',d.clientEmail);setText('dPhone',d.clientPhone);
+  setText('dEventName',d.eventName);setText('dEventType',d.eventType);setText('dEventDate',d.eventDate);
   setText('dTime',[d.startTime,d.endTime].filter(Boolean).join(' - '));
   setText('dVenue',[d.venueName,d.venueAddress].filter(Boolean).join(', '));
   setText('dGuests',d.guestCount);
@@ -170,85 +190,29 @@ function renderAgreement(d){
   if(d.depositDueDate)setText('dDepositDate',d.depositDueDate);
   if(d.balanceDueDate)setText('dBalanceDate',d.balanceDueDate);
   setText('dPayment',d.paymentMethod);
-  document.getElementById('dSignerName').textContent=d.clientName||'Client';
+  const signerEl=document.getElementById('dSignerName');
+  if(signerEl)signerEl.textContent=d.clientName||'Client';
   const issued=new URLSearchParams(window.location.search).get('issued')||new Date().toISOString().split('T')[0];
-  document.querySelector('#amgSignDate span').textContent=issued;
+  const amgSpan=document.querySelector('#amgSignDate span');
+  if(amgSpan)amgSpan.textContent=issued;
 }
 
-function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val||'';if(el&&!val)el.classList.add('empty');}
+function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val||'';}
 
-// Signature Pad - initialized after page is visible
-let canvas, ctx, sigWrap, isDrawing=false, hasSignature=false;
-
+// Signature Pad
+let canvas,ctx,sigWrap,isDrawing=false,hasSignature=false;
 function initSignaturePad(){
-  canvas=document.getElementById('sigCanvas');
-  ctx=canvas.getContext('2d');
-  sigWrap=document.getElementById('sigWrap');
-
-  function resizeCanvas(){
-    const rect=canvas.getBoundingClientRect();
-    if(rect.width===0) return; // not visible yet
-    canvas.width=rect.width*window.devicePixelRatio;
-    canvas.height=rect.height*window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
-    ctx.strokeStyle='#f0ebe4';
-    ctx.lineWidth=2.5;
-    ctx.lineCap='round';
-    ctx.lineJoin='round';
-  }
-  resizeCanvas();
-  window.addEventListener('resize',resizeCanvas);
-
-  function getPos(e){
-    const rect=canvas.getBoundingClientRect();
-    const t=e.touches?e.touches[0]:e;
-    return{x:t.clientX-rect.left,y:t.clientY-rect.top};
-  }
-
-  function startDraw(e){
-    e.preventDefault();
-    isDrawing=true;
-    const p=getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x,p.y);
-    sigWrap.classList.add('active');
-  }
-
-  function draw(e){
-    e.preventDefault();
-    if(!isDrawing)return;
-    const p=getPos(e);
-    ctx.lineTo(p.x,p.y);
-    ctx.stroke();
-    hasSignature=true;
-    sigWrap.classList.add('has-signature');
-  }
-
-  function endDraw(){
-    isDrawing=false;
-    sigWrap.classList.remove('active');
-  }
-
-  // Mouse events
-  canvas.addEventListener('mousedown',startDraw);
-  canvas.addEventListener('mousemove',draw);
-  canvas.addEventListener('mouseup',endDraw);
-  canvas.addEventListener('mouseleave',endDraw);
-
-  // Touch events
-  canvas.addEventListener('touchstart',startDraw,{passive:false});
-  canvas.addEventListener('touchmove',draw,{passive:false});
-  canvas.addEventListener('touchend',endDraw);
-  canvas.addEventListener('touchcancel',endDraw);
+  canvas=document.getElementById('sigCanvas');ctx=canvas.getContext('2d');sigWrap=document.getElementById('sigWrap');
+  function resize(){const r=canvas.getBoundingClientRect();if(r.width===0)return;canvas.width=r.width*devicePixelRatio;canvas.height=r.height*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);ctx.strokeStyle='#f0ebe4';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';}
+  resize();window.addEventListener('resize',resize);
+  function getPos(e){const r=canvas.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top};}
+  function start(e){e.preventDefault();isDrawing=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);sigWrap.classList.add('active');}
+  function draw(e){e.preventDefault();if(!isDrawing)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true;sigWrap.classList.add('has-signature');}
+  function end(){isDrawing=false;sigWrap.classList.remove('active');}
+  canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',draw);canvas.addEventListener('mouseup',end);canvas.addEventListener('mouseleave',end);
+  canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',draw,{passive:false});canvas.addEventListener('touchend',end);canvas.addEventListener('touchcancel',end);
 }
-
-function clearSignature(){
-  if(!canvas||!ctx)return;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  hasSignature=false;
-  sigWrap.classList.remove('has-signature');
-}
-
+function clearSignature(){if(!canvas||!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;sigWrap.classList.remove('has-signature');}
 function toggleTerms(el){el.classList.toggle('open');el.nextElementSibling.classList.toggle('open');}
 
 async function submitAgreement(){
@@ -267,7 +231,6 @@ async function submitAgreement(){
     btn.classList.remove('loading');btn.disabled=false;
   }
 }
-
 function showStatus(msg){const el=document.getElementById('statusMsg');el.textContent=msg;el.className='status-msg error';}
 function hideStatus(){document.getElementById('statusMsg').className='status-msg';}
 </script>
