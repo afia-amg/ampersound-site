@@ -35,8 +35,6 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
 .section-label { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet); margin-bottom: 0.4rem; }
 .section-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--text); margin-bottom: 1.2rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border); }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-.detail-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
-.detail-grid.single { grid-template-columns: 1fr; }
 .detail-item .label { font-family: 'Montserrat', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.2rem; }
 .detail-item .value { font-size: 0.9rem; color: var(--text); font-weight: 500; }
 .detail-item .value.empty { color: var(--text-muted); font-style: italic; font-weight: 400; }
@@ -70,7 +68,7 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
 .amg-signed .sig-meta strong { color: var(--text); font-weight: 600; }
 .amg-signed .sig-date { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem; }
 .sig-canvas-wrap { border: 1px solid var(--field-border); border-radius: 8px; background: var(--field-bg); padding: 4px; position: relative; margin-bottom: 0.5rem; }
-.sig-canvas-wrap canvas { display: block; width: 100%; height: 120px; border-radius: 6px; cursor: crosshair; }
+.sig-canvas-wrap canvas { display: block; width: 100%; height: 140px; border-radius: 6px; cursor: crosshair; touch-action: none; }
 .sig-canvas-wrap.active { border-color: var(--gold); }
 .sig-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 0.8rem; pointer-events: none; transition: opacity 200ms; }
 .sig-canvas-wrap.has-signature .sig-placeholder { opacity: 0; }
@@ -100,7 +98,7 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
 .loading-overlay.visible { display: flex; }
 .loading-overlay p { color: var(--text-dim); font-size: 0.9rem; }
 .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 800ms linear infinite; }
-@media (max-width: 640px) { .page-wrapper { padding: 1.5rem 1.25rem; } .detail-grid, .detail-grid.triple { grid-template-columns: 1fr; } .sig-grid { grid-template-columns: 1fr; gap: 1.5rem; } .doc-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; } .doc-header-text { text-align: left; } }
+@media (max-width: 640px) { .page-wrapper { padding: 1.5rem 1.25rem; } .detail-grid { grid-template-columns: 1fr; } .sig-grid { grid-template-columns: 1fr; gap: 1.5rem; } .doc-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; } .doc-header-text { text-align: left; } }
 @media print { body { background: #fff; color: #111; padding: 0; } .page-wrapper { background: #fff; box-shadow: none; border: none; padding: 0; max-width: none; } .terms-body { display: block !important; } .submit-wrap, .sig-clear { display: none; } }
 </style>
 </head>
@@ -144,6 +142,8 @@ let agreementData=null;
     renderAgreement(agreementData);
     document.getElementById('loadingOverlay').classList.remove('visible');
     document.getElementById('agreementPage').style.display='block';
+    // Initialize canvas AFTER page is visible
+    setTimeout(initSignaturePad, 50);
   }catch(err){
     document.getElementById('loadingOverlay').innerHTML='<p style="color:var(--error)">Unable to load agreement. Please contact us at contact@ampersoundmediagroup.com.</p>';
   }
@@ -177,19 +177,78 @@ function renderAgreement(d){
 
 function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val||'';if(el&&!val)el.classList.add('empty');}
 
-const canvas=document.getElementById('sigCanvas'),ctx=canvas.getContext('2d'),sigWrap=document.getElementById('sigWrap');
-let isDrawing=false,hasSignature=false;
-function resizeCanvas(){const r=canvas.getBoundingClientRect();canvas.width=r.width*devicePixelRatio;canvas.height=r.height*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);ctx.strokeStyle='#f0ebe4';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';}
-resizeCanvas();window.addEventListener('resize',resizeCanvas);
-function getPos(e){const r=canvas.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top};}
-canvas.addEventListener('mousedown',e=>{isDrawing=true;ctx.beginPath();ctx.moveTo(getPos(e).x,getPos(e).y);sigWrap.classList.add('active');});
-canvas.addEventListener('mousemove',e=>{if(!isDrawing)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true;sigWrap.classList.add('has-signature');});
-canvas.addEventListener('mouseup',()=>{isDrawing=false;sigWrap.classList.remove('active');});
-canvas.addEventListener('mouseleave',()=>{isDrawing=false;sigWrap.classList.remove('active');});
-canvas.addEventListener('touchstart',e=>{e.preventDefault();isDrawing=true;ctx.beginPath();ctx.moveTo(getPos(e).x,getPos(e).y);sigWrap.classList.add('active');},{passive:false});
-canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!isDrawing)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true;sigWrap.classList.add('has-signature');},{passive:false});
-canvas.addEventListener('touchend',()=>{isDrawing=false;sigWrap.classList.remove('active');});
-function clearSignature(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;sigWrap.classList.remove('has-signature');}
+// Signature Pad - initialized after page is visible
+let canvas, ctx, sigWrap, isDrawing=false, hasSignature=false;
+
+function initSignaturePad(){
+  canvas=document.getElementById('sigCanvas');
+  ctx=canvas.getContext('2d');
+  sigWrap=document.getElementById('sigWrap');
+
+  function resizeCanvas(){
+    const rect=canvas.getBoundingClientRect();
+    if(rect.width===0) return; // not visible yet
+    canvas.width=rect.width*window.devicePixelRatio;
+    canvas.height=rect.height*window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
+    ctx.strokeStyle='#f0ebe4';
+    ctx.lineWidth=2.5;
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+  }
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+
+  function getPos(e){
+    const rect=canvas.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return{x:t.clientX-rect.left,y:t.clientY-rect.top};
+  }
+
+  function startDraw(e){
+    e.preventDefault();
+    isDrawing=true;
+    const p=getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x,p.y);
+    sigWrap.classList.add('active');
+  }
+
+  function draw(e){
+    e.preventDefault();
+    if(!isDrawing)return;
+    const p=getPos(e);
+    ctx.lineTo(p.x,p.y);
+    ctx.stroke();
+    hasSignature=true;
+    sigWrap.classList.add('has-signature');
+  }
+
+  function endDraw(){
+    isDrawing=false;
+    sigWrap.classList.remove('active');
+  }
+
+  // Mouse events
+  canvas.addEventListener('mousedown',startDraw);
+  canvas.addEventListener('mousemove',draw);
+  canvas.addEventListener('mouseup',endDraw);
+  canvas.addEventListener('mouseleave',endDraw);
+
+  // Touch events
+  canvas.addEventListener('touchstart',startDraw,{passive:false});
+  canvas.addEventListener('touchmove',draw,{passive:false});
+  canvas.addEventListener('touchend',endDraw);
+  canvas.addEventListener('touchcancel',endDraw);
+}
+
+function clearSignature(){
+  if(!canvas||!ctx)return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  hasSignature=false;
+  sigWrap.classList.remove('has-signature');
+}
+
 function toggleTerms(el){el.classList.toggle('open');el.nextElementSibling.classList.toggle('open');}
 
 async function submitAgreement(){
