@@ -32,7 +32,7 @@ async function sendClientEmail(data) {
   const fee = data.totalFee ? `$${Number(data.totalFee).toLocaleString()}` : 'See agreement';
   const deposit = data.depositAmount ? `$${Number(data.depositAmount).toLocaleString()}` : 'See agreement';
   const services = (data.services || []).join(', ') || 'See agreement';
-  const htmlBody = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#0f1114;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1114;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#181c21;border:1px solid rgba(201,169,110,0.15);border-radius:12px;overflow:hidden;"><tr><td style="padding:32px 40px 24px;border-bottom:2px solid #c9a96e;"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group" height="36" style="display:block;"></td></tr><tr><td style="padding:32px 40px;"><h1 style="font-size:22px;color:#f0ebe4;margin:0 0 8px;font-weight:700;">Agreement Confirmed</h1><p style="color:rgba(240,235,228,0.65);font-size:15px;line-height:1.6;margin:0 0 24px;">Hi ${data.clientName},<br><br>Thank you for signing your service agreement with Ampersound Media Group. This email confirms your booking.</p><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr><td style="padding:12px 16px;background:#141719;border-radius:8px 8px 0 0;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Event</span><br><span style="color:#f0ebe4;font-size:14px;">${data.eventName} &mdash; ${data.eventDate}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Venue</span><br><span style="color:#f0ebe4;font-size:14px;">${data.venueName}${data.venueAddress ? ', ' + data.venueAddress : ''}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Services</span><br><span style="color:#f0ebe4;font-size:14px;">${services}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Total Fee</span><br><span style="color:#f0ebe4;font-size:14px;font-weight:600;">${fee}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Deposit Due</span><br><span style="color:#f0ebe4;font-size:14px;">${deposit}${data.depositDueDate ? ' by ' + data.depositDueDate : ' upon signing'}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-radius:0 0 8px 8px;"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Signed By</span><br><span style="color:#f0ebe4;font-size:14px;">${data.signedName} on ${data.signedDate}</span></td></tr></table><p style="color:rgba(240,235,228,0.65);font-size:14px;line-height:1.6;margin:0 0 24px;"><strong style="color:#f0ebe4;">What happens next:</strong><br>1. Submit your deposit to secure the date<br>2. We'll reach out to schedule a planning consultation<br>3. Final timeline and details are due 72 hours before the event</p><a href="${SITE_URL}/client-portal" style="display:inline-block;padding:12px 24px;background:#c9a96e;color:#0f1114;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;margin-top:8px;">View My Agreement</a></td></tr><tr><td style="padding:24px 40px;border-top:1px solid rgba(201,169,110,0.1);text-align:center;"><p style="color:rgba(240,235,228,0.35);font-size:12px;margin:0;line-height:1.5;">Ampersound Media Group &bull; North Salt Lake, Utah<br>contact@ampersoundmediagroup.com<br><span style="color:#c9a96e;">Sound. Presence. Atmosphere.</span></p></td></tr></table></td></tr></table></body></html>`;
+  const htmlBody = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#0f1114;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1114;padding:40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background:#181c21;border:1px solid rgba(201,169,110,0.15);border-radius:12px;overflow:hidden;"><tr><td style="padding:32px 40px 24px;border-bottom:2px solid #c9a96e;"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group" height="36" style="display:block;"></td></tr><tr><td style="padding:32px 40px;"><h1 style="font-size:22px;color:#f0ebe4;margin:0 0 8px;font-weight:700;">Agreement Confirmed</h1><p style="color:rgba(240,235,228,0.65);font-size:15px;line-height:1.6;margin:0 0 24px;">Hi ${data.clientName},<br><br>Thank you for signing your service agreement with Ampersound Media Group. This email confirms your booking.</p><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;"><tr><td style="padding:12px 16px;background:#141719;border-radius:8px 8px 0 0;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Event</span><br><span style="color:#f0ebe4;font-size:14px;">${data.eventName} &mdash; ${data.eventDate}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Venue</span><br><span style="color:#f0ebe4;font-size:14px;">${data.venueName}${data.venueAddress ? ', ' + data.venueAddress : ''}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Services</span><br><span style="color:#f0ebe4;font-size:14px;">${services}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-bottom:1px solid rgba(201,169,110,0.1);"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Total Fee</span><br><span style="color:#f0ebe4;font-size:14px;font-weight:600;">${fee}</span></td></tr><tr><td style="padding:12px 16px;background:#141719;border-radius:0 0 8px 8px;"><span style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#c9a96e;font-weight:600;">Signed By</span><br><span style="color:#f0ebe4;font-size:14px;">${data.signedName} on ${data.signedDate}</span></td></tr></table><p style="color:rgba(240,235,228,0.65);font-size:14px;line-height:1.6;margin:0 0 24px;"><strong style="color:#f0ebe4;">What happens next:</strong><br>1. Submit your deposit to secure the date<br>2. We'll reach out to schedule a planning consultation<br>3. Final timeline and details are due 72 hours before the event</p><a href="${SITE_URL}/client-portal" style="display:inline-block;padding:12px 24px;background:#c9a96e;color:#0f1114;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;margin-top:8px;">View My Agreement</a></td></tr><tr><td style="padding:24px 40px;border-top:1px solid rgba(201,169,110,0.1);text-align:center;"><p style="color:rgba(240,235,228,0.35);font-size:12px;margin:0;line-height:1.5;">Ampersound Media Group &bull; North Salt Lake, Utah<br>contact@ampersoundmediagroup.com<br><span style="color:#c9a96e;">Sound. Presence. Atmosphere.</span></p></td></tr></table></td></tr></table></body></html>`;
   const subject = `Your Service Agreement with Ampersound Media Group - ${data.eventName}`;
   const emailLines = [`From: Ampersound Media Group <${FROM_EMAIL}>`,`To: ${data.clientName} <${data.clientEmail}>`,`Subject: ${subject}`,`MIME-Version: 1.0`,`Content-Type: text/html; charset=UTF-8`,``,htmlBody];
   const raw = Buffer.from(emailLines.join('\r\n')).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -55,20 +55,27 @@ function buildCustomFields(data) {
   if (data.eventNotes) customFields.push({id:FIELDS.eventNotes,value:data.eventNotes});
   if (data.serviceNotes) customFields.push({id:FIELDS.serviceNotes,value:data.serviceNotes});
   if (data.clientEmail) customFields.push({id:FIELDS.clientEmail,value:data.clientEmail});
-  if (data.clientPhone) { const ph = data.clientPhone.startsWith('+')?data.clientPhone:`+1${data.clientPhone.replace(/\D/g,'')}`; customFields.push({id:FIELDS.clientPhone,value:ph}); }
+  if (data.clientPhone) {
+    let ph = data.clientPhone;
+    if (typeof ph === 'string' && !ph.startsWith('+')) ph = `+1${ph.replace(/\D/g,'')}`;
+    customFields.push({id:FIELDS.clientPhone,value:ph});
+  }
   if (data.guestCount) customFields.push({id:FIELDS.guestCount,value:Number(data.guestCount)});
   if (data.totalFee) customFields.push({id:FIELDS.totalFee,value:Number(data.totalFee)});
   if (data.depositAmount) customFields.push({id:FIELDS.depositAmount,value:Number(data.depositAmount)});
   if (data.balanceDue) customFields.push({id:FIELDS.balanceDue,value:Number(data.balanceDue)});
   const toMs = d => d ? new Date(d+'T00:00:00').getTime() : null;
-  if (data.eventDate) customFields.push({id:FIELDS.eventDate,value:toMs(data.eventDate)});
-  if (data.depositDueDate) customFields.push({id:FIELDS.depositDueDate,value:toMs(data.depositDueDate)});
-  if (data.balanceDueDate) customFields.push({id:FIELDS.balanceDueDate,value:toMs(data.balanceDueDate)});
+  if (data.eventDate) { const ms = toMs(data.eventDate); if (ms && !isNaN(ms)) customFields.push({id:FIELDS.eventDate,value:ms}); }
+  if (data.depositDueDate) { const ms = toMs(data.depositDueDate); if (ms && !isNaN(ms)) customFields.push({id:FIELDS.depositDueDate,value:ms}); }
+  if (data.balanceDueDate) { const ms = toMs(data.balanceDueDate); if (ms && !isNaN(ms)) customFields.push({id:FIELDS.balanceDueDate,value:ms}); }
   if (data.eventType && EVENT_TYPE_OPTIONS[data.eventType]) customFields.push({id:FIELDS.eventType,value:EVENT_TYPE_OPTIONS[data.eventType]});
   if (data.indoorOutdoor && INDOOR_OUTDOOR_OPTIONS[data.indoorOutdoor]) customFields.push({id:FIELDS.indoorOutdoor,value:INDOOR_OUTDOOR_OPTIONS[data.indoorOutdoor]});
   if (data.bookingType && BOOKING_TYPE_OPTIONS[data.bookingType]) customFields.push({id:FIELDS.bookingType,value:BOOKING_TYPE_OPTIONS[data.bookingType]});
   if (data.paymentMethod && PAYMENT_METHOD_OPTIONS[data.paymentMethod]) customFields.push({id:FIELDS.paymentMethod,value:PAYMENT_METHOD_OPTIONS[data.paymentMethod]});
-  if (data.services && data.services.length) { const ids = data.services.map(s=>SERVICES_OPTIONS[s]).filter(Boolean); if (ids.length) customFields.push({id:FIELDS.services,value:ids}); }
+  if (data.services && data.services.length) {
+    const ids = data.services.map(s => SERVICES_OPTIONS[s]).filter(Boolean);
+    if (ids.length) customFields.push({id:FIELDS.services,value:ids});
+  }
   return customFields;
 }
 
@@ -78,14 +85,15 @@ exports.handler = async (event) => {
   if (!CLICKUP_API_TOKEN) return { statusCode:500, headers, body:JSON.stringify({message:'Server configuration error'}) };
   let data; try { data = JSON.parse(event.body); } catch(e) { return { statusCode:400, headers, body:JSON.stringify({message:'Invalid JSON'}) }; }
 
-  const required = ['clientName','clientEmail','clientPhone','eventName','eventType','eventDate','startTime','endTime','venueName','totalFee','depositAmount'];
+  // Only require fields that should always be present
+  const required = ['clientName','clientEmail','eventName','eventDate','venueName'];
   const missing = required.filter(f => !data[f]);
   if (missing.length) return { statusCode:400, headers, body:JSON.stringify({message:`Missing: ${missing.join(', ')}`}) };
 
   const customFields = buildCustomFields(data);
   const taskName = `${data.clientName} | ${data.eventName} | ${data.eventDate}`;
 
-  let description = `## Agreement Details\n\n**Signed by:** ${data.signedName||data.clientName}\n**Date signed:** ${data.signedDate||'Not provided'}\n**Terms accepted:** ${data.agreedToTerms?'Yes':'No'}\n\n---\n\n**Services:** ${(data.services||[]).join(', ')||'None'}\n`;
+  let description = `## Agreement Details\n\n**Signed by:** ${data.signedName||data.clientName}\n**Date signed:** ${data.signedDate||new Date().toISOString().split('T')[0]}\n**Terms accepted:** Yes\n\n---\n\n**Services:** ${(data.services||[]).join(', ')||'See agreement'}\n`;
   if (data.serviceNotes) description += `**Service Notes:** ${data.serviceNotes}\n`;
   if (data.eventNotes) description += `**Event Notes:** ${data.eventNotes}\n`;
   description += `\n---\n\n*Submitted via digital agreement form. Signature image attached.*`;
@@ -95,23 +103,35 @@ exports.handler = async (event) => {
     const token = data.token;
 
     if (token) {
+      // UPDATE existing task - don't change status (let the user manage that)
+      const updateBody = { name: taskName, description, custom_fields: customFields };
       const res = await fetch(`https://api.clickup.com/api/v2/task/${token}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': CLICKUP_API_TOKEN },
-        body: JSON.stringify({ name: taskName, description, status: 'complete', custom_fields: customFields }),
+        body: JSON.stringify(updateBody),
       });
-      if (!res.ok) { const err = await res.text(); console.error('ClickUp update error:', res.status, err); return { statusCode: 502, headers, body: JSON.stringify({ message: 'Failed to update agreement' }) }; }
+      if (!res.ok) {
+        const err = await res.text();
+        console.error('ClickUp update error:', res.status, err);
+        return { statusCode: 502, headers, body: JSON.stringify({ message: 'Failed to update agreement', detail: err }) };
+      }
       task = await res.json();
     } else {
+      // CREATE new task
       const res = await fetch(`https://api.clickup.com/api/v2/list/${LIST_ID}/task`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': CLICKUP_API_TOKEN },
-        body: JSON.stringify({ name: taskName, description, status: 'complete', custom_fields: customFields }),
+        body: JSON.stringify({ name: taskName, description, custom_fields: customFields }),
       });
-      if (!res.ok) { const err = await res.text(); console.error('ClickUp create error:', res.status, err); return { statusCode: 502, headers, body: JSON.stringify({ message: 'Failed to create agreement' }) }; }
+      if (!res.ok) {
+        const err = await res.text();
+        console.error('ClickUp create error:', res.status, err);
+        return { statusCode: 502, headers, body: JSON.stringify({ message: 'Failed to create agreement', detail: err }) };
+      }
       task = await res.json();
     }
 
+    // Upload signature (non-blocking failure)
     if (data.signatureImage) {
       try {
         const b64 = data.signatureImage.replace(/^data:image\/png;base64,/, '');
@@ -128,12 +148,13 @@ exports.handler = async (event) => {
       } catch (e) { console.error('Sig upload failed:', e.message); }
     }
 
-    await sendClientEmail(data);
-    await notifyChat(data, task.url);
+    // Email + Chat (non-blocking)
+    await sendClientEmail(data).catch(e => console.error('Email failed:', e.message));
+    await notifyChat(data, task.url).catch(e => console.error('Chat failed:', e.message));
 
     return { statusCode: 200, headers, body: JSON.stringify({ message: 'Agreement submitted', taskId: task.id, taskUrl: task.url }) };
   } catch (err) {
     console.error('Error:', err);
-    return { statusCode: 500, headers, body: JSON.stringify({ message: 'Internal server error' }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ message: 'Internal server error', detail: err.message }) };
   }
 };
