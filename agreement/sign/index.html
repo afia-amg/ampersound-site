@@ -20,38 +20,32 @@
   --violet: oklch(52% 0.2 280);
   --field-bg: oklch(14% 0.008 250);
   --field-border: oklch(30% 0.03 70 / 0.3);
-  --field-focus: var(--gold);
   --success: oklch(65% 0.15 145);
   --error: oklch(60% 0.2 25);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; color: var(--text); background: var(--bg); padding: 2rem 1rem 4rem; -webkit-font-smoothing: antialiased; font-optical-sizing: auto; }
+body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; color: var(--text); background: var(--bg); padding: 2rem 1rem 4rem; -webkit-font-smoothing: antialiased; }
 .page-wrapper { max-width: 780px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3rem 3.5rem; }
 .doc-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1.75rem; border-bottom: 2px solid var(--gold); margin-bottom: 2.5rem; }
 .doc-header img { height: 42px; }
 .doc-header-text { text-align: right; }
 .doc-header-text h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.35rem; letter-spacing: -0.03em; color: var(--text); }
 .doc-header-text p { font-size: 0.7rem; color: var(--gold); margin-top: 3px; letter-spacing: 0.14em; text-transform: uppercase; font-family: 'Montserrat', sans-serif; font-weight: 600; }
-.section { margin-bottom: 2.75rem; }
+.section { margin-bottom: 2.5rem; }
 .section-label { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet); margin-bottom: 0.4rem; }
 .section-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--text); margin-bottom: 1.2rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border); }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.85rem; }
-.field-row.triple { grid-template-columns: 1fr 1fr 1fr; }
-.field-row.single { grid-template-columns: 1fr; }
-.field-group { display: flex; flex-direction: column; gap: 0.3rem; }
-.field-group label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.03em; font-family: 'Montserrat', sans-serif; }
-.field-group input, .field-group select, .field-group textarea { font-family: 'Open Sans', sans-serif; font-size: 0.875rem; padding: 0.6rem 0.75rem; border: 1px solid var(--field-border); border-radius: 8px; background: var(--field-bg); color: var(--text); transition: border-color 200ms cubic-bezier(0.25, 1, 0.5, 1), box-shadow 200ms cubic-bezier(0.25, 1, 0.5, 1); outline: none; }
-.field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: var(--field-focus); box-shadow: 0 0 0 3px oklch(72% 0.1 70 / 0.1); }
-.field-group input.invalid, .field-group select.invalid { border-color: var(--error); }
-.field-group input[readonly], .field-group select[disabled], .field-group textarea[readonly] { opacity: 0.7; cursor: default; }
-.field-group textarea { resize: vertical; min-height: 64px; }
-.field-group select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9a96e' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
-.field-group select option { background: var(--surface); color: var(--text); }
-.checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1.5rem; margin: 0.75rem 0; }
-.checkbox-item { display: flex; align-items: center; gap: 0.6rem; }
-.checkbox-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer; }
-.checkbox-item label { font-size: 0.85rem; cursor: pointer; color: var(--text-dim); }
-.checkbox-item:hover label { color: var(--text); }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.detail-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+.detail-grid.single { grid-template-columns: 1fr; }
+.detail-item .label { font-family: 'Montserrat', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.2rem; }
+.detail-item .value { font-size: 0.9rem; color: var(--text); font-weight: 500; }
+.detail-item .value.empty { color: var(--text-muted); font-style: italic; font-weight: 400; }
+.services-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.service-tag { padding: 0.4rem 0.85rem; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 6px; font-family: 'Montserrat', sans-serif; font-size: 0.75rem; font-weight: 600; color: var(--text-dim); }
+.comp-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+.comp-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+.comp-table td:first-child { color: var(--text-dim); }
+.comp-table td:last-child { text-align: right; font-weight: 600; color: var(--text); font-feature-settings: 'tnum'; }
 .terms-toggle { display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1rem; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; margin-bottom: 0.5rem; transition: border-color 200ms; }
 .terms-toggle:hover { border-color: var(--border-strong); }
 .terms-toggle h4 { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 0.82rem; color: var(--text-dim); flex: 1; }
@@ -67,7 +61,7 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
 .cancel-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.78rem; }
 .cancel-table th { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase; text-align: left; padding: 0.5rem 0.7rem; background: var(--surface-raised); color: var(--gold); border-bottom: 1px solid var(--border); }
 .cancel-table td { padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--border); color: var(--text-dim); }
-.sig-section { margin-top: 2rem; }
+.sig-section { margin-top: 2.5rem; }
 .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 1.5rem; }
 .sig-party h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.72rem; color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem; }
 .amg-signed { padding: 1.25rem; background: var(--field-bg); border: 1px solid var(--border); border-radius: 8px; }
@@ -83,10 +77,10 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
 .sig-clear { font-size: 0.72rem; color: var(--gold); cursor: pointer; font-family: 'Montserrat', sans-serif; font-weight: 600; background: none; border: none; padding: 0; }
 .sig-clear:hover { color: var(--gold-bright); }
 .consent-check { display: flex; align-items: flex-start; gap: 0.75rem; margin: 1.5rem 0; padding: 1rem 1.25rem; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 8px; }
-.consent-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--gold); }
+.consent-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--gold); flex-shrink: 0; }
 .consent-check label { font-size: 0.82rem; color: var(--text-dim); line-height: 1.5; }
 .submit-wrap { margin-top: 2rem; text-align: center; }
-.submit-btn { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em; padding: 0.9rem 2.5rem; background: var(--gold); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; transition: background 200ms, transform 100ms; }
+.submit-btn { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.04em; padding: 1rem 3rem; background: var(--gold); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; transition: background 200ms, transform 100ms; }
 .submit-btn:hover { background: var(--gold-bright); }
 .submit-btn:active { transform: scale(0.97); }
 .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -94,7 +88,6 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
 .submit-btn.loading::after { content: ''; position: absolute; top: 50%; left: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid var(--bg); border-top-color: transparent; border-radius: 50%; animation: spin 600ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .status-msg { display: none; text-align: center; padding: 1rem; border-radius: 8px; margin-top: 1rem; font-size: 0.85rem; font-weight: 500; }
-.status-msg.success { display: block; background: oklch(65% 0.15 145 / 0.1); border: 1px solid var(--success); color: var(--success); }
 .status-msg.error { display: block; background: oklch(60% 0.2 25 / 0.1); border: 1px solid var(--error); color: var(--error); }
 .doc-footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); text-align: center; font-size: 0.68rem; color: var(--text-muted); }
 .doc-footer span { color: var(--gold); font-weight: 600; }
@@ -103,102 +96,121 @@ body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; 
 .success-overlay h2 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--text); }
 .success-overlay p { color: var(--text-dim); max-width: 420px; line-height: 1.6; }
 .success-check { width: 64px; height: 64px; border-radius: 50%; background: oklch(65% 0.15 145 / 0.15); border: 2px solid var(--success); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-@media (max-width: 640px) { .page-wrapper { padding: 1.5rem 1.25rem; } .field-row, .field-row.triple { grid-template-columns: 1fr; } .checkbox-grid { grid-template-columns: 1fr; } .sig-grid { grid-template-columns: 1fr; gap: 1.5rem; } .doc-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; } .doc-header-text { text-align: left; } }
-@media print { body { background: #fff; color: #111; padding: 0; } .page-wrapper { background: #fff; box-shadow: none; border: none; padding: 0; max-width: none; } .terms-body { display: block !important; } .terms-toggle .arrow { display: none; } .submit-wrap, .sig-clear { display: none; } }
+.loading-overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; }
+.loading-overlay.visible { display: flex; }
+.loading-overlay p { color: var(--text-dim); font-size: 0.9rem; }
+.loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 800ms linear infinite; }
+@media (max-width: 640px) { .page-wrapper { padding: 1.5rem 1.25rem; } .detail-grid, .detail-grid.triple { grid-template-columns: 1fr; } .sig-grid { grid-template-columns: 1fr; gap: 1.5rem; } .doc-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; } .doc-header-text { text-align: left; } }
+@media print { body { background: #fff; color: #111; padding: 0; } .page-wrapper { background: #fff; box-shadow: none; border: none; padding: 0; max-width: none; } .terms-body { display: block !important; } .submit-wrap, .sig-clear { display: none; } }
 </style>
 </head>
 <body>
-<div class="page-wrapper">
-  <header class="doc-header">
-    <img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group">
-    <div class="doc-header-text"><h1>Service Agreement</h1><p>Sound. Presence. Atmosphere.</p></div>
-  </header>
-  <form id="agreementForm" novalidate>
-    <section class="section"><div class="section-label">Section 1</div><div class="section-title">Client Information</div>
-      <div class="field-row"><div class="field-group"><label for="clientName">Full Name *</label><input type="text" id="clientName" name="clientName" required></div><div class="field-group"><label for="organization">Organization</label><input type="text" id="organization" name="organization"></div></div>
-      <div class="field-row"><div class="field-group"><label for="clientEmail">Email Address *</label><input type="email" id="clientEmail" name="clientEmail" required></div><div class="field-group"><label for="clientPhone">Phone Number *</label><input type="tel" id="clientPhone" name="clientPhone" required></div></div>
-      <div class="field-row single"><div class="field-group"><label for="mailingAddress">Mailing Address</label><input type="text" id="mailingAddress" name="mailingAddress"></div></div>
-    </section>
-    <section class="section"><div class="section-label">Section 2</div><div class="section-title">Event Details</div>
-      <div class="field-row"><div class="field-group"><label for="eventName">Event Name *</label><input type="text" id="eventName" name="eventName" required></div><div class="field-group"><label for="eventType">Event Type *</label><select id="eventType" name="eventType" required><option value="">Select...</option><option value="Wedding">Wedding</option><option value="Corporate Event">Corporate Event</option><option value="Convention / Conference">Convention / Conference</option><option value="Private Party">Private Party</option><option value="Community Event">Community Event</option><option value="Concert / Show">Concert / Show</option><option value="Other">Other</option></select></div></div>
-      <div class="field-row triple"><div class="field-group"><label for="eventDate">Event Date *</label><input type="date" id="eventDate" name="eventDate" required></div><div class="field-group"><label for="startTime">Start Time *</label><input type="time" id="startTime" name="startTime" required></div><div class="field-group"><label for="endTime">End Time *</label><input type="time" id="endTime" name="endTime" required></div></div>
-      <div class="field-row"><div class="field-group"><label for="venueName">Venue Name *</label><input type="text" id="venueName" name="venueName" required></div><div class="field-group"><label for="venueAddress">Venue Address</label><input type="text" id="venueAddress" name="venueAddress"></div></div>
-      <div class="field-row"><div class="field-group"><label for="guestCount">Expected Guest Count</label><input type="number" id="guestCount" name="guestCount" min="1"></div><div class="field-group"><label for="indoorOutdoor">Indoor / Outdoor</label><select id="indoorOutdoor" name="indoorOutdoor"><option value="">Select...</option><option value="Indoor">Indoor</option><option value="Outdoor">Outdoor</option><option value="Both">Both</option></select></div></div>
-      <div class="field-row single"><div class="field-group"><label for="eventNotes">Additional Event Notes</label><textarea id="eventNotes" name="eventNotes" rows="3"></textarea></div></div>
-    </section>
-    <section class="section"><div class="section-label">Section 3</div><div class="section-title">Services Retained</div>
-      <div class="checkbox-grid"><div class="checkbox-item"><input type="checkbox" id="svc_dj" name="services" value="DJ / Sound Direction"><label for="svc_dj">DJ / Sound Direction</label></div><div class="checkbox-item"><input type="checkbox" id="svc_mc" name="services" value="MC / Event Hosting"><label for="svc_mc">MC / Event Hosting</label></div><div class="checkbox-item"><input type="checkbox" id="svc_mod" name="services" value="Moderation"><label for="svc_mod">Moderation</label></div><div class="checkbox-item"><input type="checkbox" id="svc_spoken" name="services" value="Spoken Word"><label for="svc_spoken">Spoken Word</label></div><div class="checkbox-item"><input type="checkbox" id="svc_speaker" name="services" value="Speaker / Keynote"><label for="svc_speaker">Speaker / Keynote</label></div><div class="checkbox-item"><input type="checkbox" id="svc_av" name="services" value="Audio / AV Production"><label for="svc_av">Audio / AV Production</label></div><div class="checkbox-item"><input type="checkbox" id="svc_playlist" name="services" value="Custom Playlist Curation"><label for="svc_playlist">Custom Playlist Curation</label></div><div class="checkbox-item"><input type="checkbox" id="svc_rental" name="services" value="Equipment Rental"><label for="svc_rental">Equipment Rental</label></div></div>
-      <div class="field-row single"><div class="field-group"><label for="serviceNotes">Service Notes / Special Requests</label><textarea id="serviceNotes" name="serviceNotes" rows="2"></textarea></div></div>
-    </section>
-    <section class="section"><div class="section-label">Section 4</div><div class="section-title">Compensation &amp; Payment</div>
-      <div class="field-row triple"><div class="field-group"><label for="totalFee">Total Fee *</label><input type="text" id="totalFee" name="totalFee" placeholder="$" required></div><div class="field-group"><label for="depositAmount">Deposit Amount *</label><input type="text" id="depositAmount" name="depositAmount" placeholder="$" required></div><div class="field-group"><label for="balanceDue">Balance Due</label><input type="text" id="balanceDue" name="balanceDue" placeholder="$" readonly></div></div>
-      <div class="field-row"><div class="field-group"><label for="depositDueDate">Deposit Due Date</label><input type="date" id="depositDueDate" name="depositDueDate"></div><div class="field-group"><label for="balanceDueDate">Balance Due Date</label><input type="date" id="balanceDueDate" name="balanceDueDate"></div></div>
-      <div class="field-row"><div class="field-group"><label for="bookingType">Booking Type</label><select id="bookingType" name="bookingType"><option value="">Select...</option><option value="Standard Booking (14+ days before event)">Standard (14+ days before event)</option><option value="Late Booking (within 14 days of event)">Late Booking (within 14 days)</option></select></div><div class="field-group"><label for="paymentMethod">Payment Method</label><select id="paymentMethod" name="paymentMethod"><option value="">Select...</option><option value="Credit / Debit Card">Credit / Debit Card</option><option value="ACH / Bank Transfer">ACH / Bank Transfer</option><option value="Zelle">Zelle</option><option value="Check">Check</option><option value="Other">Other</option></select></div></div>
-      <div style="margin-top: 1.25rem;"><div class="terms-toggle" onclick="toggleTerms(this)"><h4>Payment Terms</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Standard Booking (14+ days before event)</h4><p>A non-refundable deposit of 30% is due upon signing to secure the date. The remaining balance is due no later than 14 days before the event date.</p><h4>Late Booking (within 14 days of event)</h4><p>Late bookings require full payment at the time of signing. Late bookings are subject to the Late Booking Cancellation terms in Section 6.</p><h4>Additional Charges</h4><p>Extended hours, travel beyond 50 miles of Salt Lake City, and add-on services will be quoted separately. Day-of overtime is invoiced within 5 business days and due upon receipt.</p></div></div>
-    </section>
-    <section class="section"><div class="section-label">Section 5</div><div class="section-title">Terms &amp; Conditions</div>
-      <div class="terms-toggle" onclick="toggleTerms(this)"><h4>View Full Terms &amp; Conditions</h4><span class="arrow">&#9660;</span></div>
-      <div class="terms-body"><h4>Scope of Services</h4><p>Ampersound Media Group ("Provider") agrees to perform the services selected in Section 3 for the event in Section 2. Any changes must be agreed to in writing.</p><h4>Client Responsibilities</h4><p>Client shall provide accurate event details, timely venue access (minimum 90 minutes before start), adequate power supply, and a secure area for equipment. Client is responsible for venue permits or approvals.</p><h4>Timeline &amp; Communication</h4><p>A planning consultation will be scheduled at least 7 days prior (standard) or ASAP after signing (late bookings). Final timelines and playlists are due from Client 72 hours before the event.</p><h4>Equipment &amp; Technical</h4><p>Provider supplies all necessary equipment unless specified. Client assumes liability for damage caused by guests, venue conditions, or negligence.</p><h4>Intellectual Property</h4><p>Provider retains the right to use event content for portfolio purposes unless Client objects in writing prior. Custom materials remain Provider's IP.</p><h4>Limitation of Liability</h4><p>Provider's total liability shall not exceed the total fee paid. Provider is not liable for indirect or consequential damages.</p><h4>Indemnification</h4><p>Client agrees to indemnify Provider from claims arising from Client's event, venue conditions, or guest behavior.</p><h4>Governing Law</h4><p>Governed by Utah law. Disputes resolved through mediation first, venue in Salt Lake County.</p></div>
-    </section>
-    <section class="section"><div class="section-label">Section 6</div><div class="section-title">Cancellation Policy</div>
-      <div class="terms-toggle" onclick="toggleTerms(this)"><h4>View Cancellation Policy</h4><span class="arrow">&#9660;</span></div>
-      <div class="terms-body"><h4>Standard Booking Cancellations</h4><p>Written cancellation to contact@ampersoundmediagroup.com. Deposit is always non-refundable.</p><table class="cancel-table"><thead><tr><th>Notice Period</th><th>Refund</th><th>Retained</th></tr></thead><tbody><tr><td>60+ days</td><td>Full balance refunded</td><td>Deposit only</td></tr><tr><td>30-59 days</td><td>50% of total</td><td>50% of total</td></tr><tr><td>15-29 days</td><td>25% of total</td><td>75% of total</td></tr><tr><td>14 days or fewer</td><td>No refund</td><td>100% of total</td></tr></tbody></table><h4>Late Booking Cancellations</h4><p>Late bookings require full payment at signing and are subject to compressed cancellation terms:</p><ul><li><strong>Within 48 hours of signing:</strong> 50% refund.</li><li><strong>After 48 hours (or if event is less than 48 hours away):</strong> No refund.</li></ul><h4>Rescheduling</h4><p><strong>Standard:</strong> One reschedule with 30+ days notice, $150 admin fee, new date within 6 months.</p><p><strong>Late:</strong> Permitted with 72+ hours notice if available, $250 admin fee.</p><h4>Provider Cancellation</h4><p>Full refund of all fees. Reasonable efforts to secure qualified replacement at no cost.</p><h4>Force Majeure</h4><p>Neither party liable for circumstances beyond reasonable control. Good faith rescheduling; if impossible, full refund minus documented non-recoverable expenses.</p><h4>No-Show</h4><p>If event fails to proceed without written notice, no refund issued. Full fee retained.</p></div>
-    </section>
-    <section class="section sig-section"><div class="section-label">Section 7</div><div class="section-title">Acknowledgment &amp; Signatures</div>
-      <div class="consent-check"><input type="checkbox" id="agreeTerms" name="agreeTerms" required><label for="agreeTerms">I have read, understand, and agree to all terms in this Service Agreement including Payment (Section 4), Terms &amp; Conditions (Section 5), and Cancellation Policy (Section 6). This constitutes the entire agreement between both parties.</label></div>
-      <div class="sig-grid">
-        <div class="sig-party"><h4>Ampersound Media Group</h4><div class="amg-signed"><img src="https://lh3.googleusercontent.com/d/1d_IcL7IwP48HmtbeAb1C7sBulRsfoVJw" alt="Afia Chin-Roberts Signature" class="sig-image"><div class="sig-meta"><strong>Afia Chin-Roberts</strong><br>Founder &amp; Creative Director</div><div class="sig-date" id="amgSignDate">Signed: <span></span></div></div></div>
-        <div class="sig-party"><h4>Client Signature</h4><div class="sig-canvas-wrap" id="sigWrap"><canvas id="sigCanvas"></canvas><span class="sig-placeholder">Sign here</span></div><button type="button" class="sig-clear" onclick="clearSignature()">Clear signature</button><div style="margin-top: 1rem;"><div class="field-group" style="margin-bottom: 0.75rem;"><label for="sigName">Printed Name *</label><input type="text" id="sigName" name="sigName" required></div><div class="field-group"><label for="sigDate">Date *</label><input type="date" id="sigDate" name="sigDate" required></div></div></div>
-      </div>
-    </section>
-    <div class="submit-wrap"><button type="submit" class="submit-btn" id="submitBtn">Sign &amp; Submit Agreement</button><div class="status-msg" id="statusMsg"></div></div>
-  </form>
+<div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div><p>Loading your agreement...</p></div>
+<div class="page-wrapper" id="agreementPage" style="display:none;">
+  <header class="doc-header"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group"><div class="doc-header-text"><h1>Service Agreement</h1><p>Sound. Presence. Atmosphere.</p></div></header>
+  <section class="section"><div class="section-label">Section 1</div><div class="section-title">Client Information</div><div class="detail-grid"><div class="detail-item"><div class="label">Full Name</div><div class="value" id="dClientName"></div></div><div class="detail-item"><div class="label">Organization</div><div class="value" id="dOrganization"></div></div><div class="detail-item"><div class="label">Email</div><div class="value" id="dEmail"></div></div><div class="detail-item"><div class="label">Phone</div><div class="value" id="dPhone"></div></div></div></section>
+  <section class="section"><div class="section-label">Section 2</div><div class="section-title">Event Details</div><div class="detail-grid"><div class="detail-item"><div class="label">Event Name</div><div class="value" id="dEventName"></div></div><div class="detail-item"><div class="label">Event Type</div><div class="value" id="dEventType"></div></div><div class="detail-item"><div class="label">Event Date</div><div class="value" id="dEventDate"></div></div><div class="detail-item"><div class="label">Time</div><div class="value" id="dTime"></div></div><div class="detail-item"><div class="label">Venue</div><div class="value" id="dVenue"></div></div><div class="detail-item"><div class="label">Guest Count</div><div class="value" id="dGuests"></div></div></div></section>
+  <section class="section"><div class="section-label">Section 3</div><div class="section-title">Services Retained</div><div class="services-list" id="dServices"></div><div id="dServiceNotes" style="margin-top:1rem;font-size:0.85rem;color:var(--text-dim);"></div></section>
+  <section class="section"><div class="section-label">Section 4</div><div class="section-title">Compensation &amp; Payment</div><table class="comp-table"><tr><td>Total Fee</td><td id="dTotalFee"></td></tr><tr><td>Deposit (due <span id="dDepositDate">upon signing</span>)</td><td id="dDeposit"></td></tr><tr><td>Balance (due <span id="dBalanceDate">14 days before event</span>)</td><td id="dBalance"></td></tr><tr><td>Payment Method</td><td id="dPayment"></td></tr></table><div style="margin-top:1.25rem;"><div class="terms-toggle" onclick="toggleTerms(this)"><h4>Payment Terms</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Standard Booking (14+ days before event)</h4><p>A non-refundable deposit of 30% is due upon signing to secure the date. The remaining balance is due no later than 14 days before the event date.</p><h4>Late Booking (within 14 days of event)</h4><p>Late bookings require full payment at the time of signing.</p><h4>Additional Charges</h4><p>Extended hours, travel beyond 50 miles of Salt Lake City, and add-on services will be quoted separately. Day-of overtime is invoiced within 5 business days and due upon receipt.</p></div></div></section>
+  <section class="section"><div class="section-label">Section 5</div><div class="section-title">Terms &amp; Conditions</div><div class="terms-toggle" onclick="toggleTerms(this)"><h4>View Full Terms &amp; Conditions</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Scope of Services</h4><p>Ampersound Media Group ("Provider") agrees to perform the services listed in Section 3 for the event in Section 2. Any changes must be agreed to in writing.</p><h4>Client Responsibilities</h4><p>Client shall provide accurate event details, timely venue access (minimum 90 minutes before start), adequate power supply, and a secure area for equipment.</p><h4>Timeline &amp; Communication</h4><p>A planning consultation will be scheduled at least 7 days prior. Final timelines and playlists are due from Client 72 hours before the event.</p><h4>Equipment &amp; Technical</h4><p>Provider supplies all necessary equipment unless specified. Client assumes liability for damage caused by guests, venue conditions, or negligence.</p><h4>Intellectual Property</h4><p>Provider retains the right to use event content for portfolio purposes unless Client objects in writing prior.</p><h4>Limitation of Liability</h4><p>Provider's total liability shall not exceed the total fee paid. Provider is not liable for indirect or consequential damages.</p><h4>Indemnification</h4><p>Client agrees to indemnify Provider from claims arising from Client's event, venue conditions, or guest behavior.</p><h4>Governing Law</h4><p>Governed by Utah law. Disputes resolved through mediation first, venue in Salt Lake County.</p></div></section>
+  <section class="section"><div class="section-label">Section 6</div><div class="section-title">Cancellation Policy</div><div class="terms-toggle" onclick="toggleTerms(this)"><h4>View Cancellation Policy</h4><span class="arrow">&#9660;</span></div><div class="terms-body"><h4>Standard Booking Cancellations</h4><p>Written cancellation to contact@ampersoundmediagroup.com. Deposit is always non-refundable.</p><table class="cancel-table"><thead><tr><th>Notice Period</th><th>Refund</th><th>Retained</th></tr></thead><tbody><tr><td>60+ days</td><td>Full balance refunded</td><td>Deposit only</td></tr><tr><td>30-59 days</td><td>50% of total</td><td>50% of total</td></tr><tr><td>15-29 days</td><td>25% of total</td><td>75% of total</td></tr><tr><td>14 days or fewer</td><td>No refund</td><td>100% of total</td></tr></tbody></table><h4>Rescheduling</h4><p><strong>Standard:</strong> One reschedule with 30+ days notice, $150 admin fee, new date within 6 months.</p><h4>Provider Cancellation</h4><p>Full refund of all fees. Reasonable efforts to secure qualified replacement at no cost.</p><h4>Force Majeure</h4><p>Neither party liable for circumstances beyond reasonable control. Good faith rescheduling; if impossible, full refund minus documented non-recoverable expenses.</p></div></section>
+  <section class="section sig-section"><div class="section-label">Section 7</div><div class="section-title">Acknowledgment &amp; Signatures</div><div class="consent-check"><input type="checkbox" id="agreeTerms" required><label for="agreeTerms">I, <strong id="dSignerName"></strong>, have read, understand, and agree to all terms in this Service Agreement including Payment (Section 4), Terms &amp; Conditions (Section 5), and Cancellation Policy (Section 6). This constitutes the entire agreement between both parties.</label></div><div class="sig-grid"><div class="sig-party"><h4>Ampersound Media Group</h4><div class="amg-signed"><img src="https://lh3.googleusercontent.com/d/1d_IcL7IwP48HmtbeAb1C7sBulRsfoVJw" alt="Afia Chin-Roberts Signature" class="sig-image"><div class="sig-meta"><strong>Afia Chin-Roberts</strong><br>Founder &amp; Creative Director</div><div class="sig-date" id="amgSignDate">Signed: <span></span></div></div></div><div class="sig-party"><h4>Client Signature</h4><div class="sig-canvas-wrap" id="sigWrap"><canvas id="sigCanvas"></canvas><span class="sig-placeholder">Sign here</span></div><button type="button" class="sig-clear" onclick="clearSignature()">Clear signature</button></div></div></section>
+  <div class="submit-wrap"><button class="submit-btn" id="submitBtn" onclick="submitAgreement()">Sign &amp; Submit Agreement</button><div class="status-msg" id="statusMsg"></div></div>
   <footer class="doc-footer"><span>Ampersound Media Group</span> &middot; North Salt Lake, Utah &middot; contact@ampersoundmediagroup.com<br>This agreement is valid for 30 days from the date of issue.</footer>
 </div>
-<div class="success-overlay" id="successOverlay"><div class="success-check">&#10003;</div><h2>Agreement Signed</h2><p>Your signed agreement has been submitted successfully. A copy has been sent to your email for your records. We'll be in touch soon to begin planning.</p><p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;">You may close this window.</p></div>
+<div class="success-overlay" id="successOverlay"><div class="success-check">&#10003;</div><h2>Agreement Signed</h2><p>Your signed agreement has been submitted successfully. A confirmation has been sent to your email. We'll be in touch soon to begin planning your event.</p></div>
 <script>
-const NETLIFY_FUNCTION_URL = '/.netlify/functions/submit-agreement';
-(function prefill() {
-  const params = new URLSearchParams(window.location.search);
-  const map = { client:'clientName',org:'organization',email:'clientEmail',phone:'clientPhone',address:'mailingAddress',event:'eventName',eventType:'eventType',date:'eventDate',start:'startTime',end:'endTime',venue:'venueName',venueAddress:'venueAddress',guests:'guestCount',indoor:'indoorOutdoor',notes:'eventNotes',fee:'totalFee',deposit:'depositAmount',balance:'balanceDue',depositDue:'depositDueDate',balanceDue:'balanceDueDate',booking:'bookingType',payment:'paymentMethod',serviceNotes:'serviceNotes' };
-  for (const [param, fieldId] of Object.entries(map)) { const v = params.get(param); if (v) { const el = document.getElementById(fieldId); if (el) el.value = decodeURIComponent(v); } }
-  const services = params.get('services');
-  if (services) services.split(',').map(s => s.trim()).forEach(svc => { document.querySelectorAll('input[name="services"]').forEach(cb => { if (cb.value === svc) cb.checked = true; }); });
-  const amgDate = params.get('issued') || new Date().toISOString().split('T')[0];
-  document.querySelector('#amgSignDate span').textContent = amgDate;
-  if (!document.getElementById('sigDate').value) document.getElementById('sigDate').value = new Date().toISOString().split('T')[0];
-  const cn = document.getElementById('clientName').value;
-  if (cn && !document.getElementById('sigName').value) document.getElementById('sigName').value = cn;
+const LOAD_URL='/.netlify/functions/load-agreement';
+const SUBMIT_URL='/.netlify/functions/submit-agreement';
+let agreementData=null;
+
+(async function init(){
+  const params=new URLSearchParams(window.location.search);
+  const token=params.get('token');
+  if(!token){document.getElementById('loadingOverlay').innerHTML='<p style="color:var(--error)">No agreement token provided.</p>';document.getElementById('loadingOverlay').classList.add('visible');return;}
+  document.getElementById('loadingOverlay').classList.add('visible');
+  try{
+    const res=await fetch(LOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+    if(!res.ok)throw new Error('Could not load agreement');
+    agreementData=await res.json();
+    agreementData.token=token;
+    if(agreementData.status==='signed'&&!params.get('view')){
+      document.getElementById('loadingOverlay').classList.remove('visible');
+      document.getElementById('successOverlay').classList.add('visible');
+      document.querySelector('.success-overlay h2').textContent='Already Signed';
+      document.querySelector('.success-overlay p').textContent='This agreement has already been signed. A confirmation was sent to your email.';
+      return;
+    }
+    renderAgreement(agreementData);
+    document.getElementById('loadingOverlay').classList.remove('visible');
+    document.getElementById('agreementPage').style.display='block';
+  }catch(err){
+    document.getElementById('loadingOverlay').innerHTML='<p style="color:var(--error)">Unable to load agreement. Please contact us at contact@ampersoundmediagroup.com.</p>';
+  }
 })();
-const canvas = document.getElementById('sigCanvas'), ctx = canvas.getContext('2d'), sigWrap = document.getElementById('sigWrap');
-let isDrawing = false, hasSignature = false;
-function resizeCanvas() { const r = canvas.getBoundingClientRect(); canvas.width = r.width * devicePixelRatio; canvas.height = r.height * devicePixelRatio; ctx.scale(devicePixelRatio, devicePixelRatio); ctx.strokeStyle = '#f0ebe4'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; }
-resizeCanvas(); window.addEventListener('resize', resizeCanvas);
-function getPos(e) { const r = canvas.getBoundingClientRect(), t = e.touches ? e.touches[0] : e; return { x: t.clientX - r.left, y: t.clientY - r.top }; }
-canvas.addEventListener('mousedown', e => { isDrawing = true; ctx.beginPath(); ctx.moveTo(getPos(e).x, getPos(e).y); sigWrap.classList.add('active'); });
-canvas.addEventListener('mousemove', e => { if (!isDrawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); hasSignature = true; sigWrap.classList.add('has-signature'); });
-canvas.addEventListener('mouseup', () => { isDrawing = false; sigWrap.classList.remove('active'); });
-canvas.addEventListener('mouseleave', () => { isDrawing = false; sigWrap.classList.remove('active'); });
-canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; ctx.beginPath(); ctx.moveTo(getPos(e).x, getPos(e).y); sigWrap.classList.add('active'); }, { passive: false });
-canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!isDrawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); hasSignature = true; sigWrap.classList.add('has-signature'); }, { passive: false });
-canvas.addEventListener('touchend', () => { isDrawing = false; sigWrap.classList.remove('active'); });
-function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); hasSignature = false; sigWrap.classList.remove('has-signature'); }
-function getSignatureData() { return hasSignature ? canvas.toDataURL('image/png') : null; }
-function toggleTerms(el) { el.classList.toggle('open'); el.nextElementSibling.classList.toggle('open'); }
-document.getElementById('totalFee').addEventListener('input', calcBalance);
-document.getElementById('depositAmount').addEventListener('input', calcBalance);
-function calcBalance() { const t = parseFloat(document.getElementById('totalFee').value.replace(/[^0-9.]/g,''))||0, d = parseFloat(document.getElementById('depositAmount').value.replace(/[^0-9.]/g,''))||0; if (t&&d) document.getElementById('balanceDue').value = '$'+(t-d).toFixed(2); }
-function validateForm() { let v = true; document.querySelectorAll('[required]').forEach(el => { el.classList.remove('invalid'); if (!el.value.trim()) { el.classList.add('invalid'); v = false; } }); if (!document.getElementById('agreeTerms').checked) v = false; if (!hasSignature) { sigWrap.style.borderColor = 'var(--error)'; v = false; } else { sigWrap.style.borderColor = ''; } return v; }
-document.getElementById('agreementForm').addEventListener('submit', async function(e) {
-  e.preventDefault(); if (!validateForm()) { showStatus('Please complete all required fields, agree to the terms, and sign the agreement.','error'); return; }
-  const btn = document.getElementById('submitBtn'); btn.classList.add('loading'); btn.disabled = true; hideStatus();
-  const services = []; document.querySelectorAll('input[name="services"]:checked').forEach(cb => services.push(cb.value));
-  const pc = v => v ? parseFloat(v.replace(/[^0-9.]/g,''))||null : null;
-  const payload = { clientName:document.getElementById('clientName').value, organization:document.getElementById('organization').value, clientEmail:document.getElementById('clientEmail').value, clientPhone:document.getElementById('clientPhone').value, mailingAddress:document.getElementById('mailingAddress').value, eventName:document.getElementById('eventName').value, eventType:document.getElementById('eventType').value, eventDate:document.getElementById('eventDate').value, startTime:document.getElementById('startTime').value, endTime:document.getElementById('endTime').value, venueName:document.getElementById('venueName').value, venueAddress:document.getElementById('venueAddress').value, guestCount:parseInt(document.getElementById('guestCount').value)||null, indoorOutdoor:document.getElementById('indoorOutdoor').value, eventNotes:document.getElementById('eventNotes').value, services, serviceNotes:document.getElementById('serviceNotes').value, totalFee:pc(document.getElementById('totalFee').value), depositAmount:pc(document.getElementById('depositAmount').value), balanceDue:pc(document.getElementById('balanceDue').value), depositDueDate:document.getElementById('depositDueDate').value, balanceDueDate:document.getElementById('balanceDueDate').value, bookingType:document.getElementById('bookingType').value, paymentMethod:document.getElementById('paymentMethod').value, signedName:document.getElementById('sigName').value, signedDate:document.getElementById('sigDate').value, signatureImage:getSignatureData(), agreedToTerms:document.getElementById('agreeTerms').checked, sendCopyToClient:true };
-  try { const res = await fetch(NETLIFY_FUNCTION_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); if (!res.ok) throw new Error((await res.json().catch(()=>({}))).message||'Submission failed'); document.getElementById('successOverlay').classList.add('visible'); } catch(err) { showStatus('Something went wrong. Please try again or contact us at contact@ampersoundmediagroup.com.','error'); btn.classList.remove('loading'); btn.disabled = false; }
-});
-function showStatus(msg,type) { const el = document.getElementById('statusMsg'); el.textContent = msg; el.className = 'status-msg '+type; }
-function hideStatus() { document.getElementById('statusMsg').className = 'status-msg'; }
+
+function renderAgreement(d){
+  setText('dClientName',d.clientName);
+  setText('dOrganization',d.organization);
+  setText('dEmail',d.clientEmail);
+  setText('dPhone',d.clientPhone);
+  setText('dEventName',d.eventName);
+  setText('dEventType',d.eventType);
+  setText('dEventDate',d.eventDate);
+  setText('dTime',[d.startTime,d.endTime].filter(Boolean).join(' - '));
+  setText('dVenue',[d.venueName,d.venueAddress].filter(Boolean).join(', '));
+  setText('dGuests',d.guestCount);
+  const svcContainer=document.getElementById('dServices');
+  const services=Array.isArray(d.services)?d.services:(d.services||'').split(',').map(s=>s.trim()).filter(Boolean);
+  svcContainer.innerHTML=services.map(s=>`<span class="service-tag">${s}</span>`).join('');
+  if(d.serviceNotes)document.getElementById('dServiceNotes').textContent=d.serviceNotes;
+  setText('dTotalFee',d.totalFee?'$'+Number(d.totalFee).toLocaleString():'');
+  setText('dDeposit',d.depositAmount?'$'+Number(d.depositAmount).toLocaleString():'');
+  setText('dBalance',d.balanceDue?'$'+Number(d.balanceDue).toLocaleString():'');
+  if(d.depositDueDate)setText('dDepositDate',d.depositDueDate);
+  if(d.balanceDueDate)setText('dBalanceDate',d.balanceDueDate);
+  setText('dPayment',d.paymentMethod);
+  document.getElementById('dSignerName').textContent=d.clientName||'Client';
+  const issued=new URLSearchParams(window.location.search).get('issued')||new Date().toISOString().split('T')[0];
+  document.querySelector('#amgSignDate span').textContent=issued;
+}
+
+function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val||'';if(el&&!val)el.classList.add('empty');}
+
+const canvas=document.getElementById('sigCanvas'),ctx=canvas.getContext('2d'),sigWrap=document.getElementById('sigWrap');
+let isDrawing=false,hasSignature=false;
+function resizeCanvas(){const r=canvas.getBoundingClientRect();canvas.width=r.width*devicePixelRatio;canvas.height=r.height*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);ctx.strokeStyle='#f0ebe4';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';}
+resizeCanvas();window.addEventListener('resize',resizeCanvas);
+function getPos(e){const r=canvas.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top};}
+canvas.addEventListener('mousedown',e=>{isDrawing=true;ctx.beginPath();ctx.moveTo(getPos(e).x,getPos(e).y);sigWrap.classList.add('active');});
+canvas.addEventListener('mousemove',e=>{if(!isDrawing)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true;sigWrap.classList.add('has-signature');});
+canvas.addEventListener('mouseup',()=>{isDrawing=false;sigWrap.classList.remove('active');});
+canvas.addEventListener('mouseleave',()=>{isDrawing=false;sigWrap.classList.remove('active');});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();isDrawing=true;ctx.beginPath();ctx.moveTo(getPos(e).x,getPos(e).y);sigWrap.classList.add('active');},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!isDrawing)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSignature=true;sigWrap.classList.add('has-signature');},{passive:false});
+canvas.addEventListener('touchend',()=>{isDrawing=false;sigWrap.classList.remove('active');});
+function clearSignature(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;sigWrap.classList.remove('has-signature');}
+function toggleTerms(el){el.classList.toggle('open');el.nextElementSibling.classList.toggle('open');}
+
+async function submitAgreement(){
+  if(!document.getElementById('agreeTerms').checked){showStatus('Please agree to the terms before signing.');return;}
+  if(!hasSignature){sigWrap.style.borderColor='var(--error)';showStatus('Please sign the agreement above.');return;}
+  sigWrap.style.borderColor='';
+  const btn=document.getElementById('submitBtn');btn.classList.add('loading');btn.disabled=true;hideStatus();
+  const d=agreementData;
+  const payload={...d,signedName:d.clientName,signedDate:new Date().toISOString().split('T')[0],signatureImage:canvas.toDataURL('image/png'),agreedToTerms:true,sendCopyToClient:true,token:d.token};
+  try{
+    const res=await fetch(SUBMIT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!res.ok)throw new Error('Submission failed');
+    document.getElementById('successOverlay').classList.add('visible');
+  }catch(err){
+    showStatus('Something went wrong. Please try again or contact us at contact@ampersoundmediagroup.com.');
+    btn.classList.remove('loading');btn.disabled=false;
+  }
+}
+
+function showStatus(msg){const el=document.getElementById('statusMsg');el.textContent=msg;el.className='status-msg error';}
+function hideStatus(){document.getElementById('statusMsg').className='status-msg';}
 </script>
 </body>
 </html>
