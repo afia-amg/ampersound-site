@@ -1,6 +1,6 @@
 const CLICKUP_API_TOKEN = 'pk_106271316_6VJ0QV1GZIQ5ONRMYT1U9H0SVVBG8NVU';
 const LIST_ID = '4027438415107101193';
-const SITE_URL = process.env.SITE_URL || 'https://ampersoundmediagroup.com';
+const SITE_URL = 'https://ampersoundmediagroup.com';
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
@@ -12,34 +12,35 @@ exports.handler = async (event) => {
   if (!email || !email.includes('@')) return { statusCode:400, headers, body:JSON.stringify({message:'Valid email required'}) };
 
   try {
-    const url = `https://api.clickup.com/api/v2/list/${LIST_ID}/task?include_closed=true&subtasks=false&custom_fields=[]`;
-    const res = await fetch(url, { headers:{'Authorization': CLICKUP_API_TOKEN} });
+    const res = await fetch(`https://api.clickup.com/api/v2/list/${LIST_ID}/task?archived=false&include_closed=true&subtasks=false&page=0`, {
+      method: 'GET',
+      headers: { 'Authorization': CLICKUP_API_TOKEN, 'Content-Type': 'application/json' },
+    });
 
     if (!res.ok) {
-      const errText = await res.text();
-      console.error('ClickUp API error:', res.status, errText);
-      return { statusCode:502, headers, body:JSON.stringify({message:'Unable to retrieve agreements', status: res.status, detail: errText}) };
+      const errBody = await res.text();
+      return { statusCode: res.status, headers, body: JSON.stringify({ message: 'ClickUp API failed', httpStatus: res.status, error: errBody }) };
     }
 
     const data = await res.json();
-    console.log('Total tasks found:', (data.tasks||[]).length);
 
-    const tasks = (data.tasks||[]).filter(task => {
+    if (!data.tasks) {
+      return { statusCode: 200, headers, body: JSON.stringify({ agreements: [], debug: 'No tasks property in response', keys: Object.keys(data) }) };
+    }
+
+    const tasks = data.tasks.filter(task => {
       const emailField = (task.custom_fields||[]).find(f => f.id === CF.clientEmail);
       if (!emailField) return false;
       let fieldValue = '';
       if (typeof emailField.value === 'string') fieldValue = emailField.value;
-      else if (emailField.value && typeof emailField.value === 'object' && emailField.value.email) fieldValue = emailField.value.email;
+      else if (emailField.value && typeof emailField.value === 'object') fieldValue = emailField.value.email || JSON.stringify(emailField.value);
       else if (emailField.value) fieldValue = String(emailField.value);
       return fieldValue.toLowerCase() === email;
     });
 
-    console.log('Matching tasks for', email, ':', tasks.length);
-
-    return { statusCode:200, headers, body:JSON.stringify({agreements:formatAgreements(tasks)}) };
+    return { statusCode: 200, headers, body: JSON.stringify({ agreements: formatAgreements(tasks), totalInList: data.tasks.length, matched: tasks.length }) };
   } catch(err) {
-    console.error('Lookup error:', err.message);
-    return { statusCode:500, headers, body:JSON.stringify({message:'Internal error', detail: err.message}) };
+    return { statusCode: 500, headers, body: JSON.stringify({ message: 'Function crashed', error: err.message, stack: err.stack }) };
   }
 };
 
@@ -48,30 +49,20 @@ function formatAgreements(tasks) {
     const getField = (id) => {
       const f = (task.custom_fields||[]).find(cf => cf.id === id);
       if (!f || f.value === null || f.value === undefined) return null;
-      if (f.type === 'drop_down') {
-        if (f.type_config && f.type_config.options && typeof f.value === 'number') {
-          const opt = f.type_config.options.find(o => o.orderindex === f.value);
-          return opt ? opt.name : null;
-        }
-        return null;
+      if (f.type === 'drop_down' && f.type_config && f.type_config.options && typeof f.value === 'number') {
+        const opt = f.type_config.options.find(o => o.orderindex === f.value);
+        return opt ? opt.name : null;
       }
-      if (f.type === 'labels' && Array.isArray(f.value)) {
-        return f.value.map(v => typeof v === 'string' ? v : (v.label || v.name || String(v))).join(', ');
-      }
-      if (f.type === 'date' && f.value) {
-        try { return new Date(Number(f.value)).toISOString().split('T')[0]; } catch { return null; }
-      }
-      if (f.type === 'currency') {
-        const num = typeof f.value === 'number' ? f.value : parseFloat(f.value);
-        return isNaN(num) ? null : num;
-      }
+      if (f.type === 'labels' && Array.isArray(f.value)) return f.value.map(v => typeof v === 'string' ? v : (v.label || v.name || '')).join(', ');
+      if (f.type === 'date' && f.value) { try { return new Date(Number(f.value)).toISOString().split('T')[0]; } catch { return null; } }
+      if (f.type === 'currency') { const n = typeof f.value === 'number' ? f.value : parseFloat(f.value); return isNaN(n) ? null : n; }
       if (typeof f.value === 'string') return f.value;
       if (typeof f.value === 'number') return f.value;
       return null;
     };
 
-    const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
     const statusType = task.status ? (task.status.type || '') : '';
+    const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
     const isSigned = statusType === 'done' || statusType === 'closed' || statusName === 'complete' || statusName === 'closed';
     const status = isSigned ? 'signed' : 'pending';
 
@@ -79,6 +70,6 @@ function formatAgreements(tasks) {
     if (status === 'pending') actions += `<a href="${SITE_URL}/agreement/sign?token=${task.id}">Sign Agreement</a>`;
     actions += `<a href="${SITE_URL}/agreement/sign?token=${task.id}&view=true">View Agreement</a>`;
 
-    return { id:task.id, eventName:getField(CF.eventName)||task.name.split('|')[1]?.trim()||task.name, eventDate:getField(CF.eventDate)||'TBD', eventType:getField(CF.eventType), venue:getField(CF.venueName), services:getField(CF.services), totalFee:getField(CF.totalFee), deposit:getField(CF.depositAmount), status, actions };
+    return { id: task.id, eventName: getField(CF.eventName) || task.name, eventDate: getField(CF.eventDate) || 'TBD', eventType: getField(CF.eventType), venue: getField(CF.venueName), services: getField(CF.services), totalFee: getField(CF.totalFee), deposit: getField(CF.depositAmount), status, actions };
   });
 }
