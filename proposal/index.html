@@ -6,88 +6,136 @@
 <title>Proposal | Ampersound Media Group</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: oklch(13% 0.01 250);
-  --surface: oklch(16% 0.008 250);
-  --surface-raised: oklch(19% 0.008 250);
-  --border: oklch(35% 0.02 70 / 0.2);
-  --border-strong: oklch(55% 0.08 70 / 0.35);
-  --text: oklch(94% 0.008 70);
-  --text-dim: oklch(78% 0.008 70);
-  --text-muted: oklch(55% 0.01 70);
-  --gold: oklch(72% 0.1 70);
-  --gold-bright: oklch(80% 0.1 70);
-  --gold-dim: oklch(72% 0.1 70 / 0.08);
-  --violet: oklch(52% 0.2 280);
-  --field-bg: oklch(14% 0.008 250);
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Open Sans', sans-serif; font-size: 15px; line-height: 1.6; color: var(--text); background: var(--bg); padding: 2rem 1rem 4rem; -webkit-font-smoothing: antialiased; }
-.proposal { max-width: 720px; margin: 0 auto; }
-.proposal-header { display: flex; align-items: center; justify-content: space-between; padding: 2.5rem 3rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 2rem; }
-.proposal-header img { height: 38px; }
-.proposal-header-right { text-align: right; }
-.proposal-header-right .tag { font-family: 'Montserrat', sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet); }
-.proposal-header-right .date { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
-.proposal-hero { padding: 3.5rem 3rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 2rem; position: relative; overflow: hidden; }
-.proposal-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), var(--violet), var(--gold)); opacity: 0.6; }
-.proposal-hero .prepared-for { font-family: 'Montserrat', sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem; }
-.proposal-hero h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: clamp(1.8rem, 4vw, 2.4rem); letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 0.5rem; }
-.proposal-hero .event-line { font-size: 1rem; color: var(--text-dim); font-weight: 400; }
-.info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 2rem; }
-.info-cell { padding: 1.5rem 1.75rem; background: var(--surface); }
-.info-cell .cell-label { font-family: 'Montserrat', sans-serif; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem; }
-.info-cell .cell-value { font-size: 0.92rem; color: var(--text); font-weight: 500; }
-.services-block { padding: 2.5rem 3rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 2rem; }
-.services-block h2 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--text); margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
-.service-row { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
-.service-row:last-child { border-bottom: none; }
-.service-row .svc-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--gold-dim); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.7rem; color: var(--gold); }
-.service-row .svc-content { flex: 1; }
-.service-row .svc-name { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.88rem; color: var(--text); margin-bottom: 0.2rem; }
-.service-row .svc-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.5; }
-.investment-block { padding: 2.5rem 3rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 2rem; }
-.investment-block h2 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--text); margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
-.invest-table { width: 100%; border-collapse: collapse; }
-.invest-table td { padding: 0.85rem 0; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
-.invest-table td:first-child { color: var(--text-dim); }
-.invest-table td:last-child { text-align: right; font-weight: 600; color: var(--text); font-feature-settings: 'tnum'; }
-.invest-table tr.total td { border-top: 2px solid var(--gold); border-bottom: none; padding-top: 1.25rem; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.15rem; color: var(--text); }
-.invest-table tr.total td:last-child { color: var(--gold); }
-.payment-note { margin-top: 1.25rem; padding: 1rem 1.25rem; background: var(--field-bg); border-radius: 8px; font-size: 0.78rem; color: var(--text-dim); line-height: 1.6; }
-.cta-block { padding: 3rem; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; text-align: center; margin-bottom: 2rem; }
-.cta-block h2 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.25rem; color: var(--text); margin-bottom: 0.75rem; }
-.cta-block p { color: var(--text-dim); font-size: 0.88rem; margin-bottom: 2rem; max-width: 420px; margin-left: auto; margin-right: auto; }
-.cta-btn { display: inline-block; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.04em; padding: 1.1rem 3rem; background: var(--gold); color: var(--bg); border-radius: 8px; text-decoration: none; transition: background 200ms, transform 100ms; }
-.cta-btn:hover { background: var(--gold-bright); transform: translateY(-2px); }
-.cta-btn:active { transform: scale(0.97); }
-.cta-sub { margin-top: 1rem; font-size: 0.72rem; color: var(--text-muted); }
-.proposal-footer { text-align: center; padding-top: 1rem; font-size: 0.68rem; color: var(--text-muted); }
-.proposal-footer span { color: var(--gold); font-weight: 600; }
-@media (max-width: 640px) { .proposal-header, .proposal-hero, .services-block, .investment-block, .cta-block { padding: 1.5rem 1.25rem; } .proposal-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; } .proposal-header-right { text-align: left; } .info-grid { grid-template-columns: 1fr; } .proposal-hero h1 { font-size: 1.6rem; } }
-@media print { body { background: #fff; color: #111; padding: 0; } .proposal-header, .proposal-hero, .services-block, .investment-block, .cta-block, .info-cell { background: #fff; border-color: #ddd; } .cta-btn { background: #333; color: #fff; } }
+:root{--bg:oklch(13% 0.01 250);--surface:oklch(16% 0.008 250);--surface-raised:oklch(19% 0.008 250);--border:oklch(35% 0.02 70/0.2);--border-strong:oklch(55% 0.08 70/0.35);--text:oklch(94% 0.008 70);--text-dim:oklch(78% 0.008 70);--text-muted:oklch(55% 0.01 70);--gold:oklch(72% 0.1 70);--gold-bright:oklch(80% 0.1 70);--gold-dim:oklch(72% 0.1 70/0.08);--violet:oklch(52% 0.2 280);--field-bg:oklch(14% 0.008 250)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var(--text);background:var(--bg);padding:2rem 1rem 4rem;-webkit-font-smoothing:antialiased}
+.proposal{max-width:720px;margin:0 auto}
+.proposal-header{display:flex;align-items:center;justify-content:space-between;padding:2.5rem 3rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:2rem}
+.proposal-header img{height:38px}
+.proposal-header-right{text-align:right}
+.proposal-header-right .tag{font-family:'Montserrat',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--violet)}
+.proposal-header-right .date{font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem}
+.proposal-hero{padding:3.5rem 3rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:2rem;position:relative;overflow:hidden}
+.proposal-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--violet),var(--gold));opacity:0.6}
+.proposal-hero .prepared-for{font-family:'Montserrat',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.75rem}
+.proposal-hero h1{font-family:'Montserrat',sans-serif;font-weight:800;font-size:clamp(1.8rem,4vw,2.4rem);letter-spacing:-0.03em;line-height:1.15;margin-bottom:0.5rem}
+.proposal-hero .event-line{font-size:1rem;color:var(--text-dim);font-weight:400}
+.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:2rem}
+.info-cell{padding:1.5rem 1.75rem;background:var(--surface)}
+.info-cell .cell-label{font-family:'Montserrat',sans-serif;font-size:0.58rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.35rem}
+.info-cell .cell-value{font-size:0.92rem;color:var(--text);font-weight:500}
+.services-block{padding:2.5rem 3rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:2rem}
+.services-block h2{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text);margin-bottom:1.5rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)}
+.service-row{display:flex;align-items:flex-start;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--border)}
+.service-row:last-child{border-bottom:none}
+.service-row .svc-icon{width:36px;height:36px;border-radius:8px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.7rem;color:var(--gold)}
+.service-row .svc-content{flex:1}
+.service-row .svc-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.88rem;color:var(--text);margin-bottom:0.2rem}
+.service-row .svc-desc{font-size:0.8rem;color:var(--text-dim);line-height:1.5}
+.investment-block{padding:2.5rem 3rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:2rem}
+.investment-block h2{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text);margin-bottom:1.5rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)}
+.invest-table{width:100%;border-collapse:collapse}
+.invest-table td{padding:0.85rem 0;font-size:0.9rem;border-bottom:1px solid var(--border)}
+.invest-table td:first-child{color:var(--text-dim)}
+.invest-table td:last-child{text-align:right;font-weight:600;color:var(--text);font-feature-settings:'tnum'}
+.invest-table tr.total td{border-top:2px solid var(--gold);border-bottom:none;padding-top:1.25rem;font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.15rem;color:var(--text)}
+.invest-table tr.total td:last-child{color:var(--gold)}
+.payment-note{margin-top:1.25rem;padding:1rem 1.25rem;background:var(--field-bg);border-radius:8px;font-size:0.78rem;color:var(--text-dim);line-height:1.6}
+.cta-block{padding:3rem;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;text-align:center;margin-bottom:2rem}
+.cta-block h2{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.25rem;color:var(--text);margin-bottom:0.75rem}
+.cta-block p{color:var(--text-dim);font-size:0.88rem;margin-bottom:2rem;max-width:420px;margin-left:auto;margin-right:auto}
+.cta-btn{display:inline-block;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.9rem;letter-spacing:0.04em;padding:1.1rem 3rem;background:var(--gold);color:var(--bg);border-radius:8px;text-decoration:none;transition:background 200ms,transform 100ms}
+.cta-btn:hover{background:var(--gold-bright);transform:translateY(-2px)}
+.cta-btn:active{transform:scale(0.97)}
+.cta-sub{margin-top:1rem;font-size:0.72rem;color:var(--text-muted)}
+.proposal-footer{text-align:center;padding-top:1rem;font-size:0.68rem;color:var(--text-muted)}
+.proposal-footer span{color:var(--gold);font-weight:600}
+.loading-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+.loading-overlay.visible{display:flex}
+.loading-overlay p{color:var(--text-dim);font-size:0.9rem}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 800ms linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:640px){.proposal-header,.proposal-hero,.services-block,.investment-block,.cta-block{padding:1.5rem 1.25rem}.proposal-header{flex-direction:column;align-items:flex-start;gap:0.75rem}.proposal-header-right{text-align:left}.info-grid{grid-template-columns:1fr}.proposal-hero h1{font-size:1.6rem}}
+@media print{body{background:#fff;color:#111;padding:0}.proposal-header,.proposal-hero,.services-block,.investment-block,.cta-block,.info-cell{background:#fff;border-color:#ddd}}
 </style>
 </head>
 <body>
-<div class="proposal">
-  <header class="proposal-header"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group"><div class="proposal-header-right"><div class="tag">Proposal</div><div class="date" id="proposalDate">July 20, 2026</div></div></header>
-  <section class="proposal-hero"><div class="prepared-for">Prepared For</div><h1 id="heroClient">Addy &amp; Zach</h1><div class="event-line" id="heroEvent">Wedding Celebration &middot; August 5, 2026</div></section>
-  <div class="info-grid"><div class="info-cell"><div class="cell-label">Event Date</div><div class="cell-value" id="infoDate">August 5, 2026</div></div><div class="info-cell"><div class="cell-label">Venue</div><div class="cell-value" id="infoVenue">Local Community Hall</div></div><div class="info-cell"><div class="cell-label">Guest Count</div><div class="cell-value" id="infoGuests">100-199</div></div><div class="info-cell"><div class="cell-label">Event Type</div><div class="cell-value" id="infoType">Wedding</div></div><div class="info-cell"><div class="cell-label">Coverage</div><div class="cell-value" id="infoCoverage">Ceremony + Reception</div></div><div class="info-cell"><div class="cell-label">Your Team</div><div class="cell-value" id="infoTeam">Adam + Afia</div></div></div>
-  <section class="services-block"><h2>What's Included</h2><div id="servicesList"><div class="service-row"><div class="svc-icon">DJ</div><div class="svc-content"><div class="svc-name">DJ / Sound Direction</div><div class="svc-desc">Live mixing for ceremony processional, cocktail hour, dinner, and reception. Full professional sound system provided. Adam builds your night's energy arc from first note to send-off.</div></div></div><div class="service-row"><div class="svc-icon">MC</div><div class="svc-content"><div class="svc-name">MC / Event Hosting</div><div class="svc-desc">Afia manages introductions, toasts, transitions, bouquet toss, and send-off. Seamless event flow so you and your guests stay fully present.</div></div></div><div class="service-row"><div class="svc-icon">&#9834;</div><div class="svc-content"><div class="svc-name">Pre-Event Planning</div><div class="svc-desc">Music consultation, timeline coordination, must-play and do-not-play lists. We build your custom event flow together.</div></div></div><div class="service-row"><div class="svc-icon">&#9881;</div><div class="svc-content"><div class="svc-name">Equipment &amp; Setup</div><div class="svc-desc">Professional speakers, subwoofer, wireless mics, DJ controller, all cables and stands. Setup 90 min before start, full breakdown after.</div></div></div></div></section>
-  <section class="investment-block"><h2>Your Investment</h2><table class="invest-table"><tr><td>DJ + MC / Full Event Coverage</td><td id="invFee">$1,000.00</td></tr><tr><td>Equipment &amp; Setup</td><td>Included</td></tr><tr><td>Pre-event planning consultation</td><td>Included</td></tr><tr class="total"><td>Total</td><td id="invTotal">$1,000.00</td></tr></table><div class="payment-note"><strong>Payment schedule:</strong> 30% deposit (<span id="invDeposit">$300</span>) due upon signing to secure your date. Remaining balance due 14 days before the event. Accepted: Zelle, ACH, credit card, check.</div></section>
-  <section class="cta-block"><h2>Ready to lock in your date?</h2><p>Review and sign your service agreement to secure this booking. Your date is held on a first-confirmed basis.</p><a class="cta-btn" id="ctaLink" href="/agreement/sign?token=">Sign Your Agreement</a><div class="cta-sub">Agreement is valid for 30 days from date of issue.</div></section>
+<div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div><p>Loading your proposal...</p></div>
+<div class="proposal" id="proposalPage">
+  <header class="proposal-header"><img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group"><div class="proposal-header-right"><div class="tag">Proposal</div><div class="date" id="proposalDate"></div></div></header>
+  <section class="proposal-hero"><div class="prepared-for">Prepared For</div><h1 id="heroClient"></h1><div class="event-line" id="heroEvent"></div></section>
+  <div class="info-grid"><div class="info-cell"><div class="cell-label">Event Date</div><div class="cell-value" id="infoDate"></div></div><div class="info-cell"><div class="cell-label">Venue</div><div class="cell-value" id="infoVenue"></div></div><div class="info-cell"><div class="cell-label">Guest Count</div><div class="cell-value" id="infoGuests"></div></div><div class="info-cell"><div class="cell-label">Event Type</div><div class="cell-value" id="infoType"></div></div><div class="info-cell"><div class="cell-label">Coverage</div><div class="cell-value" id="infoCoverage"></div></div><div class="info-cell"><div class="cell-label">Your Team</div><div class="cell-value" id="infoTeam">Adam + Afia</div></div></div>
+  <section class="services-block"><h2>What's Included</h2><div id="servicesList"></div></section>
+  <section class="investment-block"><h2>Your Investment</h2><table class="invest-table"><tbody id="investBody"></tbody></table><div class="payment-note" id="paymentNote"></div></section>
+  <section class="cta-block"><h2>Ready to lock in your date?</h2><p>Review and sign your service agreement to secure this booking. Your date is held on a first-confirmed basis.</p><a class="cta-btn" id="ctaLink" href="#">Sign Your Agreement</a><div class="cta-sub">Agreement is valid for 30 days from date of issue.</div></section>
   <footer class="proposal-footer"><span>Ampersound Media Group</span> &middot; North Salt Lake, Utah &middot; contact@ampersoundmediagroup.com<br>Sound. Presence. Atmosphere.</footer>
 </div>
 <script>
-(function() {
+const LOAD_URL = '/.netlify/functions/load-agreement';
+
+(async function init() {
   const params = new URLSearchParams(window.location.search);
-  const map = { client:'heroClient', event:'heroEvent', date:'infoDate', venue:'infoVenue', guests:'infoGuests', type:'infoType', coverage:'infoCoverage', team:'infoTeam', fee:'invFee', total:'invTotal', deposit:'invDeposit', issued:'proposalDate' };
-  for (const [param, elId] of Object.entries(map)) { const val = params.get(param); if (val) { const el = document.getElementById(elId); if (el) el.textContent = decodeURIComponent(val); } }
+  const token = params.get('token');
+
+  // If token present, load from ClickUp
+  if (token) {
+    document.getElementById('loadingOverlay').classList.add('visible');
+    try {
+      const res = await fetch(LOAD_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token}) });
+      if (!res.ok) throw new Error('Could not load proposal');
+      const d = await res.json();
+      renderFromData(d, token);
+    } catch(e) {
+      document.getElementById('loadingOverlay').innerHTML = '<p style="color:var(--error)">Unable to load proposal.</p>';
+      return;
+    }
+    document.getElementById('loadingOverlay').classList.remove('visible');
+  } else {
+    // Fallback: URL params (legacy)
+    renderFromParams(params);
+  }
+})();
+
+function renderFromData(d, token) {
+  document.getElementById('proposalDate').textContent = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('heroClient').textContent = d.clientName || 'Client';
+  document.getElementById('heroEvent').textContent = [d.eventName, d.eventDate].filter(Boolean).join(' \u00b7 ');
+  document.getElementById('infoDate').textContent = d.eventDate || 'TBD';
+  document.getElementById('infoVenue').textContent = [d.venueName, d.venueAddress].filter(Boolean).join(', ') || 'TBD';
+  document.getElementById('infoGuests').textContent = d.guestCount || 'TBD';
+  document.getElementById('infoType').textContent = d.eventType || 'TBD';
+  document.getElementById('infoCoverage').textContent = [d.startTime, d.endTime].filter(Boolean).join(' - ') || 'Full event';
+
+  // Services
+  const services = Array.isArray(d.services) ? d.services : (d.services||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const svcIcons = {'DJ / Sound Direction':'DJ','MC / Event Hosting':'MC','Moderation':'MOD','Spoken Word':'SW','Speaker / Keynote':'SP','Audio / AV Production':'AV','Custom Playlist Curation':'\u266a','Equipment Rental':'\u2699'};
+  document.getElementById('servicesList').innerHTML = services.map(s => {
+    const icon = svcIcons[s] || '\u2713';
+    return `<div class="service-row"><div class="svc-icon">${icon}</div><div class="svc-content"><div class="svc-name">${s}</div></div></div>`;
+  }).join('') || '<p style="color:var(--text-dim)">Services to be confirmed.</p>';
+
+  // Investment
+  const fee = d.totalFee ? '$' + Number(d.totalFee).toLocaleString() : 'TBD';
+  const deposit = d.depositAmount ? '$' + Number(d.depositAmount).toLocaleString() : 'TBD';
+  document.getElementById('investBody').innerHTML = `<tr><td>Services</td><td>${fee}</td></tr><tr><td>Equipment & Setup</td><td>Included</td></tr><tr><td>Pre-event planning</td><td>Included</td></tr><tr class="total"><td>Total</td><td>${fee}</td></tr>`;
+  document.getElementById('paymentNote').innerHTML = `<strong>Payment schedule:</strong> ${deposit} deposit due upon signing to secure your date. Remaining balance due 14 days before the event. Accepted: Zelle, ACH, credit card, check.`;
+
+  // CTA
+  document.getElementById('ctaLink').href = `/agreement/sign?token=${token}`;
+}
+
+function renderFromParams(params) {
+  const map = {client:'heroClient',event:'heroEvent',date:'infoDate',venue:'infoVenue',guests:'infoGuests',type:'infoType',coverage:'infoCoverage',team:'infoTeam',issued:'proposalDate'};
+  for (const [p,id] of Object.entries(map)) { const v=params.get(p); if(v) document.getElementById(id).textContent=decodeURIComponent(v); }
+  if (!document.getElementById('proposalDate').textContent) document.getElementById('proposalDate').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const fee = params.get('fee') || '$0';
+  const deposit = params.get('deposit') || 'TBD';
+  document.getElementById('investBody').innerHTML = `<tr><td>Services</td><td>${decodeURIComponent(fee)}</td></tr><tr><td>Equipment & Setup</td><td>Included</td></tr><tr class="total"><td>Total</td><td>${decodeURIComponent(fee)}</td></tr>`;
+  document.getElementById('paymentNote').innerHTML = `<strong>Payment schedule:</strong> ${decodeURIComponent(deposit)} deposit due upon signing. Balance due 14 days before event.`;
+  document.getElementById('servicesList').innerHTML = '<div class="service-row"><div class="svc-icon">DJ</div><div class="svc-content"><div class="svc-name">DJ / Sound Direction</div></div></div><div class="service-row"><div class="svc-icon">MC</div><div class="svc-content"><div class="svc-name">MC / Event Hosting</div></div></div>';
   const token = params.get('token');
   if (token) document.getElementById('ctaLink').href = `/agreement/sign?token=${token}`;
-  const fee = params.get('fee');
-  if (fee) document.getElementById('invTotal').textContent = decodeURIComponent(fee);
-})();
+}
 </script>
 </body>
 </html>

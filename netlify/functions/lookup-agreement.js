@@ -59,31 +59,40 @@ function formatAgreements(tasks) {
       return null;
     };
 
-    // Get payment status
+    // Payment status
     const paymentStatusField = (task.custom_fields||[]).find(cf => cf.id === CF.paymentStatus);
     let paymentStatus = null;
     if (paymentStatusField && paymentStatusField.type_config && paymentStatusField.type_config.options && typeof paymentStatusField.value === 'number') {
       const opt = paymentStatusField.type_config.options.find(o => o.orderindex === paymentStatusField.value);
       if (opt) paymentStatus = opt.name;
     }
-
     const isPaid = paymentStatus === 'Payment Recieved';
     const paymentLink = getField(CF.paymentLink);
 
+    // Determine stage: proposal (draft/sent) vs agreement (signed)
     const statusType = task.status ? (task.status.type || '') : '';
     const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
     const isSigned = statusType === 'done' || statusType === 'closed' || statusName === 'signed' || statusName === 'closed';
-    const status = isSigned ? 'signed' : 'pending';
+    const isDraft = statusName === 'draft';
+    const isSent = statusName === 'sent';
 
-    // Build actions based on state
+    let stage, status;
+    if (isSigned) { stage = 'agreement'; status = 'signed'; }
+    else if (isSent) { stage = 'proposal'; status = 'awaiting_signature'; }
+    else { stage = 'proposal'; status = 'draft'; }
+
+    // Build actions based on stage and payment state
     let actions = '';
-    if (status === 'pending') {
-      actions += `<a href="/agreement/sign?token=${task.id}">Sign Agreement</a>`;
+    if (stage === 'proposal') {
+      actions += `<a href="/proposal?token=${task.id}">View Proposal</a>`;
+      if (isSent) actions += `<a href="/agreement/sign?token=${task.id}">Sign Agreement</a>`;
+    } else {
+      // Signed agreement
+      if (!isPaid && paymentLink) {
+        actions += `<a href="${paymentLink}" class="pay-action">Pay Deposit</a>`;
+      }
+      actions += `<a href="/agreement/sign?token=${task.id}&view=true">View Agreement</a>`;
     }
-    if (isSigned && !isPaid && paymentLink) {
-      actions += `<a href="${paymentLink}" class="pay-action">Pay Deposit</a>`;
-    }
-    actions += `<a href="/agreement/sign?token=${task.id}&view=true">View Agreement</a>`;
 
     return {
       id: task.id,
@@ -94,6 +103,7 @@ function formatAgreements(tasks) {
       services: getField(CF.services),
       totalFee: getField(CF.totalFee),
       deposit: getField(CF.depositAmount),
+      stage,
       status,
       paymentStatus: isPaid ? 'paid' : (paymentLink ? 'unpaid' : 'no_link'),
       paymentLink,
