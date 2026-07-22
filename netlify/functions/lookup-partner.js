@@ -15,17 +15,15 @@ const CLICKUP_API_TOKEN = process.env.CLICKUP_API_TOKEN;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const PARTNER_LIST_ID = '4027406389340530077'; // Partnership/Sponsorship Leads list
 
-// Custom field IDs - update these to match your ClickUp list's custom fields
-// These will need to be configured once you add custom fields to the Partnership list
+// Custom field IDs from the Partnership/Sponsorship Leads list
 const CF = {
-  partnerEmail: '', // Email custom field ID (to be configured)
-  partnerName: '',  // Partner name / org
-  partnerType: '',  // Dropdown: exchange, sponsor, vendor
-  agreementStatus: '', // Dropdown: pending, signed
-  invoiceAmount: '',   // Currency field
-  paymentStatus: '',   // Dropdown: pending, paid
-  paymentLink: '',     // URL field (Stripe hosted invoice URL)
-  documents: '',       // Text field (JSON array of doc links)
+  partnerEmail: '218731dd-fa76-4a6b-87d1-51fccf0bcbe5', // Partner Email (email type)
+  contactPerson: '8c6a242c-ab5b-4766-ab50-27f7cf660c4d', // Contact Person (short text)
+  expectedRevenue: 'dc02a84a-93c0-4cdd-90a8-9745113c8d24', // Expected Revenue (currency/USD)
+  leadSource: '2674227a-b35a-4274-b15c-06d06d70d826', // Lead Source (dropdown)
+  lastContacted: 'bf8213f6-f4ab-45ca-a38d-7d6ede464fb7', // Last Contacted (date)
+  followUpAction: 'a4b6d357-f124-43e8-a581-5e7e9eab5606', // Follow-Up Action (text)
+  leadStatusUpdate: '1a81182b-0bf0-45b4-89b6-8e1a139827b7', // Lead Status Update (text)
 };
 
 const headers = {
@@ -62,18 +60,13 @@ exports.handler = async (event) => {
 
     const data = await res.json();
 
-    // Find partner task by email match
-    // Strategy: Check task description and custom fields for the email
+    // Find partner task by email match on the Partner Email custom field
     const partnerTask = (data.tasks || []).find(task => {
-      // Check custom field if configured
-      if (CF.partnerEmail) {
-        const emailField = (task.custom_fields || []).find(f => f.id === CF.partnerEmail);
-        if (emailField && typeof emailField.value === 'string' && emailField.value.toLowerCase() === email) return true;
-      }
+      const emailField = (task.custom_fields || []).find(f => f.id === CF.partnerEmail);
+      if (emailField && typeof emailField.value === 'string' && emailField.value.toLowerCase() === email) return true;
       // Fallback: check task description for email mention
       const desc = (task.description || '').toLowerCase();
       if (desc.includes(email)) return true;
-      // Check comments for email (first comment from Partnership Paulina often has contact info)
       return false;
     });
 
@@ -101,6 +94,7 @@ async function formatPartnerData(task) {
       return opt ? opt.name : null;
     }
     if (f.type === 'currency') { const n = typeof f.value === 'number' ? f.value : parseFloat(f.value); return isNaN(n) ? null : n; }
+    if (f.type === 'date' && f.value) { try { return new Date(Number(f.value)).toISOString().split('T')[0]; } catch { return null; } }
     if (typeof f.value === 'string') return f.value;
     if (typeof f.value === 'number') return f.value;
     return null;
@@ -136,31 +130,18 @@ async function formatPartnerData(task) {
     viewUrl: '/agreement/sign?token=' + task.id + '&view=true',
   }];
 
-  // Build invoices array
+  // Build invoices array from Expected Revenue field
   const invoices = [];
-  const invoiceAmount = getField(CF.invoiceAmount);
-  const paymentLink = getField(CF.paymentLink);
-  const paymentStatus = getField(CF.paymentStatus);
+  const invoiceAmount = getField(CF.expectedRevenue);
 
-  if (invoiceAmount && invoiceAmount > 0) {
+  if (invoiceAmount && invoiceAmount > 0 && partnerType === 'sponsor') {
     invoices.push({
-      title: partnerType === 'sponsor' ? 'Sponsorship Payment' : 'Partnership Fee',
+      title: 'Sponsorship Payment',
       amount: invoiceAmount,
       description: task.name,
-      status: paymentStatus === 'paid' ? 'paid' : 'due',
-      paymentUrl: paymentLink || null,
+      status: 'due', // Will be updated when payment status field is added
+      paymentUrl: null, // Will be populated from a payment link field when added
     });
-  }
-
-  // If Stripe is configured and we have an invoice but no payment link, try to get one
-  if (STRIPE_SECRET_KEY && invoices.length && !invoices[0].paymentUrl && invoices[0].status === 'due') {
-    try {
-      const stripe = require('stripe')(STRIPE_SECRET_KEY);
-      // Look up customer invoices by email (if customer exists in Stripe)
-      // This is a future enhancement - for now, payment links are set manually in ClickUp
-    } catch (e) {
-      console.log('Stripe lookup skipped:', e.message);
-    }
   }
 
   return {
