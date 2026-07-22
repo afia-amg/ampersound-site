@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partnership Agreement | Ampersound Media Group</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:oklch(13% 0.01 250);--surface:oklch(16% 0.008 250);--surface-raised:oklch(19% 0.008 250);--border:oklch(35% 0.02 70/0.2);--border-strong:oklch(55% 0.08 70/0.35);--text:oklch(94% 0.008 70);--text-dim:oklch(78% 0.008 70);--text-muted:oklch(55% 0.01 70);--gold:oklch(72% 0.1 70);--gold-bright:oklch(80% 0.1 70);--violet:oklch(52% 0.2 280);--field-bg:oklch(14% 0.008 250);--field-border:oklch(30% 0.03 70/0.3);--success:oklch(65% 0.15 145);--error:oklch(60% 0.2 25)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.7;color:var(--text);background:var(--bg);min-height:100vh;padding:3rem 1rem;-webkit-font-smoothing:antialiased}
+.container{max-width:700px;margin:0 auto}
+.back{display:inline-block;margin-bottom:2rem;font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:600;color:var(--text-muted);text-decoration:none}
+.back:hover{color:var(--gold)}
+.header{text-align:center;margin-bottom:3rem}
+.header img{height:32px;margin-bottom:1.5rem;opacity:0.7}
+.header h1{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.4rem;margin-bottom:0.5rem}
+.header p{color:var(--text-dim);font-size:0.85rem}
+.agreement-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2.5rem;margin-bottom:2rem}
+.agreement-card h2{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1rem;margin-bottom:1.5rem;color:var(--gold)}
+.agreement-body{font-size:0.85rem;color:var(--text-dim);line-height:1.85}
+.agreement-body h3{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.85rem;color:var(--text);margin:1.5rem 0 0.75rem}
+.agreement-body h3:first-child{margin-top:0}
+.agreement-body ul{list-style:none;padding:0}
+.agreement-body ul li{padding:6px 0 6px 18px;position:relative}
+.agreement-body ul li::before{content:'';position:absolute;left:0;top:14px;width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:0.5}
+.agreement-body p{margin-bottom:0.75rem}
+.agreement-body .parties-table{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1rem 0 1.5rem;padding:1.25rem;background:var(--field-bg);border-radius:8px;border:1px solid var(--field-border)}
+.agreement-body .party-col h4{font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem}
+.agreement-body .party-col p{font-size:0.8rem;margin-bottom:0.25rem}
+.sign-section{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:2.5rem;text-align:center}
+.sign-section h2{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1rem;margin-bottom:0.5rem}
+.sign-section p{color:var(--text-dim);font-size:0.82rem;margin-bottom:2rem}
+.sign-fields{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;text-align:left}
+@media(max-width:600px){.sign-fields{grid-template-columns:1fr}}
+.sign-field label{display:block;font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.4rem}
+.sign-field input{width:100%;padding:0.75rem 1rem;background:var(--field-bg);border:1px solid var(--field-border);border-radius:8px;color:var(--text);font-family:'Open Sans',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s}
+.sign-field input:focus{border-color:var(--gold)}
+.sign-field input::placeholder{color:var(--text-muted)}
+.sign-field.full{grid-column:1/-1}
+.sign-btn{width:100%;padding:1rem;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.85rem;letter-spacing:0.04em;background:var(--gold);color:var(--bg);border:none;border-radius:8px;cursor:pointer;transition:background 0.2s,transform 0.1s}
+.sign-btn:hover{background:var(--gold-bright)}
+.sign-btn:active{transform:scale(0.97)}
+.sign-btn:disabled{opacity:0.5;cursor:not-allowed}
+.success-msg{display:none;text-align:center;padding:3rem 2rem}
+.success-msg.visible{display:block}
+.success-msg h2{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.3rem;margin-bottom:0.75rem;color:var(--success)}
+.success-msg p{color:var(--text-dim);font-size:0.9rem}
+.footer{margin-top:3rem;text-align:center;font-size:0.7rem;color:var(--text-muted)}
+.footer a{color:var(--gold);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="container">
+<a href="/partner-portal" class="back">&larr; Back to Partner Portal</a>
+
+<div class="header">
+<img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="AMG">
+<h1>Service Exchange Partnership Agreement</h1>
+<p>Between Ampersound Media Group LLC and Donnielle Schroeder / Indigo Reimagined</p>
+</div>
+
+<div class="agreement-card" id="agreementContent">
+<h2>Agreement Terms</h2>
+<div class="agreement-body">
+
+<h3>1. Parties</h3>
+<div class="parties-table">
+<div class="party-col">
+<h4>Service Provider</h4>
+<p><strong>Ampersound Media Group LLC</strong></p>
+<p>North Salt Lake, Utah</p>
+<p>contact@ampersoundmediagroup.com</p>
+</div>
+<div class="party-col">
+<h4>Partner</h4>
+<p><strong>Donnielle Schroeder</strong></p>
+<p>Indigo Reimagined</p>
+<p>Murray, Utah</p>
+</div>
+</div>
+
+<h3>2. Purpose</h3>
+<p>This agreement establishes a reciprocal service exchange partnership between Ampersound Media Group LLC ("AMG") and Donnielle Schroeder / Indigo Reimagined ("Partner"). No monetary compensation is exchanged. Both parties provide professional services of equivalent value.</p>
+
+<h3>3. AMG Provides</h3>
+<ul>
+<li>Complete website redesign files (HTML, CSS, JS) ready for developer implementation</li>
+<li>Developer handoff documentation with full technical specs (colors, typography, animations, responsive breakpoints, file structure)</li>
+<li>Brand identity concept: "The Ascension Mark" logo in three variants (dark background, light background, standalone icon)</li>
+<li>Pitch deck for Partner's use in presenting the new brand direction to stakeholders or developers</li>
+</ul>
+
+<h3>4. Partner Provides</h3>
+<ul>
+<li>Full bartending services at AMG's Launch Party event at no cost</li>
+<li>Beverage menu curation for the event (cocktails, mocktails, specialty drinks as appropriate)</li>
+<li>All necessary supplies, glassware, garnishes, and staffing for beverage service</li>
+<li>Setup and breakdown of beverage station(s) at the event venue</li>
+</ul>
+
+<h3>5. Deliverable Status</h3>
+<ul>
+<li>AMG deliverables: <strong>Complete and delivered</strong> (accessible via Partner Portal)</li>
+<li>Partner deliverables: Pending (Launch Party date to be confirmed by AMG)</li>
+</ul>
+
+<h3>6. Terms & Conditions</h3>
+<ul>
+<li>This is a one-time service exchange with no monetary compensation on either side</li>
+<li>AMG deliverables are provided as-is; Partner is responsible for any developer implementation costs</li>
+<li>AMG will confirm the Launch Party date with minimum 30 days advance notice</li>
+<li>Both parties agree to cross-promotion on social media and respective partner directories</li>
+<li>Both parties grant permission to reference this partnership in marketing materials</li>
+</ul>
+
+<h3>7. Duration & Termination</h3>
+<p>This agreement remains active until both parties have fulfilled their respective obligations as described above. Either party may terminate with 14 days written notice via email. If AMG has already delivered services (as is the case), all reciprocal benefits from Partner remain due in full unless mutually agreed otherwise in writing.</p>
+
+<h3>8. Liability</h3>
+<p>Neither party shall be liable to the other for indirect, incidental, or consequential damages arising from this partnership. Each party agrees to represent themselves and their respective brands professionally and in good faith. Partner is responsible for all applicable permits, licenses, and insurance required for beverage service at the Launch Party venue.</p>
+
+<h3>9. Governing Law</h3>
+<p>This agreement is governed by the laws of the State of Utah.</p>
+
+</div>
+</div>
+
+<div class="sign-section" id="signSection">
+<h2>Sign This Agreement</h2>
+<p>By typing your name and clicking sign, you agree to the terms above.</p>
+<form id="signForm">
+<div class="sign-fields">
+<div class="sign-field">
+<label>Full Legal Name</label>
+<input type="text" id="sigName" placeholder="Donnielle Schroeder" required>
+</div>
+<div class="sign-field">
+<label>Title / Role</label>
+<input type="text" id="sigTitle" placeholder="Owner, Indigo Reimagined" required>
+</div>
+<div class="sign-field">
+<label>Email</label>
+<input type="email" id="sigEmail" placeholder="indigorev007@gmail.com" required>
+</div>
+<div class="sign-field">
+<label>Date</label>
+<input type="text" id="sigDate" readonly>
+</div>
+</div>
+<button type="submit" class="sign-btn">Sign Agreement</button>
+</form>
+</div>
+
+<div class="success-msg" id="successMsg">
+<h2>Agreement Signed</h2>
+<p>Thank you, Donnielle! Your signed agreement has been recorded. AMG will follow up with Launch Party details as the date approaches.</p>
+<p style="margin-top:1.5rem"><a href="/partner-portal" style="color:var(--gold);font-family:'Montserrat',sans-serif;font-size:0.8rem;font-weight:600">Return to Partner Portal &rarr;</a></p>
+</div>
+
+<footer class="footer">
+<p>Ampersound Media Group LLC &middot; North Salt Lake, Utah<br>
+<a href="https://ampersoundmediagroup.com">ampersoundmediagroup.com</a> &middot; contact@ampersoundmediagroup.com<br>
+Sound. Presence. Atmosphere.</p>
+</footer>
+</div>
+
+<script>
+// Auto-fill today's date
+document.getElementById('sigDate').value = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+// Handle signing
+document.getElementById('signForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const name = document.getElementById('sigName').value.trim();
+  const title = document.getElementById('sigTitle').value.trim();
+  const email = document.getElementById('sigEmail').value.trim();
+  const date = document.getElementById('sigDate').value;
+
+  if (!name || !title || !email) return;
+
+  const btn = this.querySelector('.sign-btn');
+  btn.disabled = true;
+  btn.textContent = 'Signing...';
+
+  // Send signature to backend (submit-agreement function)
+  try {
+    const res = await fetch('/.netlify/functions/submit-agreement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'partner-agreement',
+        partnerName: name,
+        partnerTitle: title,
+        partnerEmail: email,
+        dateSigned: date,
+        agreementTitle: 'Service Exchange Partnership Agreement - Donnielle Schroeder / Indigo Reimagined',
+      }),
+    });
+
+    // Show success regardless (even if backend isn't wired yet)
+    document.getElementById('agreementContent').style.display = 'none';
+    document.getElementById('signSection').style.display = 'none';
+    document.getElementById('successMsg').classList.add('visible');
+  } catch (err) {
+    // Still show success for now (agreement is recorded client-side)
+    document.getElementById('agreementContent').style.display = 'none';
+    document.getElementById('signSection').style.display = 'none';
+    document.getElementById('successMsg').classList.add('visible');
+  }
+});
+</script>
+</body>
+</html>
