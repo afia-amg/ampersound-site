@@ -1,16 +1,5 @@
-// netlify/functions/create-payment-link.js
-// Creates a Stripe Payment Link for a client deposit
-//
-// ENV VARS:
-//   STRIPE_SECRET_KEY - Stripe secret key (sk_live_... or sk_test_...)
-//
-// POST body:
-//   { clientName, eventName, amount (in dollars), taskId (optional) }
-//
-// Returns:
-//   { url: "https://buy.stripe.com/...", id: "plink_..." }
-
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const SITE_URL = process.env.SITE_URL || 'https://ampersoundmediagroup.com';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +16,7 @@ exports.handler = async (event) => {
   try { data = JSON.parse(event.body); }
   catch { return { statusCode: 400, headers, body: JSON.stringify({ message: 'Invalid request' }) }; }
 
-  const { clientName, eventName, amount, taskId } = data;
+  const { clientName, eventName, eventDate, venue, services, amount, balance, taskId } = data;
 
   if (!amount || !clientName) {
     return { statusCode: 400, headers, body: JSON.stringify({ message: 'clientName and amount required' }) };
@@ -40,8 +29,19 @@ exports.handler = async (event) => {
 
   const productName = `${clientName} - ${eventName || 'Event'} Deposit`;
 
+  // Build redirect URL with event details for the confirmation page
+  const redirectParams = new URLSearchParams({
+    event: eventName || '',
+    date: eventDate || '',
+    venue: venue || '',
+    services: services || '',
+    paid: `$${Number(amount).toLocaleString()}`,
+    balance: balance ? `$${Number(balance).toLocaleString()}` : '$0',
+  });
+  const redirectUrl = `${SITE_URL}/booking-confirmed?${redirectParams.toString()}`;
+
   try {
-    // Step 1: Create a one-time Price (which auto-creates a Product)
+    // Create Price (auto-creates Product)
     const priceRes = await fetch('https://api.stripe.com/v1/prices', {
       method: 'POST',
       headers: {
@@ -66,7 +66,7 @@ exports.handler = async (event) => {
 
     const price = await priceRes.json();
 
-    // Step 2: Create a Payment Link using that Price
+    // Create Payment Link
     const linkRes = await fetch('https://api.stripe.com/v1/payment_links', {
       method: 'POST',
       headers: {
@@ -79,7 +79,7 @@ exports.handler = async (event) => {
         'payment_method_types[0]': 'card',
         'payment_method_types[1]': 'us_bank_account',
         'after_completion[type]': 'redirect',
-        'after_completion[redirect][url]': 'https://ampersoundmediagroup.com/client-portal?paid=true',
+        'after_completion[redirect][url]': redirectUrl,
         'metadata[client]': clientName,
         'metadata[event]': eventName || '',
         'metadata[taskId]': taskId || '',
