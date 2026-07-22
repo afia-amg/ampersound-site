@@ -7,13 +7,13 @@
  *   CLICKUP_API_TOKEN - ClickUp API token
  *   STRIPE_SECRET_KEY - Stripe secret key (for hosted invoice URL lookup)
  * 
- * ClickUp List: Partnership/Sponsorship Leads (ID in PARTNER_LIST_ID)
+ * ClickUp List: Partnership/Sponsorship Leads (objectID format for API)
  * Custom fields map partner data. Update CF object if field IDs change.
  */
 
 const CLICKUP_API_TOKEN = process.env.CLICKUP_API_TOKEN;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-const PARTNER_LIST_ID = '4027406389340530077'; // Partnership/Sponsorship Leads list
+const PARTNER_LIST_ID = '901417758955'; // Partnership/Sponsorship Leads list (objectID)
 
 // Custom field IDs from the Partnership/Sponsorship Leads list
 const CF = {
@@ -45,7 +45,6 @@ exports.handler = async (event) => {
 
   try {
     // Fetch tasks from the Partnership/Sponsorship Leads list
-    // Matches the same pattern as the working lookup-agreement.js
     const res = await fetch(
       `https://api.clickup.com/api/v2/list/${PARTNER_LIST_ID}/task?archived=false&include_closed=true&subtasks=false&page=0`,
       {
