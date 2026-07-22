@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partner Portal | Ampersound Media Group</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:oklch(13% 0.01 250);--surface:oklch(16% 0.008 250);--surface-raised:oklch(19% 0.008 250);--border:oklch(35% 0.02 70/0.2);--border-strong:oklch(55% 0.08 70/0.35);--text:oklch(94% 0.008 70);--text-dim:oklch(78% 0.008 70);--text-muted:oklch(55% 0.01 70);--gold:oklch(72% 0.1 70);--gold-bright:oklch(80% 0.1 70);--violet:oklch(52% 0.2 280);--field-bg:oklch(14% 0.008 250);--field-border:oklch(30% 0.03 70/0.3);--success:oklch(65% 0.15 145);--error:oklch(60% 0.2 25);--warning:oklch(72% 0.12 85)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var(--text);background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:3rem 1rem;-webkit-font-smoothing:antialiased}
+.portal-container{width:100%;max-width:640px}
+.portal-header{text-align:center;margin-bottom:2.5rem}
+.portal-header img{height:38px;margin-bottom:1.25rem}
+.portal-header h1{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:-0.03em;color:var(--text);margin-bottom:0.5rem}
+.portal-header p{color:var(--text-dim);font-size:0.9rem;max-width:440px;margin:0 auto}
+.lookup-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem 2.25rem}
+.lookup-card label{display:block;font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:0.4rem}
+.lookup-card input{width:100%;font-family:'Open Sans',sans-serif;font-size:0.95rem;padding:0.75rem 1rem;border:1px solid var(--field-border);border-radius:8px;background:var(--field-bg);color:var(--text);outline:none;transition:border-color 200ms,box-shadow 200ms}
+.lookup-card input:focus{border-color:var(--gold);box-shadow:0 0 0 3px oklch(72% 0.1 70/0.1)}
+.lookup-card input.invalid{border-color:var(--error)}
+.lookup-btn{width:100%;margin-top:1.25rem;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.85rem;letter-spacing:0.03em;padding:0.85rem;background:var(--gold);color:var(--bg);border:none;border-radius:8px;cursor:pointer;transition:background 200ms,transform 100ms}
+.lookup-btn:hover{background:var(--gold-bright)}
+.lookup-btn:active{transform:scale(0.97)}
+.lookup-btn:disabled{opacity:0.5;cursor:not-allowed}
+.lookup-btn.loading{position:relative;color:transparent;pointer-events:none}
+.lookup-btn.loading::after{content:'';position:absolute;top:50%;left:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid var(--bg);border-top-color:transparent;border-radius:50%;animation:spin 600ms linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lookup-error{display:none;margin-top:1rem;padding:0.75rem 1rem;border-radius:8px;font-size:0.82rem;background:oklch(60% 0.2 25/0.08);border:1px solid var(--error);color:var(--error)}
+.lookup-error.visible{display:block}
+.results-section{display:none;margin-top:2rem}
+.results-section.visible{display:block}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.results-header h2{font-family:'Montserrat',sans-serif;font-weight:700;font-size:1rem;color:var(--text)}
+.results-header button{font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:600;color:var(--gold);background:none;border:none;cursor:pointer}
+.results-header button:hover{color:var(--gold-bright)}
+.section-label{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--violet);margin-bottom:0.75rem;margin-top:1.5rem}
+.section-label:first-child{margin-top:0}
+.partner-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem 1.75rem;margin-bottom:1rem;transition:border-color 200ms}
+.partner-card:hover{border-color:var(--border-strong)}
+.partner-card .card-title{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text);margin-bottom:0.2rem}
+.partner-card .card-meta{font-size:0.8rem;color:var(--text-dim);margin-bottom:1rem}
+.partner-card .card-desc{font-size:0.82rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.6}
+.badge{display:inline-flex;align-items:center;gap:0.4rem;padding:0.35rem 0.75rem;border-radius:20px;font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge.signed{background:oklch(65% 0.15 145/0.1);color:var(--success)}
+.badge.pending{background:oklch(72% 0.12 85/0.1);color:var(--warning)}
+.badge.delivered{background:oklch(52% 0.2 280/0.1);color:var(--violet)}
+.badge.paid{background:oklch(65% 0.15 145/0.1);color:var(--success)}
+.badge.due{background:oklch(60% 0.2 25/0.08);color:var(--error)}
+.card-actions{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:1rem;flex-wrap:wrap}
+.card-actions a{font-family:'Montserrat',sans-serif;font-size:0.72rem;font-weight:600;color:var(--gold);text-decoration:none;letter-spacing:0.02em;transition:color 150ms}
+.card-actions a:hover{color:var(--gold-bright)}
+.card-actions a.pay-action{padding:0.45rem 1rem;background:var(--gold);color:var(--bg);border-radius:6px;transition:background 200ms}
+.card-actions a.pay-action:hover{background:var(--gold-bright);color:var(--bg)}
+.card-actions a.sign-action{padding:0.45rem 1rem;background:var(--violet);color:white;border-radius:6px}
+.empty-state{text-align:center;padding:2.5rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.empty-state p{color:var(--text-dim);font-size:0.88rem}
+.empty-state .icon{font-size:2rem;margin-bottom:0.75rem;opacity:0.5}
+.portal-footer{margin-top:3rem;text-align:center;font-size:0.7rem;color:var(--text-muted)}
+.portal-footer a{color:var(--gold);text-decoration:none}
+.portal-footer a:hover{color:var(--gold-bright)}
+.nav-back{display:inline-flex;align-items:center;gap:0.4rem;font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:600;color:var(--text-muted);text-decoration:none;margin-bottom:2rem;transition:color 150ms}
+.nav-back:hover{color:var(--gold)}
+@media(max-width:640px){.lookup-card{padding:1.5rem 1.25rem}.partner-card{padding:1.25rem}}
+</style>
+</head>
+<body>
+<div class="portal-container">
+  <a href="/" class="nav-back">&larr; Back to ampersoundmediagroup.com</a>
+  <header class="portal-header">
+    <img src="https://lh3.googleusercontent.com/d/10P4ITtp20uk0Cn_xFypAbL1nf1bv48xU" alt="Ampersound Media Group">
+    <h1>Partner Portal</h1>
+    <p>Access your documents, sign agreements, and manage payments. Enter the email you registered with.</p>
+  </header>
+  <div class="lookup-card" id="lookupCard">
+    <label for="lookupEmail">Email Address</label>
+    <input type="email" id="lookupEmail" placeholder="Enter your partner email" autocomplete="email">
+    <button class="lookup-btn" id="lookupBtn" onclick="lookupPartner()">Access My Portal</button>
+    <div class="lookup-error" id="lookupError"></div>
+  </div>
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <h2 id="resultsTitle">Your Partnership</h2>
+      <button onclick="resetLookup()">Search again</button>
+    </div>
+    <div id="resultsContainer"></div>
+  </div>
+  <footer class="portal-footer">
+    <a href="https://ampersoundmediagroup.com">ampersoundmediagroup.com</a> &middot; contact@ampersoundmediagroup.com<br>Sound. Presence. Atmosphere.
+  </footer>
+</div>
+<script>
+const LOOKUP_URL='/.netlify/functions/lookup-partner';
+
+async function lookupPartner(){
+  const ei=document.getElementById('lookupEmail'),email=ei.value.trim(),err=document.getElementById('lookupError'),btn=document.getElementById('lookupBtn');
+  err.classList.remove('visible');ei.classList.remove('invalid');
+  if(!email||!email.includes('@')){ei.classList.add('invalid');err.textContent='Please enter a valid email address.';err.classList.add('visible');return}
+  btn.classList.add('loading');btn.disabled=true;
+  try{
+    const res=await fetch(LOOKUP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.message||'Lookup failed')}
+    const data=await res.json();
+    renderResults(data,email);
+  }catch(e){err.textContent=e.message||'Something went wrong.';err.classList.add('visible')}
+  finally{btn.classList.remove('loading');btn.disabled=false}
+}
+
+function renderResults(data,email){
+  const c=document.getElementById('resultsContainer'),s=document.getElementById('resultsSection'),l=document.getElementById('lookupCard');
+  l.style.display='none';s.classList.add('visible');
+  if(!data.partner){c.innerHTML='<div class="empty-state"><div class="icon">\uD83D\uDD0D</div><p>No partner account found for <strong>'+email+'</strong>.<br>Contact <a href="mailto:contact@ampersoundmediagroup.com" style="color:var(--gold)">contact@ampersoundmediagroup.com</a> for access.</p></div>';return}
+  const p=data.partner;
+  document.getElementById('resultsTitle').textContent='Welcome, '+p.name;
+  let html='';
+  // Documents
+  if(p.documents&&p.documents.length){
+    html+='<div class="section-label">Documents & Deliverables</div>';
+    html+=p.documents.map(d=>'<div class="partner-card"><div class="card-title">'+d.title+'</div><div class="card-meta">'+d.meta+'</div><span class="badge delivered"><span class="dot"></span>Delivered</span>'+(d.url?'<div class="card-actions"><a href="'+d.url+'" target="_blank">Download</a></div>':'')+'</div>').join('');
+  }
+  // Agreements
+  if(p.agreements&&p.agreements.length){
+    html+='<div class="section-label">Agreements</div>';
+    html+=p.agreements.map(a=>{
+      const isPending=a.status==='pending';
+      const badge=isPending?'<span class="badge pending"><span class="dot"></span>Needs Signature</span>':'<span class="badge signed"><span class="dot"></span>Signed</span>';
+      let actions='';
+      if(isPending&&a.signUrl) actions='<a href="'+a.signUrl+'" class="sign-action">Sign Agreement</a>';
+      else if(a.viewUrl) actions='<a href="'+a.viewUrl+'">View Agreement</a>';
+      return '<div class="partner-card"><div class="card-title">'+a.title+'</div><div class="card-meta">'+a.type+'</div><div class="card-desc">'+a.summary+'</div>'+badge+(actions?'<div class="card-actions">'+actions+'</div>':'')+'</div>';
+    }).join('');
+  }
+  // Invoices / Payments
+  if(p.invoices&&p.invoices.length){
+    html+='<div class="section-label">Payments</div>';
+    html+=p.invoices.map(inv=>{
+      const isPaid=inv.status==='paid';
+      const badge=isPaid?'<span class="badge paid"><span class="dot"></span>Paid</span>':'<span class="badge due"><span class="dot"></span>Due</span>';
+      let actions='';
+      if(!isPaid&&inv.paymentUrl) actions='<a href="'+inv.paymentUrl+'" target="_blank" class="pay-action">Pay Now</a>';
+      return '<div class="partner-card"><div class="card-title">'+inv.title+'</div><div class="card-meta">$'+Number(inv.amount).toLocaleString()+' &middot; '+inv.description+'</div>'+badge+(actions?'<div class="card-actions">'+actions+'</div>':'')+'</div>';
+    }).join('');
+  }else if(p.partnerType==='exchange'){
+    html+='<div class="section-label">Payments</div><div class="partner-card"><div class="card-title">No Payment Required</div><div class="card-meta">Your partnership is a service exchange. No monetary balance due.</div><span class="badge signed"><span class="dot"></span>Fulfilled</span></div>';
+  }
+  c.innerHTML=html;
+}
+
+function resetLookup(){document.getElementById('lookupCard').style.display='block';document.getElementById('resultsSection').classList.remove('visible');document.getElementById('resultsContainer').innerHTML='';document.getElementById('lookupEmail').value=''}
+document.getElementById('lookupEmail').addEventListener('keydown',e=>{if(e.key==='Enter')lookupPartner()});
+</script>
+</body>
+</html>
