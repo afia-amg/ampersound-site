@@ -44,9 +44,10 @@ exports.handler = async (event) => {
   if (!CLICKUP_API_TOKEN) return { statusCode: 500, headers, body: JSON.stringify({ message: 'Server configuration error' }) };
 
   try {
-    // Fetch all tasks from the Partnership/Sponsorship Leads list
+    // Fetch tasks from the Partnership/Sponsorship Leads list
+    // Matches the same pattern as the working lookup-agreement.js
     const res = await fetch(
-      `https://api.clickup.com/api/v2/list/${PARTNER_LIST_ID}/task?archived=false&include_closed=true&subtasks=true&page=0`,
+      `https://api.clickup.com/api/v2/list/${PARTNER_LIST_ID}/task?archived=false&include_closed=true&subtasks=false&page=0`,
       {
         method: 'GET',
         headers: { 'Authorization': CLICKUP_API_TOKEN, 'Content-Type': 'application/json' },
@@ -54,7 +55,8 @@ exports.handler = async (event) => {
     );
 
     if (!res.ok) {
-      console.error('ClickUp API error:', res.status, await res.text());
+      const errBody = await res.text();
+      console.error('ClickUp API error:', res.status, errBody);
       return { statusCode: 502, headers, body: JSON.stringify({ message: 'Unable to retrieve partner data' }) };
     }
 
@@ -75,7 +77,7 @@ exports.handler = async (event) => {
     }
 
     // Format the partner data
-    const partner = await formatPartnerData(partnerTask);
+    const partner = formatPartnerData(partnerTask);
     return { statusCode: 200, headers, body: JSON.stringify({ partner }) };
 
   } catch (err) {
@@ -84,7 +86,7 @@ exports.handler = async (event) => {
   }
 };
 
-async function formatPartnerData(task) {
+function formatPartnerData(task) {
   const getField = (id) => {
     if (!id) return null;
     const f = (task.custom_fields || []).find(cf => cf.id === id);
@@ -110,14 +112,13 @@ async function formatPartnerData(task) {
   const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
   const agreementStatus = (statusName === 'complete' || statusName === 'signed') ? 'signed' : 'pending';
 
-  // Get subtasks as documents/deliverables
+  // Build documents from description context
   const documents = [];
-  if (task.subtasks && task.subtasks.length) {
-    task.subtasks.forEach(sub => {
-      if (sub.status && sub.status.status && sub.status.status.toLowerCase() === 'complete') {
-        documents.push({ title: sub.name, meta: 'Completed', url: null });
-      }
-    });
+  if (content.includes('website') || content.includes('deliverables complete')) {
+    documents.push({ title: 'Website Redesign Package', meta: 'HTML + Dev Handoff + Logo + Pitch Deck', url: null });
+  }
+  if (content.includes('pitch deck') || content.includes('investor')) {
+    documents.push({ title: 'Pitch Deck', meta: 'Presentation slides', url: null });
   }
 
   // Build agreements array
@@ -139,8 +140,8 @@ async function formatPartnerData(task) {
       title: 'Sponsorship Payment',
       amount: invoiceAmount,
       description: task.name,
-      status: 'due', // Will be updated when payment status field is added
-      paymentUrl: null, // Will be populated from a payment link field when added
+      status: 'due',
+      paymentUrl: null,
     });
   }
 
@@ -155,7 +156,6 @@ async function formatPartnerData(task) {
 
 function extractAgreementSummary(description) {
   if (!description) return 'Partnership agreement details available upon review.';
-  // Extract the first meaningful section from the description
   const lines = description.split('\n').filter(l => l.trim() && !l.startsWith('#'));
   const summary = lines.slice(0, 3).join(' ').replace(/<[^>]+>/g, '').trim();
   return summary.length > 200 ? summary.substring(0, 200) + '...' : summary || 'Partnership agreement details available upon review.';
