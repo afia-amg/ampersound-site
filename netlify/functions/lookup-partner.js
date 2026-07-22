@@ -18,6 +18,7 @@ const PARTNER_LIST_ID = '901417758955'; // Partnership/Sponsorship Leads list (o
 // Custom field IDs from the Partnership/Sponsorship Leads list
 const CF = {
   partnerEmail: '218731dd-fa76-4a6b-87d1-51fccf0bcbe5', // Partner Email (email type)
+  portalDocuments: 'c1d81331-97b9-42ba-8122-9b3e13a632e2', // Portal Documents (multi-line text, format: Title | URL)
   contactPerson: '8c6a242c-ab5b-4766-ab50-27f7cf660c4d', // Contact Person (short text)
   expectedRevenue: 'dc02a84a-93c0-4cdd-90a8-9745113c8d24', // Expected Revenue (currency/USD)
   leadSource: '2674227a-b35a-4274-b15c-06d06d70d826', // Lead Source (dropdown)
@@ -111,13 +112,21 @@ function formatPartnerData(task) {
   const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
   const agreementStatus = (statusName === 'complete' || statusName === 'signed') ? 'signed' : 'pending';
 
-  // Build documents from description context
+  // Build documents from Portal Documents field (format: "Title | URL" per line)
   const documents = [];
-  if (content.includes('website') || content.includes('deliverables complete')) {
-    documents.push({ title: 'Website Redesign Package', meta: 'HTML + Dev Handoff + Logo + Pitch Deck', url: null });
-  }
-  if (content.includes('pitch deck') || content.includes('investor')) {
-    documents.push({ title: 'Pitch Deck', meta: 'Presentation slides', url: null });
+  const docsRaw = getField(CF.portalDocuments);
+  if (docsRaw) {
+    const lines = docsRaw.split('\n').filter(l => l.trim());
+    lines.forEach(line => {
+      const parts = line.split('|').map(p => p.trim());
+      if (parts.length >= 2) {
+        documents.push({ title: parts[0], meta: 'Available for download', url: parts[1] });
+      } else if (parts.length === 1 && parts[0].startsWith('http')) {
+        documents.push({ title: 'Document', meta: '', url: parts[0] });
+      } else {
+        documents.push({ title: parts[0], meta: '', url: null });
+      }
+    });
   }
 
   // Build agreements array
