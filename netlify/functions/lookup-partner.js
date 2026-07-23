@@ -27,6 +27,11 @@ const CF = {
   leadStatusUpdate: '1a81182b-0bf0-45b4-89b6-8e1a139827b7', // Lead Status Update (text)
 };
 
+// Map partner task names to their agreement page URLs
+const AGREEMENT_URLS = {
+  'Donnielle Schroeder': '/partner-docs/donnielle/agreement.html',
+};
+
 const headers = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -129,14 +134,17 @@ function formatPartnerData(task) {
     });
   }
 
+  // Get agreement URL from the map, or generate a slug-based path
+  const agreementUrl = AGREEMENT_URLS[task.name] || '/partner-docs/' + task.name.toLowerCase().replace(/\s+/g, '-') + '/agreement.html';
+
   // Build agreements array
   const agreements = [{
     title: task.name + ' Partnership Agreement',
     type: partnerType === 'exchange' ? 'Service Exchange' : partnerType === 'sponsor' ? 'Sponsorship' : 'Preferred Vendor',
     summary: extractAgreementSummary(task.description),
     status: agreementStatus,
-    signUrl: agreementStatus === 'pending' ? '/agreement/sign?token=' + task.id : null,
-    viewUrl: '/agreement/sign?token=' + task.id + '&view=true',
+    signUrl: agreementStatus === 'pending' ? agreementUrl : null,
+    viewUrl: agreementUrl,
   }];
 
   // Build invoices array from Expected Revenue field
