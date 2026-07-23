@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Service Exchange Agreement — Ampersound x Indigo Reimagined</title>
+<title>Service Exchange Agreement | Ampersound x Indigo Reimagined</title>
 <meta name="robots" content="noindex, nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@400;500;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--dark:oklch(12% 0.01 260);--surface:oklch(16% 0.008 260);--gold:oklch(55% 0.12 70);--gold-light:oklch(62% 0.1 70);--gold-dim:oklch(25% 0.04 65);--text:oklch(90% 0.01 70);--text-dim:oklch(68% 0.01 260);--text-muted:oklch(45% 0.008 260);--accent:oklch(50% 0.2 275);--success:oklch(65% 0.15 145)}
@@ -45,8 +45,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 .value-block .note{font-size:.78rem;color:var(--text-muted);width:100%}
 .status-grid{display:flex;flex-direction:column;gap:10px}
 .status-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border-radius:8px;border:1px solid oklch(22% 0.01 260)}
-.status-check{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:.7rem;flex-shrink:0}
-.status-check.done{background:oklch(30% 0.08 145);color:oklch(75% 0.12 145)}
+.status-check{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:.7rem;flex-shrink:0;background:oklch(30% 0.08 145);color:oklch(75% 0.12 145)}
 .status-item span{font-size:.85rem;color:var(--text)}
 .event-detail{background:var(--surface);border:1px solid oklch(22% 0.01 260);border-radius:10px;padding:24px;margin-bottom:48px}
 .event-detail h3{font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;margin-bottom:12px}
@@ -65,17 +64,21 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 @media(max-width:500px){.sig-grid{grid-template-columns:1fr;gap:48px}}
 .sig-block{}
 .sig-label{font-family:'Montserrat',sans-serif;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px}
-.sig-name{font-family:'Dancing Script',cursive;font-size:3.2rem;color:var(--text);line-height:1.1;margin-bottom:12px}
+.sig-image{width:100%;max-width:320px;height:auto;display:block;margin-bottom:12px;filter:brightness(1.15) contrast(1.1)}
 .sig-line{width:100%;height:1px;background:oklch(45% 0.008 260);margin-bottom:10px}
 .sig-meta{font-size:.78rem;color:var(--text-dim)}
 .sig-meta span{display:block;margin-bottom:3px}
 .sig-date{font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:600;color:var(--text-muted);margin-top:10px}
 
 /* Partner sign area */
-.sig-input{width:100%;padding:14px 16px;background:oklch(14% 0.008 250);border:1px solid oklch(30% 0.03 70/0.3);border-radius:8px;color:var(--text);font-family:'Dancing Script',cursive;font-size:2.6rem;outline:none;transition:border-color 0.2s;text-align:center;margin-bottom:12px}
-.sig-input:focus{border-color:var(--gold)}
-.sig-input::placeholder{color:var(--text-muted);font-size:1.4rem;font-family:'Open Sans',sans-serif}
-.sign-btn{width:100%;padding:16px;margin-top:12px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.04em;background:var(--gold);color:var(--dark);border:none;border-radius:8px;cursor:pointer;transition:background 0.2s,transform 0.1s}
+.sig-canvas-wrap{border:1px solid oklch(30% 0.03 70/0.3);border-radius:8px;background:oklch(14% 0.008 250);padding:4px;position:relative;margin-bottom:8px}
+.sig-canvas-wrap canvas{display:block;width:100%;height:160px;border-radius:6px;cursor:crosshair;touch-action:none}
+.sig-canvas-wrap.active{border-color:var(--gold)}
+.sig-canvas-wrap.has-sig .sig-placeholder{opacity:0}
+.sig-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-muted);font-size:0.8rem;pointer-events:none;transition:opacity 200ms}
+.sig-clear{font-size:0.7rem;color:var(--gold);cursor:pointer;font-family:'Montserrat',sans-serif;font-weight:600;background:none;border:none;padding:0;margin-top:4px}
+.sig-clear:hover{color:var(--gold-light)}
+.sign-btn{width:100%;padding:16px;margin-top:20px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.04em;background:var(--gold);color:var(--dark);border:none;border-radius:8px;cursor:pointer;transition:background 0.2s,transform 0.1s}
 .sign-btn:hover{background:var(--gold-light)}
 .sign-btn:active{transform:scale(0.97)}
 .sign-btn:disabled{opacity:0.5;cursor:not-allowed}
@@ -88,7 +91,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 .footer{text-align:center;padding-top:32px;border-top:1px solid oklch(22% 0.008 260);margin-top:48px}
 .footer .tagline{font-family:'Montserrat',sans-serif;font-weight:600;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
 .footer .contact{font-size:.8rem;color:var(--text-dim)}
-@media print{.back,.sign-btn{display:none}.page{padding:24px}}
+@media print{.back,.sign-btn,.sig-clear{display:none}.page{padding:24px}}
 </style>
 </head>
 <body>
@@ -155,7 +158,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 <div class="value-block">
 <div>
 <div class="label">Estimated Exchange Value</div>
-<div class="amount">$2,500 – $3,500</div>
+<div class="amount">$2,500 &ndash; $3,500</div>
 </div>
 <div class="note">Value based on comparable web design packages and professional bartending rates. No cash changes hands; services exchanged at equivalent professional value.</div>
 </div>
@@ -163,17 +166,17 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 <section class="section">
 <h2 class="section-title">AMG Deliverable Status</h2>
 <div class="status-grid">
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Site wireframe and page structure</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Homepage design (hero, intro, services)</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Featured Drinks section with monthly rotation</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Partner/Trusted By logo grid</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>About section with photo placement</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Contact/inquiry form section</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Scroll animations and interactive states</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Responsive mobile layout</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Logo concept: The Ascension Mark</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Pitch deck compiled</span></div>
-<div class="status-item"><div class="status-check done">&#10003;</div><span>Final HTML files packaged for developer</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Site wireframe and page structure</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Homepage design (hero, intro, services)</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Featured Drinks section with monthly rotation</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Partner/Trusted By logo grid</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>About section with photo placement</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Contact/inquiry form section</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Scroll animations and interactive states</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Responsive mobile layout</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Logo concept: The Ascension Mark</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Pitch deck compiled</span></div>
+<div class="status-item"><div class="status-check">&#10003;</div><span>Final HTML files packaged for developer</span></div>
 </div>
 </section>
 
@@ -203,10 +206,10 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 <h2>Signatures</h2>
 <div class="sig-grid">
 
-<!-- AFIA'S SIGNATURE (pre-signed, large, legible) -->
+<!-- AFIA'S SIGNATURE (pre-signed with actual signature image, large) -->
 <div class="sig-block">
 <div class="sig-label">Ampersound Media Group</div>
-<div class="sig-name">Afia Chin-Roberts</div>
+<img src="https://lh3.googleusercontent.com/d/1d_IcL7IwP48HmtbeAb1C7sBulRsfoVJw" alt="Afia Chin-Roberts Signature" class="sig-image">
 <div class="sig-line"></div>
 <div class="sig-meta">
 <span><strong>Afia Chin-Roberts</strong></span>
@@ -216,10 +219,14 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 <div class="sig-date">Signed: July 22, 2026</div>
 </div>
 
-<!-- DONNIELLE'S SIGNATURE (to be signed) -->
+<!-- DONNIELLE'S SIGNATURE (draw to sign) -->
 <div class="sig-block" id="partnerSigBlock">
 <div class="sig-label">Indigo Reimagined</div>
-<input type="text" class="sig-input" id="partnerSigInput" placeholder="Sign your name here">
+<div class="sig-canvas-wrap" id="sigWrap">
+<canvas id="sigCanvas"></canvas>
+<span class="sig-placeholder">Draw your signature here</span>
+</div>
+<button type="button" class="sig-clear" onclick="clearSig()">Clear</button>
 <div class="sig-line"></div>
 <div class="sig-meta">
 <span><strong>Donnielle Schroeder</strong></span>
@@ -247,35 +254,55 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 </div>
 
 <script>
-var signBtn = document.getElementById('signBtn');
-var sigInput = document.getElementById('partnerSigInput');
-var sigDate = document.getElementById('partnerSigDate');
+// Signature pad
+var canvas=document.getElementById('sigCanvas'),ctx,sigWrap=document.getElementById('sigWrap');
+var isDrawing=false,hasSig=false;
 
-signBtn.addEventListener('click', async function() {
-  var name = sigInput.value.trim();
-  if (name.length < 3) { sigInput.style.borderColor = 'oklch(60% 0.2 25)'; return; }
+function initPad(){
+  var r=canvas.getBoundingClientRect();
+  canvas.width=r.width*devicePixelRatio;
+  canvas.height=r.height*devicePixelRatio;
+  ctx=canvas.getContext('2d');
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.strokeStyle='#f0ebe4';
+  ctx.lineWidth=2.5;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+}
+initPad();
+window.addEventListener('resize',initPad);
 
-  signBtn.disabled = true;
-  signBtn.textContent = 'Processing...';
+function getPos(e){var r=canvas.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top}}
+function start(e){e.preventDefault();isDrawing=true;var p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);sigWrap.classList.add('active')}
+function draw(e){e.preventDefault();if(!isDrawing)return;var p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSig=true;sigWrap.classList.add('has-sig')}
+function end(){isDrawing=false;sigWrap.classList.remove('active')}
 
-  try {
-    await fetch('/.netlify/functions/submit-agreement', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'partner-agreement-signed',
-        partnerName: 'Donnielle Schroeder',
-        signedAs: name,
-        dateSigned: new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }),
-        agreementTitle: 'Service Exchange - Ampersound x Indigo Reimagined',
-      }),
+canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',draw);canvas.addEventListener('mouseup',end);canvas.addEventListener('mouseleave',end);
+canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',draw,{passive:false});canvas.addEventListener('touchend',end);canvas.addEventListener('touchcancel',end);
+
+function clearSig(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSig=false;sigWrap.classList.remove('has-sig')}
+
+// Submit
+document.getElementById('signBtn').addEventListener('click',async function(){
+  if(!hasSig){sigWrap.style.borderColor='oklch(60% 0.2 25)';return}
+  var btn=this;btn.disabled=true;btn.textContent='Processing...';
+  try{
+    await fetch('/.netlify/functions/submit-agreement',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        type:'partner-agreement-signed',
+        partnerName:'Donnielle Schroeder',
+        signatureImage:canvas.toDataURL('image/png'),
+        dateSigned:new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),
+        agreementTitle:'Service Exchange - Ampersound x Indigo Reimagined'
+      })
     });
-  } catch(e) { /* continue */ }
-
-  sigInput.disabled = true;
-  sigInput.style.borderColor = 'oklch(65% 0.15 145)';
-  sigDate.textContent = 'Signed: ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-  signBtn.style.display = 'none';
+  }catch(e){}
+  document.getElementById('partnerSigDate').textContent='Signed: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  btn.style.display='none';
+  document.querySelector('.sig-clear').style.display='none';
+  canvas.style.pointerEvents='none';
   document.getElementById('signedMsg').classList.add('visible');
 });
 </script>
