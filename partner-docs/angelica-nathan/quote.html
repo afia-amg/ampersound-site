@@ -31,14 +31,18 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 .package-list{list-style:none;display:flex;flex-direction:column;gap:12px}
 .package-list li{font-size:.88rem;color:var(--text-dim);padding-left:18px;position:relative;line-height:1.5}
 .package-list li::before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
-.value-block{background:var(--gold-dim);border:1px solid oklch(30% 0.04 65);border-radius:10px;padding:28px;margin-bottom:48px}
+.value-block{background:var(--gold-dim);border:1px solid oklch(30% 0.04 65);border-radius:10px;padding:28px;margin-bottom:20px}
 .price-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid oklch(30% 0.03 65)}
 .price-row:last-child{border-bottom:none}
 .price-row .label{font-size:.85rem;color:var(--text-dim)}
 .price-row .val{font-family:'Montserrat',sans-serif;font-weight:700;font-size:.9rem;color:var(--text)}
+.price-row .val.struck{text-decoration:line-through;color:var(--text-muted);font-weight:400;font-size:.8rem}
+.price-row .val.discount{color:var(--success)}
 .price-total{display:flex;justify-content:space-between;align-items:center;padding-top:16px;margin-top:8px;border-top:2px solid oklch(40% 0.06 65)}
 .price-total .label{font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;color:var(--text)}
 .price-total .val{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.6rem;color:var(--text)}
+.referral-note{background:var(--surface);border:1px solid oklch(30% 0.08 145);border-radius:10px;padding:20px 24px;margin-bottom:48px;font-size:.85rem;color:var(--text-dim);line-height:1.6}
+.referral-note strong{color:var(--success);font-weight:600}
 .terms-list{display:flex;flex-direction:column;gap:10px}
 .terms-list p{font-size:.85rem;color:var(--text-dim);line-height:1.6}
 .terms-list p strong{color:var(--text);font-weight:600}
@@ -73,7 +77,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 <div class="detail-item"><div class="label">Venue</div><div class="value">Backyard (Private Residence)</div></div>
 <div class="detail-item"><div class="label">Guests</div><div class="value">51 - 100</div></div>
 <div class="detail-item"><div class="label">Planner</div><div class="value">Carla Lifferth</div></div>
-<div class="detail-item"><div class="label">Lead Source</div><div class="value">Referral</div></div>
+<div class="detail-item"><div class="label">Referred By</div><div class="value">Liffcake Parties</div></div>
 </div>
 </section>
 
@@ -95,10 +99,15 @@ body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text)
 <section class="section">
 <h2 class="section-title">Investment</h2>
 <div class="value-block">
-<div class="price-row"><span class="label">DJ + MC Event Flow Package</span><span class="val">$900</span></div>
+<div class="price-row"><span class="label">DJ + MC Event Flow Package (standard rate)</span><span class="val struck">$1,750</span></div>
+<div class="price-row"><span class="label">Liffcake Parties Referral Rate</span><span class="val discount">$900</span></div>
 <div class="price-row"><span class="label">Deposit to reserve date (30%)</span><span class="val">$270</span></div>
 <div class="price-row"><span class="label">Remaining balance (due 14 days before event)</span><span class="val">$630</span></div>
-<div class="price-total"><span class="label">Total</span><span class="val">$900</span></div>
+<div class="price-total"><span class="label">Your Total</span><span class="val">$900</span></div>
+</div>
+
+<div class="referral-note">
+<strong>Referral Partner Pricing:</strong> Because you were referred through Liffcake Parties, we are working within your budget as best as we can. Our standard DJ + MC Event Flow Package for weddings starts at $1,750. Through this referral, we're able to offer the full package at $900, a savings of $850, because we value our partnership with Carla and want to make sure your celebration gets the support it deserves.
 </div>
 </section>
 
