@@ -1,5 +1,5 @@
 const CLICKUP_API_TOKEN = process.env.CLICKUP_API_TOKEN;
-const LIST_ID = '901418268145';
+const LIST_IDS = ['901418268145', '901418180552']; // Agreements list + Proposals Sent list
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791', paymentLink:'959cae43-8c7a-43b4-b0ce-2513b311b227', paymentStatus:'96105ecf-6396-4fb1-90aa-93b37c9dfc48' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
@@ -12,20 +12,20 @@ exports.handler = async (event) => {
   if (!CLICKUP_API_TOKEN) return { statusCode:500, headers, body:JSON.stringify({message:'Server configuration error'}) };
 
   try {
-    const res = await fetch(`https://api.clickup.com/api/v2/list/${LIST_ID}/task?archived=false&include_closed=true&subtasks=false&page=0`, {
-      method: 'GET',
-      headers: { 'Authorization': CLICKUP_API_TOKEN, 'Content-Type': 'application/json' },
-    });
-
-    if (!res.ok) {
-      const errBody = await res.text();
-      console.error('ClickUp API error:', res.status, errBody);
-      return { statusCode:502, headers, body:JSON.stringify({message:'Unable to retrieve agreements'}) };
+    // Search across multiple lists
+    const allTasks = [];
+    for (const listId of LIST_IDS) {
+      const res = await fetch(`https://api.clickup.com/api/v2/list/${listId}/task?archived=false&include_closed=true&subtasks=false&page=0`, {
+        method: 'GET',
+        headers: { 'Authorization': CLICKUP_API_TOKEN, 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.tasks) allTasks.push(...data.tasks);
+      }
     }
 
-    const data = await res.json();
-
-    const tasks = (data.tasks||[]).filter(task => {
+    const tasks = allTasks.filter(task => {
       const emailField = (task.custom_fields||[]).find(f => f.id === CF.clientEmail);
       if (!emailField) return false;
       let fieldValue = '';
@@ -74,20 +74,28 @@ function formatAgreements(tasks) {
     const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
     const isSigned = statusType === 'done' || statusType === 'closed' || statusName === 'signed' || statusName === 'closed';
     const isDraft = statusName === 'draft';
-    const isSent = statusName === 'sent';
+    const isSent = statusName === 'sent' || statusName === 'proposal';
 
     let stage, status;
     if (isSigned) { stage = 'agreement'; status = 'signed'; }
     else if (isSent) { stage = 'proposal'; status = 'awaiting_signature'; }
     else { stage = 'proposal'; status = 'draft'; }
 
+    // Check for custom proposal link (quote page)
+    const proposalLinkField = (task.custom_fields||[]).find(cf => cf.id === '41aa0747-8956-404a-8460-1ddfb0d5e913');
+    const proposalLink = proposalLinkField && typeof proposalLinkField.value === 'string' ? proposalLinkField.value : null;
+
     // Build actions based on stage and payment state
     let actions = '';
     if (stage === 'proposal') {
-      actions += `<a href="/proposal?token=${task.id}">View Proposal</a>`;
-      if (isSent) actions += `<a href="/agreement/sign?token=${task.id}">Sign Agreement</a>`;
+      if (proposalLink) {
+        actions += `<a href="${proposalLink}">View Quote</a>`;
+        actions += `<a href="${proposalLink.replace('quote.html','sign.html')}">Sign Agreement</a>`;
+      } else {
+        actions += `<a href="/proposal?token=${task.id}">View Proposal</a>`;
+        if (isSent) actions += `<a href="/agreement/sign?token=${task.id}">Sign Agreement</a>`;
+      }
     } else {
-      // Signed agreement
       if (!isPaid && paymentLink) {
         actions += `<a href="${paymentLink}" class="pay-action">Pay Deposit</a>`;
       }
