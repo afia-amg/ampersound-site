@@ -1,4 +1,4 @@
-const LIST_ID = "901417290253";
+const LIST_ID = "901418578191";
 
 const FIELDS = {
   email: "a32a6928-ba34-4d2f-8792-d2f63d739f90",
@@ -14,6 +14,7 @@ const FIELDS = {
   businessName: "859f2865-375b-444b-a80e-88d941740249",
   howHeard: "2cdd3842-f23c-4e3e-8d7e-39b2fd026e42",
   indoorOutdoor: "57131e3e-b145-41e1-9123-677e37994ed3",
+  leadSource: "8d63eb2b-55a0-47ca-93b1-7fbc0cba590d",
 };
 
 const EVENT_TYPE_MAP = {
@@ -47,6 +48,16 @@ const INDOOR_MAP = {
   "Indoor": "6729e243-e299-4d2c-9fb4-045a444b10fa",
   "Outdoor": "f2f61c79-f833-46a2-97b9-b688b94a6760",
   "Both": "9c6aa961-c00e-4cae-8046-f333d94de739"
+};
+
+const REFERRAL_SOURCE_MAP = {
+  "WeddingPro": "Website Intake",
+  "Bark": "Website Intake",
+  "Google": "Website Intake",
+  "Instagram": "Website Intake",
+  "Referral": "Website Intake",
+  "Venue": "Website Intake",
+  "Other": "Website Intake"
 };
 
 exports.handler = async (event) => {
@@ -152,7 +163,7 @@ exports.handler = async (event) => {
       "Notes: " + (data.notes || "None"),
     ].join("\n");
 
-    // Create task in ClickUp
+    // Create task in ClickUp — new consolidated Pipeline list
     var response = await fetch(
       "https://api.clickup.com/api/v2/list/" + LIST_ID + "/task",
       {
@@ -164,7 +175,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           name: data.name || "New Intake Submission",
           description: description,
-          status: "unqualified prospect",
+          status: "New Lead",
           custom_fields: customFields,
         }),
       }
@@ -180,6 +191,6 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, taskId: task.id }) };
   } catch (err) {
     console.error("Function error:", err);
-           return { statusCode: 500, headers, body: JSON.stringify({ error: "Server error" }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "Server error" }) };
   }
 };
