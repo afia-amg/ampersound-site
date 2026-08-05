@@ -3,13 +3,22 @@
  * Receives song requests and timeline data from client portal.
  * Posts formatted comments on the matching Pipeline task in ClickUp.
  *
+ * Matching logic: checks both the Email Address field AND the task
+ * description for the submitted email. This allows either partner
+ * in a couple to submit from the same portal.
+ *
  * Env vars:
  *   CLICKUP_API_TOKEN
  *   PIPELINE_LIST_ID - 901418578191 (new consolidated Pipeline)
  */
 
 const CLICKUP_BASE = "https://api.clickup.com/api/v2";
-const EMAIL_FIELD_ID = "a32a6928-ba34-4d2f-8792-d2f63d739f90";
+
+// Both email fields that could contain a match
+const EMAIL_FIELD_IDS = [
+  "a32a6928-ba34-4d2f-8792-d2f63d739f90",  // Email Address (list-level)
+  "6662e48d-f76c-4bf4-aa23-1d56037dd61c"   // Email (folder-level)
+];
 
 exports.handler = async (event) => {
   const headers = {
@@ -41,18 +50,21 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: "Invalid JSON" };
   }
 
-  const { type, email, client, data } = payload;
+  const { type, email, emails, client, data } = payload;
 
-  if (!type || !email || !data) {
+  if (!type || (!email && !emails) || !data) {
     return { statusCode: 400, headers, body: "Missing required fields" };
   }
 
+  // Support single email or array of emails
+  const emailsToMatch = emails || [email];
+
   try {
-    // Find the Pipeline task by email
-    const task = await findTaskByEmail(TOKEN, LIST_ID, email);
+    // Find the Pipeline task by any matching email
+    const task = await findTaskByEmails(TOKEN, LIST_ID, emailsToMatch);
 
     if (!task) {
-      console.log(`No task found for: ${email}`);
+      console.log(`No task found for: ${emailsToMatch.join(", ")}`);
       return {
         statusCode: 200, headers,
         body: JSON.stringify({ ok: true, message: "No matching task" })
@@ -102,6 +114,11 @@ function formatSongComment(data, client) {
   if (data.motherSon) lines.push(`**Mother/Son:** ${data.motherSon}`);
   if (data.tossSong) lines.push(`**Bouquet/Garter Toss:** ${data.tossSong}`);
 
+  if (data.playlistLink) {
+    lines.push("");
+    lines.push(`**Playlist Link:** ${data.playlistLink}`);
+  }
+
   if (data.mustPlay && data.mustPlay.length > 0) {
     lines.push("");
     lines.push("**Must-Play:**");
@@ -116,7 +133,11 @@ function formatSongComment(data, client) {
 
   if (data.vibe) {
     lines.push("");
-    lines.push(`**Energy Preference:** ${data.vibe}`);
+    lines.push(`**Volume/Energy:** ${data.vibe}`);
+  }
+
+  if (data.requests) {
+    lines.push(`**Guest Request Policy:** ${data.requests}`);
   }
 
   if (data.notes) {
@@ -150,18 +171,28 @@ function formatTimelineComment(data, client) {
 
 // --- ClickUp Helpers ---
 
-async function findTaskByEmail(token, listId, email) {
+async function findTaskByEmails(token, listId, emails) {
   const res = await fetch(`${CLICKUP_BASE}/list/${listId}/task?include_closed=false`, {
     headers: { Authorization: token },
   });
   if (!res.ok) throw new Error(`ClickUp API: ${res.status}`);
   const data = await res.json();
 
-  return data.tasks.find((t) =>
-    t.custom_fields?.some(
-      (f) => f.id === EMAIL_FIELD_ID && f.value === email
-    )
-  ) || null;
+  // Match on any email field OR check if email appears in task description
+  return data.tasks.find((t) => {
+    // Check custom email fields
+    const fieldMatch = t.custom_fields?.some(
+      (f) => EMAIL_FIELD_IDS.includes(f.id) && emails.includes(f.value)
+    );
+    if (fieldMatch) return true;
+
+    // Fallback: check if any email appears in description (for secondary contacts)
+    if (t.description) {
+      return emails.some((e) => t.description.includes(e));
+    }
+
+    return false;
+  }) || null;
 }
 
 async function postComment(token, taskId, text) {
@@ -174,16 +205,25 @@ async function postComment(token, taskId, text) {
 }
 
 async function updateSongFields(token, taskId, data) {
-  // Update Must-Play field (f6f085c8-6d03-4b29-88ce-2c005d68b91f)
-  // Update Do-Not-Play field (a64d3333-7c86-4d16-8967-f8e6a569ac17)
   const fields = [];
 
+  // Build must-play content
+  let mustPlayParts = [];
+  if (data.firstDance) mustPlayParts.push(`First Dance: ${data.firstDance}`);
+  if (data.lastDance) mustPlayParts.push(`Private Last Dance: ${data.lastDance}`);
+  if (data.groomEntrance) mustPlayParts.push(`Groom Entrance: ${data.groomEntrance}`);
+  if (data.brideProcessional) mustPlayParts.push(`Bride Processional: ${data.brideProcessional}`);
+  if (data.fatherDaughter) mustPlayParts.push(`Father/Daughter: ${data.fatherDaughter}`);
+  if (data.motherSon) mustPlayParts.push(`Mother/Son: ${data.motherSon}`);
+  if (data.tossSong) mustPlayParts.push(`Exit/Toss: ${data.tossSong}`);
   if (data.mustPlay && data.mustPlay.length > 0) {
-    const mustPlayText = data.mustPlay.join("\n");
-    if (data.firstDance) fields.push({ id: "f6f085c8-6d03-4b29-88ce-2c005d68b91f", value: `First Dance: ${data.firstDance}\n${mustPlayText}` });
-    else fields.push({ id: "f6f085c8-6d03-4b29-88ce-2c005d68b91f", value: mustPlayText });
-  } else if (data.firstDance) {
-    fields.push({ id: "f6f085c8-6d03-4b29-88ce-2c005d68b91f", value: `First Dance: ${data.firstDance}` });
+    mustPlayParts.push("");
+    mustPlayParts = mustPlayParts.concat(data.mustPlay);
+  }
+  if (data.playlistLink) mustPlayParts.push(`\nPlaylist: ${data.playlistLink}`);
+
+  if (mustPlayParts.length > 0) {
+    fields.push({ id: "f6f085c8-6d03-4b29-88ce-2c005d68b91f", value: mustPlayParts.join("\n") });
   }
 
   if (data.dontPlay && data.dontPlay.length > 0) {
