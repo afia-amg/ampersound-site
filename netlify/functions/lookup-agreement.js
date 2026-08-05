@@ -3,14 +3,52 @@ const LIST_IDS = ['901418268145', '901418180552'];
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791', paymentLink:'959cae43-8c7a-43b4-b0ce-2513b311b227', paymentStatus:'96105ecf-6396-4fb1-90aa-93b37c9dfc48', agreementDoc:'b4a7de8c-d2d2-4f2b-b26e-8353d94f00b4' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
-// Static portal data for confirmed clients (fast path, no ClickUp API call needed)
-const CLIENT_DATA = {
-  'ryan.nelson.jrn@gmail.com': { eventName:'Katie & Ryan Wedding', eventDate:'2026-10-09', venue:'Utah State Capitol', services:'DJ + MC / Signature Celebration', totalFee:1912.50, deposit:956.25, portalUrl:'https://run.clickup.ai/90141325083/2d7a069d-dbe9-4d41-8343-aa6d4803c7ac/katie-ryan-agreement.html' },
-  'kategeis@hotmail.com': { eventName:'Katie & Ryan Wedding', eventDate:'2026-10-09', venue:'Utah State Capitol', services:'DJ + MC / Signature Celebration', totalFee:1912.50, deposit:956.25, portalUrl:'https://run.clickup.ai/90141325083/2d7a069d-dbe9-4d41-8343-aa6d4803c7ac/katie-ryan-agreement.html' },
-  'ashleyveenendaal23@gmail.com': { eventName:'Katie & Ryan Wedding', eventDate:'2026-10-09', venue:'Utah State Capitol', services:'DJ + MC / Signature Celebration', totalFee:1912.50, deposit:956.25, portalUrl:'https://run.clickup.ai/90141325083/2d7a069d-dbe9-4d41-8343-aa6d4803c7ac/katie-ryan-agreement.html' },
-  'jesseradike1@gmail.com': { eventName:'Jesse & Zariah Wedding', eventDate:'2027-04-28', venue:'Grand Falls', services:'DJ + MC / Signature Celebration', totalFee:1912.50, deposit:956.25, portalUrl:'https://run.clickup.ai/90141325083/574ccfe8-f4f7-461e-9bc9-c8b9c1d49fe6/jesse-zariah-agreement.html' },
-  'spinsbooknook@gmail.com': { eventName:'Aspen & Hyrum Wedding', eventDate:'2026-08-21', venue:'Lindon, Utah', services:'DJ / Essential Package', totalFee:722.50, deposit:361.25, portalUrl:'https://run.clickup.ai/90141325083/e1e2e40b-fa98-4935-8cb2-d00a62adb190/aspen-hyrum-agreement.html' },
+// Static portal map: email -> full agreement card data for known clients
+const CLIENT_PORTALS = {
+  'ryan.nelson.jrn@gmail.com': {
+    eventName: 'Katie & Ryan Wedding',
+    eventDate: '2026-10-09',
+    eventType: 'Wedding',
+    venue: 'Utah State Capitol',
+    services: 'DJ / Sound Direction, MC / Event Hosting, Audio / AV Production',
+    totalFee: 1912.50,
+    deposit: 956.25,
+    stage: 'agreement',
+    status: 'signed',
+    paymentStatus: 'paid',
+    portalUrl: 'https://run.clickup.ai/90141325083/2d7a069d-dbe9-4d41-8343-aa6d4803c7ac/katie-ryan-agreement.html',
+  },
+  'jesseradike1@gmail.com': {
+    eventName: 'Jesse & Zariah Wedding',
+    eventDate: '2027-04-28',
+    eventType: 'Wedding',
+    venue: 'Grand Falls',
+    services: 'DJ / Sound Direction, MC / Event Hosting',
+    totalFee: 1912.50,
+    deposit: 956.25,
+    stage: 'proposal',
+    status: 'awaiting_signature',
+    paymentStatus: 'unpaid',
+    portalUrl: 'https://run.clickup.ai/90141325083/574ccfe8-f4f7-461e-9bc9-c8b9c1d49fe6/jesse-zariah-agreement.html',
+  },
+  'spinsbooknook@gmail.com': {
+    eventName: 'Aspen & Hyrum Wedding',
+    eventDate: '2026-08-21',
+    eventType: 'Wedding',
+    venue: 'Lindon, Utah',
+    services: 'DJ / Sound Direction',
+    totalFee: 722.50,
+    deposit: 361.25,
+    stage: 'proposal',
+    status: 'awaiting_signature',
+    paymentStatus: 'unpaid',
+    portalUrl: 'https://run.clickup.ai/90141325083/e1e2e40b-fa98-4935-8cb2-d00a62adb190/aspen-hyrum-agreement.html',
+  },
 };
+
+// Aliases: multiple emails -> same portal
+CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
+CLIENT_PORTALS['ashleyveenendaal23@gmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode:204, headers, body:'' };
@@ -21,35 +59,39 @@ exports.handler = async (event) => {
   if (!CLICKUP_API_TOKEN) return { statusCode:500, headers, body:JSON.stringify({message:'Server configuration error'}) };
 
   try {
-    // Fast path: known clients with confirmed bookings
-    if (CLIENT_DATA[email]) {
-      const d = CLIENT_DATA[email];
+    // Fast path: static portal map (returns full card data the frontend expects)
+    const staticEntry = CLIENT_PORTALS[email];
+    if (staticEntry) {
+      let actions = '';
+      if (staticEntry.portalUrl) {
+        actions = '<a href="' + staticEntry.portalUrl + '">Open Client Portal</a>';
+      }
       return {
         statusCode: 200, headers,
         body: JSON.stringify({
           agreements: [{
-            id: 'confirmed',
-            eventName: d.eventName,
-            eventDate: d.eventDate,
-            eventType: 'Wedding',
-            venue: d.venue,
-            services: d.services,
-            totalFee: d.totalFee,
-            deposit: d.deposit,
-            stage: 'agreement',
-            status: 'signed',
-            paymentStatus: 'paid',
-            portalUrl: d.portalUrl,
-            actions: '<a href="' + d.portalUrl + '">Open Client Portal</a>'
+            id: 'static-' + email.split('@')[0],
+            eventName: staticEntry.eventName,
+            eventDate: staticEntry.eventDate,
+            eventType: staticEntry.eventType,
+            venue: staticEntry.venue,
+            services: staticEntry.services,
+            totalFee: staticEntry.totalFee,
+            deposit: staticEntry.deposit,
+            stage: staticEntry.stage,
+            status: staticEntry.status,
+            paymentStatus: staticEntry.paymentStatus,
+            portalUrl: staticEntry.portalUrl,
+            actions: actions,
           }]
         })
       };
     }
 
-    // Full lookup: search ClickUp lists
+    // Dynamic path: search ClickUp lists
     const allTasks = [];
     for (const listId of LIST_IDS) {
-      const res = await fetch(`https://api.clickup.com/api/v2/list/${listId}/task?archived=false&include_closed=true&subtasks=false&page=0`, {
+      const res = await fetch('https://api.clickup.com/api/v2/list/' + listId + '/task?archived=false&include_closed=true&subtasks=false&page=0', {
         method: 'GET',
         headers: { 'Authorization': CLICKUP_API_TOKEN, 'Content-Type': 'application/json' },
       });
@@ -59,18 +101,17 @@ exports.handler = async (event) => {
       }
     }
 
-    // Match on Client Email field OR description contains the email
-    const tasks = allTasks.filter(task => {
-      const emailField = (task.custom_fields||[]).find(f => f.id === CF.clientEmail);
+    // Match on Client Email field OR email in description
+    const tasks = allTasks.filter(function(task) {
+      var emailField = (task.custom_fields||[]).find(function(f) { return f.id === CF.clientEmail; });
       if (emailField) {
-        let fieldValue = '';
+        var fieldValue = '';
         if (typeof emailField.value === 'string') fieldValue = emailField.value;
-        else if (emailField.value && typeof emailField.value === 'object') fieldValue = emailField.value.email || JSON.stringify(emailField.value);
+        else if (emailField.value && typeof emailField.value === 'object') fieldValue = emailField.value.email || '';
         else if (emailField.value) fieldValue = String(emailField.value);
         if (fieldValue.toLowerCase() === email) return true;
       }
-      // Fallback: check description
-      if (task.description && task.description.toLowerCase().includes(email)) return true;
+      if (task.description && task.description.toLowerCase().indexOf(email) !== -1) return true;
       return false;
     });
 
@@ -86,55 +127,38 @@ exports.handler = async (event) => {
 };
 
 function formatAgreements(tasks) {
-  return tasks.map(task => {
-    const getField = (id) => {
-      const f = (task.custom_fields||[]).find(cf => cf.id === id);
+  return tasks.map(function(task) {
+    var getField = function(id) {
+      var f = (task.custom_fields||[]).find(function(cf) { return cf.id === id; });
       if (!f || f.value === null || f.value === undefined) return null;
       if (f.type === 'drop_down' && f.type_config && f.type_config.options && typeof f.value === 'number') {
-        const opt = f.type_config.options.find(o => o.orderindex === f.value);
+        var opt = f.type_config.options.find(function(o) { return o.orderindex === f.value; });
         return opt ? opt.name : null;
       }
-      if (f.type === 'labels' && Array.isArray(f.value)) return f.value.map(v => typeof v === 'string' ? v : (v.label || v.name || '')).join(', ');
-      if (f.type === 'date' && f.value) { try { return new Date(Number(f.value)).toISOString().split('T')[0]; } catch { return null; } }
-      if (f.type === 'currency') { const n = typeof f.value === 'number' ? f.value : parseFloat(f.value); return isNaN(n) ? null : n; }
+      if (f.type === 'labels' && Array.isArray(f.value)) return f.value.map(function(v) { return typeof v === 'string' ? v : (v.label || v.name || ''); }).join(', ');
+      if (f.type === 'date' && f.value) { try { return new Date(Number(f.value)).toISOString().split('T')[0]; } catch(e) { return null; } }
+      if (f.type === 'currency') { var n = typeof f.value === 'number' ? f.value : parseFloat(f.value); return isNaN(n) ? null : n; }
       if (typeof f.value === 'string') return f.value;
       if (typeof f.value === 'number') return f.value;
       return null;
     };
 
-    const statusType = task.status ? (task.status.type || '') : '';
-    const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
-    const isSigned = statusType === 'done' || statusType === 'closed' || statusName === 'signed' || statusName === 'closed' || statusName === 'paid';
-    const isSent = statusName === 'sent' || statusName === 'proposal';
+    var statusType = task.status ? (task.status.type || '') : '';
+    var statusName = task.status ? (task.status.status || '').toLowerCase() : '';
+    var isSigned = statusType === 'done' || statusType === 'closed' || statusName === 'signed' || statusName === 'closed' || statusName === 'paid';
+    var isSent = statusName === 'sent' || statusName === 'proposal';
 
-    let stage, status;
+    var stage, status;
     if (isSigned) { stage = 'agreement'; status = 'signed'; }
     else if (isSent) { stage = 'proposal'; status = 'awaiting_signature'; }
     else { stage = 'proposal'; status = 'draft'; }
 
-    const portalUrl = getField(CF.agreementDoc) || null;
-    const paymentLink = getField(CF.paymentLink);
-
-    const paymentStatusField = (task.custom_fields||[]).find(cf => cf.id === CF.paymentStatus);
-    let paymentStatus = null;
-    if (paymentStatusField && paymentStatusField.type_config && paymentStatusField.type_config.options && typeof paymentStatusField.value === 'number') {
-      const opt = paymentStatusField.type_config.options.find(o => o.orderindex === paymentStatusField.value);
-      if (opt) paymentStatus = opt.name;
-    }
-    const isPaid = paymentStatus === 'Payment Recieved';
-
-    let actions = '';
-    if (isSigned && portalUrl) {
+    var portalUrl = getField(CF.agreementDoc) || null;
+    var actions = '';
+    if (portalUrl) {
       actions = '<a href="' + portalUrl + '">Open Client Portal</a>';
-    } else if (isSigned) {
-      actions = '<a href="/agreement/sign?token=' + task.id + '&view=true">View Agreement</a>';
-    } else if (!isPaid && paymentLink) {
-      actions = '<a href="' + paymentLink + '" class="pay-action">Pay Deposit</a>';
     } else {
-      const proposalLinkField = (task.custom_fields||[]).find(cf => cf.id === '41aa0747-8956-404a-8460-1ddfb0d5e913');
-      const proposalLink = proposalLinkField && typeof proposalLinkField.value === 'string' ? proposalLinkField.value : null;
-      if (proposalLink) actions = '<a href="' + proposalLink + '">View Proposal</a>';
-      else actions = '<a href="/agreement/sign?token=' + task.id + '">View</a>';
+      actions = '<a href="/agreement/sign?token=' + task.id + '&view=true">View Agreement</a>';
     }
 
     return {
@@ -146,11 +170,11 @@ function formatAgreements(tasks) {
       services: getField(CF.services),
       totalFee: getField(CF.totalFee),
       deposit: getField(CF.depositAmount),
-      stage,
-      status,
-      paymentStatus: isPaid ? 'paid' : (paymentLink ? 'unpaid' : 'no_link'),
-      portalUrl,
-      actions,
+      stage: stage,
+      status: status,
+      paymentStatus: isSigned ? 'paid' : 'unpaid',
+      portalUrl: portalUrl,
+      actions: actions,
     };
   });
 }
