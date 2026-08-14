@@ -25,11 +25,11 @@ const CLIENT_PORTALS = {
     venue: 'Grand Falls',
     services: 'DJ / Sound Direction, MC / Event Hosting',
     totalFee: 1912.50,
-    deposit: 956.25,
+    deposit: 478.13,
     stage: 'proposal',
     status: 'awaiting_signature',
     paymentStatus: 'unpaid',
-    portalUrl: 'https://run.clickup.ai/90141325083/574ccfe8-f4f7-461e-9bc9-c8b9c1d49fe6/jesse-zariah-agreement.html',
+    portalUrl: 'https://run.clickup.ai/90141325083/56a7ed0d-f426-4ad1-af43-1abf8d3332df/jesse-zariah-agreement.html',
   },
   'spinsbooknook@gmail.com': {
     eventName: 'Aspen & Hyrum Wedding',
@@ -59,7 +59,7 @@ exports.handler = async (event) => {
   if (!CLICKUP_API_TOKEN) return { statusCode:500, headers, body:JSON.stringify({message:'Server configuration error'}) };
 
   try {
-    // Fast path: static portal map (returns full card data the frontend expects)
+    // Fast path: static portal map
     const staticEntry = CLIENT_PORTALS[email];
     if (staticEntry) {
       let actions = '';
@@ -101,7 +101,6 @@ exports.handler = async (event) => {
       }
     }
 
-    // Match on Client Email field OR email in description
     const tasks = allTasks.filter(function(task) {
       var emailField = (task.custom_fields||[]).find(function(f) { return f.id === CF.clientEmail; });
       if (emailField) {
