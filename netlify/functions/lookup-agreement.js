@@ -44,6 +44,19 @@ const CLIENT_PORTALS = {
     paymentStatus: 'unpaid',
     portalUrl: 'https://run.clickup.ai/90141325083/e1e2e40b-fa98-4935-8cb2-d00a62adb190/aspen-hyrum-agreement.html',
   },
+  'liffcakeparties@gmail.com': {
+    eventName: 'Angelica & Nathan Wedding',
+    eventDate: '2026-09-05',
+    eventType: 'Wedding',
+    venue: 'Backyard',
+    services: 'DJ / Sound Direction, MC / Event Hosting',
+    totalFee: 900,
+    deposit: 450,
+    stage: 'proposal',
+    status: 'awaiting_signature',
+    paymentStatus: 'unpaid',
+    portalUrl: 'https://run.clickup.ai/90141325083/6ef3a3f9-5f9a-4e43-84f6-7f14c054ef33/angelica-nathan-agreement.html',
+  },
 };
 
 // Aliases: multiple emails -> same portal
