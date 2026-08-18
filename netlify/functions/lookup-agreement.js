@@ -3,7 +3,6 @@ const LIST_IDS = ['901418268145', '901418180552'];
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791', paymentLink:'959cae43-8c7a-43b4-b0ce-2513b311b227', paymentStatus:'96105ecf-6396-4fb1-90aa-93b37c9dfc48', agreementDoc:'b4a7de8c-d2d2-4f2b-b26e-8353d94f00b4' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
-// Static portal map: email -> full agreement card data for known clients
 const CLIENT_PORTALS = {
   'ryan.nelson.jrn@gmail.com': {
     eventName: 'Katie & Ryan Wedding',
@@ -51,15 +50,14 @@ const CLIENT_PORTALS = {
     venue: 'Backyard',
     services: 'DJ / Sound Direction, MC / Event Hosting',
     totalFee: 900,
-    deposit: 450,
+    deposit: 900,
     stage: 'proposal',
     status: 'awaiting_signature',
     paymentStatus: 'unpaid',
-    portalUrl: 'https://run.clickup.ai/90141325083/6ef3a3f9-5f9a-4e43-84f6-7f14c054ef33/angelica-nathan-agreement.html',
+    portalUrl: 'https://run.clickup.ai/90141325083/75704d3d-592c-44f9-b0b3-ff1a393df140/angelica-nathan-agreement.html',
   },
 };
 
-// Aliases: multiple emails -> same portal
 CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
 CLIENT_PORTALS['ashleyveenendaal23@gmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
 
@@ -72,7 +70,6 @@ exports.handler = async (event) => {
   if (!CLICKUP_API_TOKEN) return { statusCode:500, headers, body:JSON.stringify({message:'Server configuration error'}) };
 
   try {
-    // Fast path: static portal map
     const staticEntry = CLIENT_PORTALS[email];
     if (staticEntry) {
       let actions = '';
@@ -101,7 +98,6 @@ exports.handler = async (event) => {
       };
     }
 
-    // Dynamic path: search ClickUp lists
     const allTasks = [];
     for (const listId of LIST_IDS) {
       const res = await fetch('https://api.clickup.com/api/v2/list/' + listId + '/task?archived=false&include_closed=true&subtasks=false&page=0', {
