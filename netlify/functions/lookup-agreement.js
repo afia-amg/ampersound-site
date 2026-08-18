@@ -54,7 +54,7 @@ const CLIENT_PORTALS = {
     stage: 'proposal',
     status: 'awaiting_signature',
     paymentStatus: 'unpaid',
-    portalUrl: 'https://run.clickup.ai/90141325083/75704d3d-592c-44f9-b0b3-ff1a393df140/angelica-nathan-agreement.html',
+    portalUrl: 'https://run.clickup.ai/90141325083/da8a248a-724e-432e-b03e-057398dab5b5/angelica-nathan-agreement.html',
   },
 };
 
