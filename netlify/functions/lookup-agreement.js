@@ -15,7 +15,7 @@ const CLIENT_PORTALS = {
     stage: 'agreement',
     status: 'signed',
     paymentStatus: 'paid',
-    portalUrl: 'https://run.clickup.ai/90141325083/2d7a069d-dbe9-4d41-8343-aa6d4803c7ac/katie-ryan-agreement.html',
+    portalUrl: 'https://run.clickup.ai/90141325083/f17229a3-766e-46ec-8fd6-8a324860110b/katie-ryan-agreement.html',
   },
   'jesseradike1@gmail.com': {
     eventName: 'Jesse & Zariah Wedding',
