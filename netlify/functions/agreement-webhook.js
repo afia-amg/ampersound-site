@@ -63,22 +63,7 @@ exports.handler = async (event) => {
 
     console.log("Found task:", task.id, task.name);
 
-    // 2. Map action to status
-    const statusMap = { viewed: "sent", signed: "signed", paid: "paid" };
-    const newStatus = statusMap[action];
-    if (!newStatus) {
-      return { statusCode: 400, headers, body: "Invalid action" };
-    }
-
-    // Update status (may fail if status doesn't exist, log but continue)
-    try {
-      await updateTask(TOKEN, task.id, { status: newStatus });
-      console.log("Status updated to:", newStatus);
-    } catch (statusErr) {
-      console.error("Status update failed (continuing):", statusErr.message);
-    }
-
-    // 3. If signed: save signature + post comment
+    // 2. If signed: post signature comment FIRST (before status change)
     if (action === "signed") {
       const signerName = contact || client || "Client";
       const signDate = signedAt ? new Date(signedAt).toLocaleDateString("en-US", {
@@ -86,7 +71,7 @@ exports.handler = async (event) => {
         hour: "numeric", minute: "2-digit", timeZoneName: "short"
       }) : new Date().toISOString();
 
-      // Post comment with signature confirmation
+      // Post signature confirmation comment
       let commentText = "\u2705 **Agreement signed digitally**\n\n";
       commentText += "**Signed by:** " + signerName + "\n";
       commentText += "**Date:** " + signDate + "\n";
@@ -94,25 +79,30 @@ exports.handler = async (event) => {
       commentText += "**Total:** $" + (total_fee || 0).toFixed(2) + "\n";
       commentText += "**Event:** " + (event_date || "N/A") + "\n";
 
-      if (signature) {
-        commentText += "\n**Signature image stored.** (Base64 data captured and available in function logs for legal records.)";
-        // Log the first 100 chars of signature for verification that data was received
-        console.log("Signature received, length:", signature.length, "preview:", signature.substring(0, 80));
-      }
-
       await postComment(TOKEN, task.id, commentText);
-      console.log("Signed comment posted");
+      console.log("Signed confirmation comment posted");
 
-      // Attempt file attachment (may fail silently)
+      // Store signature as separate comment with full base64 data URL
+      // This is the most reliable approach: no multipart, no timeout risk
       if (signature) {
-        try {
-          await attachSignature(TOKEN, task.id, signature, signerName);
-          console.log("Signature file attached successfully");
-        } catch (attachErr) {
-          console.error("Signature attachment failed (non-fatal):", attachErr.message);
-          // Post the base64 as a second comment so it's never lost
-          await postComment(TOKEN, task.id, "Signature data (base64, first 500 chars for reference):\n" + signature.substring(0, 500));
-        }
+        const sigComment = "\ud83d\udd8a\ufe0f **Digital Signature Image**\n\n" +
+          "Signer: " + signerName + "\n" +
+          "Timestamp: " + signDate + "\n\n" +
+          "Signature data (base64 PNG):\n" + signature;
+        await postComment(TOKEN, task.id, sigComment);
+        console.log("Signature data saved in comment, length:", signature.length);
+      }
+    }
+
+    // 3. Update status AFTER comments are saved
+    const statusMap = { viewed: "sent", signed: "signed", paid: "paid" };
+    const newStatus = statusMap[action];
+    if (newStatus) {
+      try {
+        await updateTask(TOKEN, task.id, { status: newStatus });
+        console.log("Status updated to:", newStatus);
+      } catch (statusErr) {
+        console.error("Status update failed (continuing):", statusErr.message);
       }
     }
 
@@ -143,7 +133,7 @@ exports.handler = async (event) => {
 // --- Helpers ---
 
 async function findTaskByEmail(token, listId, email) {
-  const url = CLICKUP_BASE + "/list/" + listId + "/task?include_closed=false";
+  const url = CLICKUP_BASE + "/list/" + listId + "/task?include_closed=true&subtasks=false";
   console.log("Searching list:", listId, "for email:", email);
 
   const res = await fetch(url, { headers: { Authorization: token } });
@@ -190,35 +180,6 @@ async function updateTask(token, taskId, updates) {
   return res.json();
 }
 
-async function attachSignature(token, taskId, base64Data, signerName) {
-  const base64Content = base64Data.replace(/^data:image\/png;base64,/, "");
-  const buffer = Buffer.from(base64Content, "base64");
-  const boundary = "----FormBoundary" + Date.now().toString(36);
-  const filename = "signature-" + signerName.replace(/\s+/g, "-").toLowerCase() + "-" + Date.now() + ".png";
-
-  const body = Buffer.concat([
-    Buffer.from("--" + boundary + "\r\nContent-Disposition: form-data; name=\"attachment\"; filename=\"" + filename + "\"\r\nContent-Type: image/png\r\n\r\n"),
-    buffer,
-    Buffer.from("\r\n--" + boundary + "--\r\n"),
-  ]);
-
-  const res = await fetch(CLICKUP_BASE + "/task/" + taskId + "/attachment", {
-    method: "POST",
-    headers: {
-      Authorization: token,
-      "Content-Type": "multipart/form-data; boundary=" + boundary,
-    },
-    body: body,
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error("Attachment failed: " + res.status + " " + errText);
-  }
-
-  return res.json();
-}
-
 async function postComment(token, taskId, text) {
   const res = await fetch(CLICKUP_BASE + "/task/" + taskId + "/comment", {
     method: "POST",
@@ -228,5 +189,6 @@ async function postComment(token, taskId, text) {
   if (!res.ok) {
     const errText = await res.text();
     console.error("Comment failed:", res.status, errText);
+    throw new Error("Comment failed: " + res.status);
   }
 }
