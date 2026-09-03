@@ -41,17 +41,34 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: "Invalid JSON" };
   }
 
-  const { action, client, contact, email, event_date, total_fee, deposit, package: pkg, signature, signedAt } = payload;
+  const {
+    action, client, contact, email, event_date,
+    total_fee, deposit, package: pkg, signature, signedAt,
+    task_id
+  } = payload;
 
   if (!action || !email) {
     return { statusCode: 400, headers, body: "Missing required fields: action, email" };
   }
 
-  console.log("Webhook received:", action, email);
+  console.log("Webhook received:", action, email, task_id ? "(task_id: " + task_id + ")" : "(no task_id)");
 
   try {
-    // 1. Find agreement task by client email
-    const task = await findTaskByEmail(TOKEN, LIST_ID, email);
+    // 1. Resolve task: prefer direct lookup by task_id, fall back to email scan
+    let task = null;
+
+    if (task_id) {
+      task = await getTaskById(TOKEN, task_id);
+      if (task) {
+        console.log("Resolved task by task_id:", task.id, task.name);
+      } else {
+        console.log("task_id", task_id, "not found, falling back to email scan");
+      }
+    }
+
+    if (!task) {
+      task = await findTaskByEmail(TOKEN, LIST_ID, email);
+    }
 
     if (!task) {
       console.log("No task found for:", email, "in list:", LIST_ID);
@@ -61,7 +78,7 @@ exports.handler = async (event) => {
       };
     }
 
-    console.log("Found task:", task.id, task.name);
+    console.log("Using task:", task.id, task.name);
 
     // 2. If signed: post signature comment FIRST (before status change)
     if (action === "signed") {
@@ -131,6 +148,20 @@ exports.handler = async (event) => {
 };
 
 // --- Helpers ---
+
+/**
+ * Direct task lookup by ClickUp task ID.
+ * Returns the task object or null if not found / unauthorized.
+ */
+async function getTaskById(token, taskId) {
+  const url = CLICKUP_BASE + "/task/" + taskId;
+  const res = await fetch(url, { headers: { Authorization: token } });
+  if (!res.ok) {
+    console.log("getTaskById failed:", res.status, "for", taskId);
+    return null;
+  }
+  return res.json();
+}
 
 async function findTaskByEmail(token, listId, email) {
   const url = CLICKUP_BASE + "/list/" + listId + "/task?include_closed=true&subtasks=false";
