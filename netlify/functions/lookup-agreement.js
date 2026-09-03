@@ -28,7 +28,7 @@ const CLIENT_PORTALS = {
     stage: 'agreement',
     status: 'signed',
     paymentStatus: 'paid',
-    portalUrl: 'https://run.clickup.ai/90141325083/a5502997-392f-46d7-b56c-19e35e7725df/jesse-zariah-agreement.html',
+    portalUrl: 'https://app.clickup.com/90141325083/artifact/2kydexrv-17294',
   },
   'liffcakeparties@gmail.com': {
     eventName: 'Angelica & Nathan Wedding',
