@@ -41,7 +41,7 @@ const CLIENT_PORTALS = {
     stage: 'agreement',
     status: 'signed',
     paymentStatus: 'paid',
-    portalUrl: 'https://run.clickup.ai/90141325083/c68cf5b1-e395-410e-8975-af6807327546/angelica-nathan-agreement.html',
+    portalUrl: 'https://app.clickup.com/90141325083/artifact/2kydexrv-17274',
   },
 };
 
