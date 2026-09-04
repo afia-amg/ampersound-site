@@ -56,6 +56,19 @@ const CLIENT_PORTALS = {
     paymentStatus: 'unpaid',
     portalUrl: 'https://app.clickup.com/90141325083/artifact/2kydexrv-17314',
   },
+  'mganpi65@gmail.com': {
+    eventName: 'LKQ Corporation Employee Appreciation & Awards Night',
+    eventDate: '2026-11-21',
+    eventType: 'Corporate Event',
+    venue: 'LKQ Corporation, Romulus, MI',
+    services: 'Keynote, MC / Event Hosting, DJ / Sound Direction, Audio / AV Production',
+    totalFee: 7000.00,
+    deposit: 3500.00,
+    stage: 'proposal',
+    status: 'awaiting_signature',
+    paymentStatus: 'unpaid',
+    portalUrl: 'https://app.clickup.com/90141325083/artifact/2kydexrv-17374',
+  },
 };
 
 CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
