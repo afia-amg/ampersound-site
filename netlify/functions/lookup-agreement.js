@@ -71,6 +71,19 @@ const CLIENT_PORTALS = {
     paymentStatus: 'unpaid',
     portalUrl: 'https://ampersoundmediagroup.com/partner-docs/lkq-corporation',
   },
+  'jaylingoines131594@gmail.com': {
+    eventName: 'Delta Sigma Theta Farwest Regional After Party',
+    eventDate: '2026-09-05',
+    eventType: 'Private Party',
+    venue: 'Drift Lounge',
+    services: 'DJ / Sound Direction',
+    totalFee: 400.00,
+    deposit: 400.00,
+    stage: 'proposal',
+    status: 'awaiting_signature',
+    paymentStatus: 'unpaid',
+    portalUrl: 'https://ampersoundmediagroup.com/partner-docs/jaylin-goines',
+  },
 };
 
 CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
