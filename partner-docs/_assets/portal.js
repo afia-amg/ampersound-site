@@ -179,7 +179,9 @@
 
   var tab = TABS.length ? TABS[0].id : "proposal";
   var step = 0;
-  var maxStep = booking.paidAt ? 3 : booking.signedAt ? 2 : 0;
+  // An unsigned client must be able to walk quote -> agreement -> sign; the
+  // deposit step only opens once we have their signature on file.
+  var maxStep = booking.paidAt ? 3 : booking.signedAt ? 3 : 2;
 
   function lockIcon() {
     return (
@@ -367,8 +369,10 @@
       '<div class="tags" style="margin-bottom:0.75rem">' +
       (o ? o.services : c.services).map(function (s) { return '<span class="tag">' + esc(s) + "</span>"; }).join("") +
       "</div>";
+    // A string value is printed verbatim, so a line can read "Included" or
+    // carry its own sign, like "- $337.50" for a partner discount.
     (p.lines || []).forEach(function (l) {
-      h += row(l.label, l.note, l.value === "Included" ? "Included" : money(l.value), { credit: l.credit });
+      h += row(l.label, l.note, typeof l.value === "string" ? l.value : money(l.value), { credit: l.credit });
     });
     h += row("Service subtotal", null, money(p.serviceSubtotal), { strong: true }) + "</div>";
 
