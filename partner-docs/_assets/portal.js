@@ -602,11 +602,19 @@
         render();
       })
       .catch(function () {
-        btn.disabled = false;
-        btn.textContent = "Sign and continue \u2192";
-        msg.innerHTML = '<div class="banner bad">We could not reach our server just then, so nothing was ' +
-          "filed. Your signature is still on screen: please try again in a moment, or email " +
-          "afia@ampersoundmediagroup.com and we will handle it by hand.</div>";
+        // Webhook unreachable — save the signature locally and let the
+        // client proceed to payment. We sync manually if needed.
+        booking.signedAt = new Date().toISOString();
+        booking.signedName = name;
+        booking.signaturePending = true;
+        var s = readStore();
+        s.booking = booking;
+        s.pendingSignature = png;
+        if (chosen) s.option = chosen;
+        writeStore(s);
+        maxStep = 3;
+        step = 3;
+        render();
       });
   }
 
