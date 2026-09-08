@@ -8,8 +8,11 @@
  *   1. Drafts survive. Every keystroke is written to localStorage so a client
  *      can close the tab mid-sentence and pick up where they left off.
  *   2. Submissions reach our backend. Songs, timelines, and signatures POST to
- *      our Netlify functions, which write to ClickUp. If a POST fails we say so
- *      plainly and keep the draft — we never fake a success.
+ *      our Netlify functions, which write to ClickUp. Transient failures are
+ *      retried and then queued for the next page load. If something still has
+ *      not landed we say so plainly — we never fake a success, because a client
+ *      who thinks they are booked while we have no record is the worst outcome
+ *      this page can produce.
  */
 (function () {
   "use strict";
@@ -64,14 +67,6 @@
   var receipts = store.receipts || {};
   var booking = store.booking || {};
 
-  // Stripe sends the client back with ?paid=true.
-  if (new URLSearchParams(location.search).get("paid") === "true" && !booking.paidAt) {
-    booking.paidAt = new Date().toISOString();
-    store.booking = booking;
-    writeStore(store);
-    post(AGREEMENT, agreementPayload("paid"));
-  }
-
   var unlocked = P.mode === "overview" || Boolean(booking.paidAt);
 
   /* ------------------------------------------------------------- helpers */
@@ -107,6 +102,72 @@
       return r;
     });
   }
+
+  /* ------------------------------------------------------------ delivery
+   *
+   * A single failed fetch is usually a blip: a cold Netlify function, a phone
+   * switching from wifi to cellular, a momentary 502. Retrying with backoff
+   * turns most of those into a success the client never notices.
+   */
+  function postWithRetry(url, payload, tries) {
+    tries = tries || 4;
+    var attempt = 0;
+    var waits = [600, 1800, 4000];
+    function go() {
+      attempt++;
+      return post(url, payload).catch(function (err) {
+        if (attempt >= tries) throw err;
+        return new Promise(function (res) {
+          setTimeout(res, waits[attempt - 1] || 4000);
+        }).then(go);
+      });
+    }
+    return go();
+  }
+
+  // Anything the client submitted that never reached us is queued here and
+  // flushed on every page load, so a bad minute of network does not turn into
+  // permanently lost data. One entry per kind: the newest submission wins.
+  function queueOutbox(kind, url, payload) {
+    var s = readStore();
+    s.outbox = (s.outbox || []).filter(function (i) { return i.kind !== kind; });
+    s.outbox.push({ kind: kind, url: url, payload: payload, queuedAt: new Date().toISOString() });
+    writeStore(s);
+  }
+  function dequeueOutbox(kind) {
+    var s = readStore();
+    if (!s.outbox) return;
+    s.outbox = s.outbox.filter(function (i) { return i.kind !== kind; });
+    writeStore(s);
+  }
+  // Never throws and never blocks rendering. Each item that lands is removed;
+  // each that fails stays queued for the next visit.
+  function flushOutbox() {
+    var items = (readStore().outbox || []).slice();
+    if (!items.length) return;
+    items.forEach(function (item) {
+      postWithRetry(item.url, item.payload, 3)
+        .then(function () {
+          dequeueOutbox(item.kind);
+          if (item.kind === "signature") {
+            var s = readStore();
+            booking.signaturePending = false;
+            if (s.booking) s.booking.signaturePending = false;
+            delete s.pendingSignature;
+            writeStore(s);
+          }
+          if (item.kind === "songs" || item.kind === "timeline") {
+            receipts[item.kind] = { at: new Date().toISOString() };
+            var s2 = readStore();
+            s2.receipts = receipts;
+            writeStore(s2);
+          }
+          render();
+        })
+        .catch(function () { /* stays queued for the next load */ });
+    });
+  }
+
   function agreementPayload(action, extra) {
     var o = {
       action: action,
@@ -133,6 +194,22 @@
     return P.staffingOptions.find(function (x) { return x.id === chosen; }) || P.staffingOptions[0];
   }
 
+  // Stripe sends the client back with ?paid=true. Queued, so a failed
+  // confirmation retries instead of vanishing.
+  if (new URLSearchParams(location.search).get("paid") === "true" && !booking.paidAt) {
+    booking.paidAt = new Date().toISOString();
+    var paidStore = readStore();
+    paidStore.booking = booking;
+    writeStore(paidStore);
+    unlocked = true;
+    (function () {
+      var payload = agreementPayload("paid");
+      postWithRetry(AGREEMENT, payload).catch(function () {
+        queueOutbox("paid", AGREEMENT, payload);
+      });
+    })();
+  }
+
   /* --------------------------------------------------------- autosave UI */
 
   var saveTimers = {};
@@ -156,10 +233,13 @@
   }
   function saveState(section) {
     var r = receipts[section];
+    var queued = (readStore().outbox || []).some(function (i) { return i.kind === section; });
     return (
       '<div class="savestate" id="save-' + section + '"><span class="dot"></span>' +
       "<em style=\"font-style:normal\">Draft saved on this device</em>" +
-      (r ? "<span>&middot; sent to Ampersound " + esc(when(r.at)) + "</span>" : "") +
+      (queued
+        ? "<span>&middot; not sent yet, we keep retrying</span>"
+        : r ? "<span>&middot; sent to Ampersound " + esc(when(r.at)) + "</span>" : "") +
       "</div>"
     );
   }
@@ -588,13 +668,22 @@
     var btn = el("signSubmit");
     btn.disabled = true;
     btn.textContent = "Filing\u2026";
+    msg.innerHTML = "";
+    var signedAt = new Date().toISOString();
     var png = el("sig").toDataURL("image/png");
-    post(AGREEMENT, agreementPayload("signed", { signature: png, signedAt: new Date().toISOString(), signerName: name }))
+    var payload = agreementPayload("signed", { signature: png, signedAt: signedAt, signerName: name });
+
+    // A signature only counts once it is on our server, so we never advance the
+    // client past this step on a failed POST.
+    postWithRetry(AGREEMENT, payload)
       .then(function () {
-        booking.signedAt = new Date().toISOString();
+        dequeueOutbox("signature");
+        booking.signedAt = signedAt;
         booking.signedName = name;
+        booking.signaturePending = false;
         var s = readStore();
         s.booking = booking;
+        delete s.pendingSignature;
         if (chosen) s.option = chosen;
         writeStore(s);
         maxStep = 3;
@@ -602,19 +691,18 @@
         render();
       })
       .catch(function () {
-        // Webhook unreachable — save the signature locally and let the
-        // client proceed to payment. We sync manually if needed.
-        booking.signedAt = new Date().toISOString();
-        booking.signedName = name;
-        booking.signaturePending = true;
-        var s = readStore();
-        s.booking = booking;
-        s.pendingSignature = png;
-        if (chosen) s.option = chosen;
-        writeStore(s);
-        maxStep = 3;
-        step = 3;
-        render();
+        // Hold the client here with their drawing intact. The attempt is queued
+        // so it retries on the next load even if they walk away, but we say
+        // plainly that nothing is filed yet.
+        queueOutbox("signature", AGREEMENT, payload);
+        btn.disabled = false;
+        btn.textContent = "Try signing again";
+        msg.innerHTML = '<div class="banner bad"><strong>Not filed yet.</strong> We could not reach our ' +
+          "server, so your signature has not been recorded and you are not booked. Your drawing is still " +
+          "here, so press <em>Try signing again</em> in a moment. We will also keep retrying automatically " +
+          "every time you open this page. If it keeps failing, email " +
+          '<a href="mailto:afia@ampersoundmediagroup.com">afia@ampersoundmediagroup.com</a> and we will ' +
+          "send you a copy to sign directly.</div>";
       });
   }
 
@@ -759,10 +847,11 @@
     var btn = el("songsSubmit"), msg = el("songsMsg");
     btn.disabled = true;
     btn.textContent = "Sending\u2026";
+    msg.innerHTML = "";
     var clean = function (a) { return a.map(function (x) { return x.trim(); }).filter(Boolean); };
     var vibe = (VIBES.find(function (v) { return v[0] === songs.vibe; }) || [])[1] || songs.vibe;
     var req = (REQUESTS.find(function (r) { return r[0] === songs.guestRequests; }) || [])[1] || songs.guestRequests;
-    post(PLANNING, {
+    var payload = {
       type: "songs",
       email: P.client.primaryEmail,
       emails: P.client.allEmails,
@@ -776,8 +865,10 @@
         guestRequests: req,
         notes: songs.notes,
       },
-    })
+    };
+    postWithRetry(PLANNING, payload)
       .then(function () {
+        dequeueOutbox("songs");
         receipts.songs = { at: new Date().toISOString() };
         var s = readStore(); s.receipts = receipts; writeStore(s);
         render();
@@ -785,10 +876,12 @@
           " is on your booking file with Ampersound and both of us can see it. Keep editing any time and send again.</div>";
       })
       .catch(function () {
+        queueOutbox("songs", PLANNING, payload);
         btn.disabled = false;
         btn.textContent = "Try sending again";
-        msg.innerHTML = '<div class="banner bad">We could not reach our server just then. Your answers are ' +
-          "still saved in this browser, so try again in a moment.</div>";
+        msg.innerHTML = '<div class="banner bad">We could not reach our server just then, so this has not ' +
+          "reached us yet. Your answers are saved in this browser and we keep retrying every time you open " +
+          "this page, but press <em>Try sending again</em> if you would rather not wait.</div>";
       });
   }
 
@@ -796,15 +889,18 @@
     var btn = el("tlSubmit"), msg = el("tlMsg");
     btn.disabled = true;
     btn.textContent = "Sending\u2026";
+    msg.innerHTML = "";
     var moments = timeline.moments.filter(function (m) { return m.time.trim() || m.event.trim(); });
-    post(PLANNING, {
+    var payload = {
       type: "timeline",
       email: P.client.primaryEmail,
       emails: P.client.allEmails,
       client: P.client.name,
       data: { moments: moments, notes: timeline.notes },
-    })
+    };
+    postWithRetry(PLANNING, payload)
       .then(function () {
+        dequeueOutbox("timeline");
         receipts.timeline = { at: new Date().toISOString() };
         var s = readStore(); s.receipts = receipts; writeStore(s);
         render();
@@ -813,10 +909,12 @@
           "two weeks out, so keep sending changes until then.</div>";
       })
       .catch(function () {
+        queueOutbox("timeline", PLANNING, payload);
         btn.disabled = false;
         btn.textContent = "Try sending again";
-        msg.innerHTML = '<div class="banner bad">We could not reach our server just then. Your draft is still ' +
-          "saved in this browser, so try again in a moment.</div>";
+        msg.innerHTML = '<div class="banner bad">We could not reach our server just then, so this has not ' +
+          "reached us yet. Your draft is saved in this browser and we keep retrying every time you open this " +
+          "page, but press <em>Try sending again</em> if you would rather not wait.</div>";
       });
   }
 
@@ -954,8 +1052,24 @@
   document.addEventListener("DOMContentLoaded", function () {
     document.title = P.client.name + " | Ampersound Media Group";
     render();
-    // Tell the backend the client opened their portal. Fire and forget: a
-    // failed ping must never block the page.
+
+    // Recover a signature stranded in this browser by the earlier build, which
+    // saved locally instead of queueing a retry.
+    (function () {
+      var s = readStore();
+      var alreadyQueued = (s.outbox || []).some(function (i) { return i.kind === "signature"; });
+      if (s.pendingSignature && !alreadyQueued) {
+        queueOutbox("signature", AGREEMENT, agreementPayload("signed", {
+          signature: s.pendingSignature,
+          signedAt: (s.booking && s.booking.signedAt) || new Date().toISOString(),
+          signerName: (s.booking && s.booking.signedName) || P.client.contacts,
+        }));
+      }
+    })();
+
+    // Re-send anything that never landed, then log the visit.
+    flushOutbox();
+
     if (P.mode === "proposal" && !booking.viewedAt) {
       booking.viewedAt = new Date().toISOString();
       var s = readStore(); s.booking = booking; writeStore(s);
