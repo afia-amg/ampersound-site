@@ -84,6 +84,19 @@ const CLIENT_PORTALS = {
     paymentStatus: 'unpaid',
     portalUrl: 'https://ampersoundmediagroup.com/partner-docs/jaylin-goines',
   },
+  'michael.eastman.1.2106301@member.theknot.com': {
+    eventName: 'Michael & Iris Wedding',
+    eventDate: '2027-02-04',
+    eventType: 'Wedding',
+    venue: 'Siempre, Draper, Utah',
+    services: 'DJ / Sound Direction, MC / Event Hosting, Timeline & Run-of-Show Coordination, Audio / AV Production',
+    totalFee: 2762.50,
+    deposit: 1381.25,
+    stage: 'proposal',
+    status: 'awaiting_signature',
+    paymentStatus: 'unpaid',
+    portalUrl: 'https://ampersoundmediagroup.com/partner-docs/michael-iris',
+  },
 };
 
 CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
