@@ -45,19 +45,6 @@ const CLIENT_PORTALS = {
     paymentStatus: 'paid',
     portalUrl: 'https://ampersoundmediagroup.com/partner-docs/angelica-nathan',
   },
-  'phlypay44@gmail.com': {
-    eventName: 'Payton & Rhys Wedding',
-    eventDate: '2026-10-10',
-    eventType: 'Wedding',
-    venue: 'Fish Haven, Idaho',
-    services: 'DJ / Sound Direction, MC / Event Hosting, Audio / AV Production',
-    totalFee: 2722.50,
-    deposit: 1361.25,
-    stage: 'proposal',
-    status: 'awaiting_signature',
-    paymentStatus: 'unpaid',
-    portalUrl: 'https://ampersoundmediagroup.com/partner-docs/payton-rhys',
-  },
   'mganpi65@gmail.com': {
     eventName: 'LKQ Corporation Employee Appreciation & Awards Night',
     eventDate: '2026-11-21',
@@ -101,7 +88,6 @@ const CLIENT_PORTALS = {
 
 CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
 CLIENT_PORTALS['ashleyveenendaal23@gmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
-CLIENT_PORTALS['payton.phillips.2.2106301@member.theknot.com'] = CLIENT_PORTALS['phlypay44@gmail.com'];
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode:204, headers, body:'' };
