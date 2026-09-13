@@ -12,6 +12,7 @@
   --ok:#7ddba3; --bad:#ff8f8f;
   --head:'Montserrat',system-ui,sans-serif;
   --body:'Open Sans',system-ui,sans-serif;
+  --content:720px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;
@@ -24,12 +25,12 @@ input::placeholder,textarea::placeholder{color:rgba(240,235,228,0.26)}
 
 /* ---------- nav ---------- */
 .nav{position:sticky;top:0;z-index:20;background:var(--surface);
-  border-bottom:1px solid var(--line);padding:0.7rem 1.25rem;
-  display:flex;align-items:center;justify-content:space-between;gap:1rem}
-.wordmark{font-family:var(--head);font-weight:800;font-size:1rem;letter-spacing:0.01em;
-  white-space:nowrap;line-height:1;color:var(--text);text-decoration:none}
-.wordmark span{color:var(--gold)}
+  border-bottom:1px solid var(--line);padding:0 1.25rem}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  max-width:var(--content);margin:0 auto;padding:0.7rem 0}
+.wordmark{display:flex;align-items:center;text-decoration:none;flex:none}
 .wordmark:hover{text-decoration:none}
+.logo{height:30px;width:auto;display:block}
 .tabwrap{position:relative;min-width:0}
 .tabs{display:flex;gap:0.15rem}
 .tabs button{display:inline-flex;align-items:center;gap:0.35rem;font-family:var(--head);
@@ -43,7 +44,7 @@ input::placeholder,textarea::placeholder{color:rgba(240,235,228,0.26)}
   text-transform:uppercase;color:var(--gold-text);border:1px solid var(--line-hot);
   border-radius:4px;padding:0.3rem 0.6rem;white-space:nowrap}
 
-main{max-width:720px;margin:0 auto;padding:2.4rem 1.25rem 4.5rem}
+main{max-width:var(--content);margin:0 auto;padding:2.4rem 1.25rem 4.5rem}
 footer.site{border-top:1px solid var(--line);padding:1.6rem 1.25rem 2.4rem;
   text-align:center;color:var(--faint);font-size:0.82rem}
 
@@ -230,7 +231,7 @@ ul.inc li::before{content:"";position:absolute;left:0;top:0.95rem;width:9px;heig
 .instal .st.paid{color:var(--ok)}
 
 @media(max-width:700px){
-  .nav{flex-direction:column;align-items:stretch;gap:0.6rem;padding:0.7rem 1rem 0.55rem}
+  .nav-inner{flex-direction:column;align-items:stretch;gap:0.6rem;padding:0.7rem 0 0.55rem}
   .badge{display:none}
   .tabwrap{margin:0 -1rem}
   .tabs{gap:0.2rem;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
