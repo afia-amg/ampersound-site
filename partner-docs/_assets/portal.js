@@ -274,7 +274,8 @@
   function renderChrome() {
     var badge = booking.paidAt || P.mode === "overview" ? "Booked" : P.client.badge;
     el("nav").innerHTML =
-      '<a class="wordmark" href="https://ampersoundmediagroup.com">Ampersound<span>.</span></a>' +
+      '<div class="nav-inner">' +
+      '<a class="wordmark" href="https://ampersoundmediagroup.com"><img src="https://lh3.googleusercontent.com/d/1EVb28hX3L68EwR2jVu7703wRA_3dN3co" alt="Ampersound Media Group" class="logo"></a>' +
       '<div class="tabwrap"><div class="tabs" id="tabs">' +
       TABS.map(function (t) {
         var locked = t.lock && !unlocked;
@@ -287,7 +288,8 @@
         );
       }).join("") +
       "</div></div>" +
-      '<span class="badge">' + esc(badge) + "</span>";
+      '<span class="badge">' + esc(badge) + "</span>" +
+      '</div>';
 
     Array.prototype.forEach.call(el("tabs").querySelectorAll("button"), function (b) {
       b.addEventListener("click", function () {
@@ -673,8 +675,6 @@
     var png = el("sig").toDataURL("image/png");
     var payload = agreementPayload("signed", { signature: png, signedAt: signedAt, signerName: name });
 
-    // A signature only counts once it is on our server, so we never advance the
-    // client past this step on a failed POST.
     postWithRetry(AGREEMENT, payload)
       .then(function () {
         dequeueOutbox("signature");
@@ -691,9 +691,6 @@
         render();
       })
       .catch(function () {
-        // Hold the client here with their drawing intact. The attempt is queued
-        // so it retries on the next load even if they walk away, but we say
-        // plainly that nothing is filed yet.
         queueOutbox("signature", AGREEMENT, payload);
         btn.disabled = false;
         btn.textContent = "Try signing again";
