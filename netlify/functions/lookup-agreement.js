@@ -3,8 +3,6 @@ const LIST_IDS = ['901418268145', '901418180552'];
 const CF = { clientEmail:'3f38f15e-6aa4-4481-9365-d4a911d68195', eventName:'4299965c-96e2-430e-947a-ac16e9068aee', eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8', eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc', venueName:'25f7eed6-37ba-49e7-918a-e6040531b58f', services:'605ff2b7-983f-43e1-8f78-fc684d140f80', totalFee:'a60f1fb7-4558-4cac-825c-abb9ea9a11e7', depositAmount:'f18252f2-13c7-4b04-a8d3-2b38dc096791', paymentLink:'959cae43-8c7a-43b4-b0ce-2513b311b227', paymentStatus:'96105ecf-6396-4fb1-90aa-93b37c9dfc48', agreementDoc:'b4a7de8c-d2d2-4f2b-b26e-8353d94f00b4' };
 const headers = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS' };
 
-// Portals are static pages on this domain, so the client never hits a login
-// wall. Keep portalUrl pointing at /partner-docs/<slug>.
 const CLIENT_PORTALS = {
   'ryan.nelson.jrn@gmail.com': {
     eventName: 'Katie & Ryan Wedding',
@@ -72,7 +70,7 @@ const CLIENT_PORTALS = {
     portalUrl: 'https://ampersoundmediagroup.com/partner-docs/jaylin-goines',
   },
   'michael.eastman.1.2106301@member.theknot.com': {
-    eventName: 'Michael & Iris Wedding',
+    eventName: 'Iris & Michael Wedding',
     eventDate: '2027-02-04',
     eventType: 'Wedding',
     venue: 'Siempre, Draper, Utah',
