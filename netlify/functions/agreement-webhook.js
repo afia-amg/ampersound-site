@@ -1,6 +1,6 @@
 /**
  * Ampersound Media Group — Agreement Webhook
- * Receives POST from client portal on viewed/signed/paid events.
+ * Receives POST from client portal on viewed/signed/paid/installment events.
  * Updates the matching task in the ClickUp Agreements list.
  *
  * Env vars:
@@ -56,10 +56,12 @@ exports.handler = async (event) => {
   try {
     // 1. Resolve task: prefer direct lookup by task_id, fall back to email scan
     let task = null;
+    let resolvedById = false;
 
     if (task_id) {
       task = await getTaskById(TOKEN, task_id);
       if (task) {
+        resolvedById = true;
         console.log("Resolved task by task_id:", task.id, task.name);
       } else {
         console.log("task_id", task_id, "not found, falling back to email scan");
@@ -130,6 +132,28 @@ exports.handler = async (event) => {
         "\ud83d\udcb0 **Payment received**\n\nAmount: " + amount + "\nClient: " + (client || email) + "\nDate: " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
       );
       console.log("Payment comment posted");
+    }
+
+    // 4b. Installment plans: the portal sends the installment's own task_id.
+    // Log the payment there, and close that task only when we resolved it
+    // directly, so an email-scan fallback can never close the main agreement.
+    if (action === "installment") {
+      const n = payload.installment;
+      const of = payload.installments;
+      const amt = typeof payload.amount === "number" ? "$" + payload.amount.toFixed(2) : "amount confirmed";
+      await postComment(TOKEN, task.id,
+        "\ud83d\udcb0 **Installment " + n + (of ? " of " + of : "") + " received**\n\nAmount: " + amt +
+        "\nClient: " + (client || email) + "\nDate: " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+      );
+      console.log("Installment comment posted:", n);
+      if (resolvedById) {
+        try {
+          await updateTask(TOKEN, task.id, { status: "completed" });
+          console.log("Installment task closed:", task.id);
+        } catch (statusErr) {
+          console.error("Installment status update failed (continuing):", statusErr.message);
+        }
+      }
     }
 
     // 5. If viewed: just log
