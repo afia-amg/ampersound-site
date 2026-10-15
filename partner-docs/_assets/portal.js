@@ -210,6 +210,38 @@
     })();
   }
 
+  // Installment plans: each installment's Stripe link returns the client with
+  // ?installment=N. We mark it paid on this device and tell our backend, which
+  // logs it on that installment's own ClickUp task (pricing.installments[].taskId).
+  // Queued like everything else, so a failed confirmation retries.
+  var paidInstallments = store.installmentsPaid || {};
+  var justPaid = null;
+  (function () {
+    var n = Number(new URLSearchParams(location.search).get("installment"));
+    var list = P.pricing && P.pricing.installments;
+    if (!n || !list) return;
+    var inst = list.find(function (i) { return i.num === n; });
+    if (!inst) return;
+    justPaid = inst;
+    if (paidInstallments[n]) return;
+    paidInstallments[n] = new Date().toISOString();
+    var s = readStore();
+    s.installmentsPaid = paidInstallments;
+    writeStore(s);
+    var payload = agreementPayload("installment", {
+      installment: inst.num,
+      installments: list.length,
+      amount: inst.amount,
+      task_id: inst.taskId,
+    });
+    postWithRetry(AGREEMENT, payload).catch(function () {
+      queueOutbox("installment-" + inst.num, AGREEMENT, payload);
+    });
+  })();
+  function installmentPaid(i) {
+    return i.status === "Paid" || Boolean(paidInstallments[i.num]);
+  }
+
   /* --------------------------------------------------------- autosave UI */
 
   var saveTimers = {};
@@ -325,6 +357,12 @@
       '<br><span style="color:var(--faint);font-size:0.88rem">' + esc(c.venueDetail) +
       " &middot; " + esc(c.guests) + " guests &middot; " + esc(c.hours) + "</span></p></header>";
 
+    if (p.installments && justPaid) {
+      h += '<div class="banner ok" style="margin-bottom:1.15rem">Thank you. Installment ' + justPaid.num +
+        " of " + p.installments.length + " (" + money(justPaid.amount) +
+        ") is in, and it is on your booking file with Ampersound.</div>";
+    }
+
     h += '<div class="card"><span class="label">Your package</span>' +
       '<p style="margin:0.55rem 0 0.75rem;font-family:var(--head);font-weight:800;font-size:1.15rem">' +
       esc(c.packageName) + "</p>" +
@@ -333,13 +371,34 @@
 
     h += '<div class="card"><span class="label">Payment</span>';
     if (p.installments) {
-      h += '<p class="body" style="margin:0.5rem 0 0.5rem">Four installments of ' +
+      var next = p.installments.find(function (i) { return !installmentPaid(i); });
+      h += '<p class="body" style="margin:0.5rem 0 0.5rem">' + p.installments.length + " installments of " +
         money(p.installments[0].amount) + ", total " + money(p.total) + ".</p>";
       h += p.installments.map(function (i) {
+        var paid = installmentPaid(i);
         return '<div class="instal"><span class="num">' + i.num + "</span>" +
           "<span>" + money(i.amount) + ' <span style="color:var(--faint)">&middot; due ' + esc(i.due) + "</span></span>" +
-          '<span class="st' + (i.status === "Paid" ? " paid" : "") + '">' + esc(i.status) + "</span></div>";
+          '<span class="st' + (paid ? " paid" : "") + '">' + esc(paid ? "Paid" : i.status) + "</span></div>";
       }).join("");
+      if (next) {
+        h += '<div style="margin-top:1.15rem;padding-top:1.15rem;border-top:1px solid var(--line-hot)">' +
+          '<span class="label">Next payment</span>' +
+          '<p style="font-family:var(--head);font-weight:800;font-size:clamp(1.7rem,6vw,2.2rem);letter-spacing:-0.03em;margin:0.5rem 0 0.3rem;line-height:1;color:var(--gold)">' +
+          money(next.amount) + "</p>" +
+          '<p style="margin:0 0 1.1rem;font-size:0.87rem;color:var(--faint)">Installment ' + next.num + " of " +
+          p.installments.length + " &middot; due " + esc(next.due) + "</p>";
+        if (next.link) {
+          h += '<a class="btn" href="' + esc(next.link) + '">Pay installment ' + next.num + " &middot; " + money(next.amount) + "</a>";
+        } else {
+          h += '<div style="border:1px dashed var(--line-hot);border-radius:8px;padding:1.1rem 1.2rem;background:var(--raised)">' +
+            '<p class="body" style="margin:0">Your secure Stripe link for this installment is on its way to ' +
+            '<span style="color:var(--gold-text)">' + esc(c.primaryEmail) + "</span>.</p></div>";
+        }
+        h += '<p style="margin:1.1rem 0 0;font-size:0.8rem;color:var(--faint);line-height:1.65">Card, bank transfer, ' +
+          "or check all work. You can come back to this page any time from ampersoundmediagroup.com.</p></div>";
+      } else {
+        h += row("Paid in full", "Nothing further owed", money(0), { strong: true });
+      }
     } else {
       h += row(p.discountLabel ? c.packageName + " (" + p.discountLabel + ")" : c.packageName, null, money(p.total));
       h += row("Deposit received", null, money(p.deposit), { credit: true });
