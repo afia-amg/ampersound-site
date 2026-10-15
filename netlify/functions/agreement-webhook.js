@@ -137,21 +137,28 @@ exports.handler = async (event) => {
     // 4b. Installment plans: the portal sends the installment's own task_id.
     // Log the payment there, and close that task only when we resolved it
     // directly, so an email-scan fallback can never close the main agreement.
+    // The Stripe webhook usually gets there first; if the task is already
+    // completed, this is a duplicate and we leave it alone.
     if (action === "installment") {
-      const n = payload.installment;
-      const of = payload.installments;
-      const amt = typeof payload.amount === "number" ? "$" + payload.amount.toFixed(2) : "amount confirmed";
-      await postComment(TOKEN, task.id,
-        "\ud83d\udcb0 **Installment " + n + (of ? " of " + of : "") + " received**\n\nAmount: " + amt +
-        "\nClient: " + (client || email) + "\nDate: " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-      );
-      console.log("Installment comment posted:", n);
-      if (resolvedById) {
-        try {
-          await updateTask(TOKEN, task.id, { status: "completed" });
-          console.log("Installment task closed:", task.id);
-        } catch (statusErr) {
-          console.error("Installment status update failed (continuing):", statusErr.message);
+      const already = resolvedById && ((task.status && task.status.status) || "").toLowerCase() === "completed";
+      if (already) {
+        console.log("Installment already logged, skipping:", task.id);
+      } else {
+        const n = payload.installment;
+        const of = payload.installments;
+        const amt = typeof payload.amount === "number" ? "$" + payload.amount.toFixed(2) : "amount confirmed";
+        await postComment(TOKEN, task.id,
+          "\ud83d\udcb0 **Installment " + n + (of ? " of " + of : "") + " received**\n\nAmount: " + amt +
+          "\nClient: " + (client || email) + "\nDate: " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+        );
+        console.log("Installment comment posted:", n);
+        if (resolvedById) {
+          try {
+            await updateTask(TOKEN, task.id, { status: "completed" });
+            console.log("Installment task closed:", task.id);
+          } catch (statusErr) {
+            console.error("Installment status update failed (continuing):", statusErr.message);
+          }
         }
       }
     }
