@@ -73,6 +73,7 @@ const CLIENT_PORTALS = {
 
 CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
 CLIENT_PORTALS['ashleyveenendaal23@gmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
+CLIENT_PORTALS['zlj7123@gmail.com'] = CLIENT_PORTALS['jesseradike1@gmail.com'];
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode:204, headers, body:'' };
