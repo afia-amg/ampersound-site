@@ -69,6 +69,19 @@ const CLIENT_PORTALS = {
     paymentStatus: 'unpaid',
     portalUrl: 'https://ampersoundmediagroup.com/partner-docs/michael-iris',
   },
+  'rose.josh.home@gmail.com': {
+    eventName: 'Rose & Josh Wedding',
+    eventDate: '2027-08-27',
+    eventType: 'Wedding',
+    venue: 'The Castle at Wadley Farms, Lindon, Utah',
+    services: 'MC / Event Hosting, DJ / Sound Direction, Timeline & Run-of-Show Coordination',
+    totalFee: 1350.00,
+    deposit: 675.00,
+    stage: 'proposal',
+    status: 'awaiting_signature',
+    paymentStatus: 'unpaid',
+    portalUrl: 'https://ampersoundmediagroup.com/partner-docs/rose-josh',
+  },
 };
 
 CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
