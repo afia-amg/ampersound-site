@@ -12,15 +12,6 @@ window.AMG = (function () {
         blurb: "Signature cocktail programs and full bar service built around the couple's story.",
         links: [{ label: "indigoreimagined.com", href: "https://indigoreimagined.com" },
                 { label: "(801) 654-8571", href: "tel:+18016548571" }] }] },
-    { group: "Planning & Design", items: [
-      { name: "Chris McKinley Event Design", role: "Full-service planning and design",
-        blurb: "Design-led planning for weddings that need a strong visual point of view.",
-        links: [{ label: "chrismckinleyevents.com", href: "https://chrismckinleyevents.com" },
-                { label: "(225) 937-0304", href: "tel:+12259370304" }] },
-      { name: "Liffcake Parties", role: "Planning and coordination \u00b7 Carla Lifferth",
-        blurb: "Warm, detail-obsessed coordination. Great for day-of and partial planning.",
-        links: [{ label: "liffcakeparties.com", href: "https://liffcakeparties.com" },
-                { label: "liffcakeparties@gmail.com", href: "mailto:liffcakeparties@gmail.com" }] }] },
     { group: "Catering", items: [
       { name: "Killa Nikkei", role: "Japanese-Peruvian catering \u00b7 Sebastian Consiglieri",
         blurb: "Nikkei cuisine that gives a reception a genuine centerpiece.",
