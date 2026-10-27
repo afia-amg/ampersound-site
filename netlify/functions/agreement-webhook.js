@@ -3,6 +3,13 @@
  * Receives POST from client portal on viewed/signed/paid/installment events.
  * Updates the matching task in the ClickUp Agreements list.
  *
+ * Signatures are saved as a PNG attachment on the agreement task (viewable
+ * in ClickUp), with a text comment as the fallback if the upload fails.
+ *
+ * Signed / paid / installment events with no matching agreement return 404,
+ * so the portal keeps the submission queued and tells the client plainly,
+ * instead of showing a success while nothing was recorded.
+ *
  * Env vars:
  *   CLICKUP_API_TOKEN
  *   AGREEMENTS_LIST_ID (objectID format, default: 901418268145)
@@ -10,6 +17,9 @@
 
 const CLICKUP_BASE = "https://api.clickup.com/api/v2";
 const CLIENT_EMAIL_FIELD = "3f38f15e-6aa4-4481-9365-d4a911d68195";
+const PAYMENT_STATUS_FIELD = "96105ecf-6396-4fb1-90aa-93b37c9dfc48";
+const PAYMENT_RECEIVED_OPTION = "7601cdf4-5cee-49ef-a8bf-802350a5bdcc";
+const MUST_RECORD = ["signed", "paid", "installment"];
 
 exports.handler = async (event) => {
   const headers = {
@@ -43,7 +53,7 @@ exports.handler = async (event) => {
 
   const {
     action, client, contact, email, event_date,
-    total_fee, deposit, package: pkg, signature, signedAt,
+    total_fee, deposit, package: pkg, signature, signedAt, signerName: signerFromPortal,
     task_id
   } = payload;
 
@@ -74,6 +84,13 @@ exports.handler = async (event) => {
 
     if (!task) {
       console.log("No task found for:", email, "in list:", LIST_ID);
+      // A signature or payment that lands nowhere must not look like a success.
+      if (MUST_RECORD.indexOf(action) !== -1) {
+        return {
+          statusCode: 404, headers,
+          body: JSON.stringify({ ok: false, message: "No matching agreement found for " + email })
+        };
+      }
       return {
         statusCode: 200, headers,
         body: JSON.stringify({ ok: true, message: "No matching task found" })
@@ -81,41 +98,54 @@ exports.handler = async (event) => {
     }
 
     console.log("Using task:", task.id, task.name);
+    const currentStatus = ((task.status && task.status.status) || "").toLowerCase();
 
-    // 2. If signed: post signature comment FIRST (before status change)
+    // 2. If signed: save the signature FIRST (before status change)
+    let signatureSaved = null;
     if (action === "signed") {
-      const signerName = contact || client || "Client";
-      const signDate = signedAt ? new Date(signedAt).toLocaleDateString("en-US", {
+      const signerName = signerFromPortal || contact || client || "Client";
+      const signDate = signedAt ? new Date(signedAt).toLocaleString("en-US", {
+        timeZone: "America/Denver",
         year: "numeric", month: "long", day: "numeric",
         hour: "numeric", minute: "2-digit", timeZoneName: "short"
       }) : new Date().toISOString();
 
-      // Post signature confirmation comment
+      if (signature) {
+        const fileName = "signature-" + slugify(signerName) + "-" + (signedAt || new Date().toISOString()).slice(0, 10) + ".png";
+        try {
+          await uploadAttachment(TOKEN, task.id, signature, fileName);
+          signatureSaved = "attachment";
+          console.log("Signature uploaded as attachment:", fileName);
+        } catch (upErr) {
+          console.error("Signature attachment failed, falling back to comment:", upErr.message);
+          const sigComment = "\ud83d\udd8a\ufe0f **Digital Signature Image**\n\n" +
+            "Signer: " + signerName + "\n" +
+            "Timestamp: " + signDate + "\n\n" +
+            "Signature data (base64 PNG):\n" + signature;
+          await postComment(TOKEN, task.id, sigComment);
+          signatureSaved = "comment";
+        }
+      }
+
       let commentText = "\u2705 **Agreement signed digitally**\n\n";
       commentText += "**Signed by:** " + signerName + "\n";
       commentText += "**Date:** " + signDate + "\n";
       commentText += "**Package:** " + (pkg || "N/A") + "\n";
-      commentText += "**Total:** $" + (total_fee || 0).toFixed(2) + "\n";
+      commentText += "**Total:** $" + Number(total_fee || 0).toFixed(2) + "\n";
       commentText += "**Event:** " + (event_date || "N/A") + "\n";
+      commentText += "**Signature:** " + (signatureSaved === "attachment"
+        ? "saved as an image attachment on this task"
+        : signatureSaved === "comment" ? "saved as data in the comment below" : "not included") + "\n";
 
       await postComment(TOKEN, task.id, commentText);
       console.log("Signed confirmation comment posted");
-
-      // Store signature as separate comment with full base64 data URL
-      // This is the most reliable approach: no multipart, no timeout risk
-      if (signature) {
-        const sigComment = "\ud83d\udd8a\ufe0f **Digital Signature Image**\n\n" +
-          "Signer: " + signerName + "\n" +
-          "Timestamp: " + signDate + "\n\n" +
-          "Signature data (base64 PNG):\n" + signature;
-        await postComment(TOKEN, task.id, sigComment);
-        console.log("Signature data saved in comment, length:", signature.length);
-      }
     }
 
-    // 3. Update status AFTER comments are saved
-    const statusMap = { viewed: "sent", signed: "signed", paid: "paid" };
-    const newStatus = statusMap[action];
+    // 3. Update status AFTER the signature is saved.
+    //    "viewed" only advances a draft, so it never reverts a signed agreement.
+    let newStatus = null;
+    if (action === "signed") newStatus = "signed";
+    if (action === "viewed" && currentStatus === "draft") newStatus = "sent";
     if (newStatus) {
       try {
         await updateTask(TOKEN, task.id, { status: newStatus });
@@ -125,11 +155,17 @@ exports.handler = async (event) => {
       }
     }
 
-    // 4. If paid: post confirmation
+    // 4. If paid: mark Payment Status and post confirmation
     if (action === "paid") {
-      const amount = deposit ? "$" + deposit.toFixed(2) : "amount confirmed";
+      try {
+        await setField(TOKEN, task.id, PAYMENT_STATUS_FIELD, PAYMENT_RECEIVED_OPTION);
+        console.log("Payment Status set to Payment Received");
+      } catch (fieldErr) {
+        console.error("Payment Status update failed (continuing):", fieldErr.message);
+      }
+      const amount = deposit ? "$" + Number(deposit).toFixed(2) : "amount confirmed";
       await postComment(TOKEN, task.id,
-        "\ud83d\udcb0 **Payment received**\n\nAmount: " + amount + "\nClient: " + (client || email) + "\nDate: " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+        "\ud83d\udcb0 **Payment received**\n\nAmount: " + amount + "\nClient: " + (client || email) + "\nDate: " + new Date().toLocaleDateString("en-US", { timeZone: "America/Denver", year: "numeric", month: "long", day: "numeric" })
       );
       console.log("Payment comment posted");
     }
@@ -140,7 +176,7 @@ exports.handler = async (event) => {
     // The Stripe webhook usually gets there first; if the task is already
     // completed, this is a duplicate and we leave it alone.
     if (action === "installment") {
-      const already = resolvedById && ((task.status && task.status.status) || "").toLowerCase() === "completed";
+      const already = resolvedById && currentStatus === "completed";
       if (already) {
         console.log("Installment already logged, skipping:", task.id);
       } else {
@@ -149,7 +185,7 @@ exports.handler = async (event) => {
         const amt = typeof payload.amount === "number" ? "$" + payload.amount.toFixed(2) : "amount confirmed";
         await postComment(TOKEN, task.id,
           "\ud83d\udcb0 **Installment " + n + (of ? " of " + of : "") + " received**\n\nAmount: " + amt +
-          "\nClient: " + (client || email) + "\nDate: " + new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+          "\nClient: " + (client || email) + "\nDate: " + new Date().toLocaleDateString("en-US", { timeZone: "America/Denver", year: "numeric", month: "long", day: "numeric" })
         );
         console.log("Installment comment posted:", n);
         if (resolvedById) {
@@ -170,7 +206,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200, headers,
-      body: JSON.stringify({ ok: true, action, taskId: task.id, newStatus }),
+      body: JSON.stringify({ ok: true, action, taskId: task.id, newStatus, signatureSaved }),
     };
   } catch (err) {
     console.error("Webhook error:", err.message, err.stack);
@@ -179,6 +215,10 @@ exports.handler = async (event) => {
 };
 
 // --- Helpers ---
+
+function slugify(s) {
+  return String(s || "client").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "client";
+}
 
 /**
  * Direct task lookup by ClickUp task ID.
@@ -211,7 +251,7 @@ async function findTaskByEmail(token, listId, email) {
   // Match on Client Email field
   const match = data.tasks.find(function(t) {
     return t.custom_fields && t.custom_fields.some(function(f) {
-      return f.id === CLIENT_EMAIL_FIELD && f.value && f.value.toLowerCase() === email.toLowerCase();
+      return f.id === CLIENT_EMAIL_FIELD && typeof f.value === "string" && f.value.toLowerCase() === email.toLowerCase();
     });
   });
 
@@ -227,6 +267,37 @@ async function findTaskByEmail(token, listId, email) {
   }
 
   return match || null;
+}
+
+async function uploadAttachment(token, taskId, dataUrl, fileName) {
+  const m = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(dataUrl || "");
+  if (!m) throw new Error("Signature is not a base64 image data URL");
+  const bytes = Buffer.from(m[2], "base64");
+  const form = new FormData();
+  form.append("attachment", new Blob([bytes], { type: m[1] }), fileName);
+  const res = await fetch(CLICKUP_BASE + "/task/" + taskId + "/attachment", {
+    method: "POST",
+    headers: { Authorization: token },
+    body: form,
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error("Attachment upload failed: " + res.status + " " + errText);
+  }
+  return res.json();
+}
+
+async function setField(token, taskId, fieldId, value) {
+  const res = await fetch(CLICKUP_BASE + "/task/" + taskId + "/field/" + fieldId, {
+    method: "POST",
+    headers: { Authorization: token, "Content-Type": "application/json" },
+    body: JSON.stringify({ value: value }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error("Field update failed: " + res.status + " " + errText);
+  }
+  return res.json();
 }
 
 async function updateTask(token, taskId, updates) {
