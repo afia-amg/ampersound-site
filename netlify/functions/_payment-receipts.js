@@ -44,7 +44,7 @@ function seal(receipt){const data=Buffer.from(JSON.stringify(receipt)).toString(
 function unseal(value){
  try {
   if(!value.startsWith(PREFIX))return null;
-  const parts=value.slice(PREFIX.length).trim().split('.');if(parts.length!==2)return null;
+  const parts=value.slice(PREFIX.length).trim().split('.');if(parts.length!==2||!/^[A-Za-z0-9_-]+$/.test(parts[0])||!/^[a-f0-9]{64}$/.test(parts[1]))return null;
   const expected=Buffer.from(signature(parts[0]),'hex'), actual=Buffer.from(parts[1],'hex');
   if(actual.length!==expected.length||!crypto.timingSafeEqual(actual,expected))return null;
   const r=JSON.parse(Buffer.from(parts[0],'base64url').toString());
