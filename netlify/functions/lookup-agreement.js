@@ -82,6 +82,19 @@ const CLIENT_PORTALS = {
     paymentStatus: 'unpaid',
     portalUrl: 'https://ampersoundmediagroup.com/partner-docs/rose-josh',
   },
+  'angelahussain99@gmail.com': {
+    eventName: 'Angela & Joe Wedding',
+    eventDate: '2027-05-28',
+    eventType: 'Wedding',
+    venue: 'Red Butte Garden, Salt Lake City, Utah',
+    services: 'MC / Event Hosting, DJ / Sound Direction, Ceremony Sound, Timeline & Run-of-Show Coordination',
+    totalFee: 1275.00,
+    deposit: 637.50,
+    stage: 'proposal',
+    status: 'awaiting_signature',
+    paymentStatus: 'unpaid',
+    portalUrl: 'https://ampersoundmediagroup.com/partner-docs/angela-joe',
+  },
 };
 
 CLIENT_PORTALS['kategeis@hotmail.com'] = CLIENT_PORTALS['ryan.nelson.jrn@gmail.com'];
