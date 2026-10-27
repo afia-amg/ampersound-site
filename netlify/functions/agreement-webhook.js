@@ -20,6 +20,7 @@ const CLIENT_EMAIL_FIELD = "3f38f15e-6aa4-4481-9365-d4a911d68195";
 const PAYMENT_STATUS_FIELD = "96105ecf-6396-4fb1-90aa-93b37c9dfc48";
 const PAYMENT_RECEIVED_OPTION = "7601cdf4-5cee-49ef-a8bf-802350a5bdcc";
 const MUST_RECORD = ["signed", "paid", "installment"];
+const DEFAULT_LIST_ID = "901418268145";
 
 exports.handler = async (event) => {
   const headers = {
@@ -37,7 +38,7 @@ exports.handler = async (event) => {
   }
 
   const TOKEN = process.env.CLICKUP_API_TOKEN;
-  const LIST_ID = process.env.AGREEMENTS_LIST_ID || "901418268145";
+  const LIST_ID = process.env.AGREEMENTS_LIST_ID || DEFAULT_LIST_ID;
 
   if (!TOKEN) {
     console.error("Missing CLICKUP_API_TOKEN");
@@ -235,17 +236,21 @@ async function getTaskById(token, taskId) {
 }
 
 async function findTaskByEmail(token, listId, email) {
-  const url = CLICKUP_BASE + "/list/" + listId + "/task?include_closed=true&subtasks=false";
-  console.log("Searching list:", listId, "for email:", email);
-
-  const res = await fetch(url, { headers: { Authorization: token } });
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error("ClickUp list fetch failed:", res.status, errText);
-    throw new Error("ClickUp API: " + res.status);
+  // The env var has held an internal-format ID before, which the ClickUp API
+  // rejects with a 400. Try it, then fall back to the known Agreements list.
+  const candidates = [listId, DEFAULT_LIST_ID].filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+  let data = null;
+  let lastErr = "";
+  for (const id of candidates) {
+    const url = CLICKUP_BASE + "/list/" + id + "/task?include_closed=true&subtasks=false";
+    console.log("Searching list:", id, "for email:", email);
+    const res = await fetch(url, { headers: { Authorization: token } });
+    if (res.ok) { data = await res.json(); break; }
+    lastErr = res.status + " " + (await res.text());
+    console.error("ClickUp list fetch failed for", id, ":", lastErr);
   }
+  if (!data) throw new Error("ClickUp API: " + lastErr);
 
-  const data = await res.json();
   console.log("Tasks in list:", data.tasks ? data.tasks.length : 0);
 
   // Match on Client Email field
