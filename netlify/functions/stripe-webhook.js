@@ -1,206 +1,52 @@
-// netlify/functions/stripe-webhook.js
-// Stripe webhook: logs payments in ClickUp straight from Stripe, so a payment
-// is recorded even if the client closes the tab before the portal redirect.
-//
-// Reads payment link metadata (copied onto every Checkout Session):
-//   clickup_task_id (or legacy taskId), deal_task_id, client, event,
-//   installment, installments_total
-// Then on that task: posts a payment comment, sets Payment Status to
-// "Payment Recieved", and moves it to "completed". Also comments on the deal
-// task and pings the Chat channel when configured.
-//
-// Safe to receive twice (Stripe retries, or the portal redirect landing too):
-// a task already "completed" is left alone.
-//
-// ENV VARS:
-//   STRIPE_WEBHOOK_SECRET   - Stripe webhook signing secret (whsec_...). Required.
-//   CLICKUP_API_TOKEN       - ClickUp API token
-//   CLICKUP_CHAT_CHANNEL_ID - optional, Chat channel for payment pings
-//
-// Stripe endpoint: https://ampersoundmediagroup.com/.netlify/functions/stripe-webhook
-// Events: checkout.session.completed, checkout.session.async_payment_succeeded
-
-const crypto = require('crypto');
-
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-const CLICKUP_API_TOKEN = process.env.CLICKUP_API_TOKEN;
-const CHAT_CHANNEL_ID = process.env.CLICKUP_CHAT_CHANNEL_ID;
-const CLICKUP_BASE = 'https://api.clickup.com/api/v2';
-const DONE = 'completed';
-
-// Payment Status field option IDs (inherited from Pipeline Management folder)
-const PAYMENT_STATUS_FIELD = '96105ecf-6396-4fb1-90aa-93b37c9dfc48';
-const PAYMENT_RECEIVED_OPTION = '7601cdf4-5cee-49ef-a8bf-802350a5bdcc'; // "Payment Recieved"
-
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Stripe-Signature',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-// Verify Stripe webhook signature. No secret means no trust: without it anyone
-// could post a fake "payment" and close a client's task.
-function verifySignature(payload, sigHeader) {
-  if (!STRIPE_WEBHOOK_SECRET || !sigHeader) return false;
-
-  let timestamp = null;
-  const sigs = [];
-  sigHeader.split(',').forEach((part) => {
-    const i = part.indexOf('=');
-    const key = part.slice(0, i).trim();
-    const val = part.slice(i + 1).trim();
-    if (key === 't') timestamp = val;
-    if (key === 'v1') sigs.push(val);
-  });
-  if (!timestamp || !sigs.length) return false;
-
-  // Check timestamp tolerance (5 min)
-  const now = Math.floor(Date.now() / 1000);
-  if (Math.abs(now - parseInt(timestamp, 10)) > 300) return false;
-
-  const expected = Buffer.from(
-    crypto.createHmac('sha256', STRIPE_WEBHOOK_SECRET).update(`${timestamp}.${payload}`, 'utf8').digest('hex'),
-    'hex'
-  );
-  return sigs.some((s) => {
-    const got = Buffer.from(s, 'hex');
-    return got.length === expected.length && crypto.timingSafeEqual(got, expected);
-  });
+'use strict';
+// Only this signature-verified endpoint can issue portal-unlock receipts.
+const crypto=require('crypto');
+const {PORTALS,api,seal,receipts}=require('./_payment-receipts');
+const FIELD='96105ecf-6396-4fb1-90aa-93b37c9dfc48';
+const RECEIVED='7601cdf4-5cee-49ef-a8bf-802350a5bdcc';
+const headers={'Content-Type':'application/json'};
+function validSignature(body,header){
+ const secret=process.env.STRIPE_WEBHOOK_SECRET;if(!secret||!header)return false;
+ const entries=header.split(',').map(x=>x.split('='));
+ const timestamp=(entries.find(x=>x[0]==='t')||[])[1];
+ if(!/^\d+$/.test(timestamp||'')||Math.abs(Date.now()/1000-Number(timestamp))>300)return false;
+ const expected=crypto.createHmac('sha256',secret).update(timestamp+'.'+body).digest();
+ return entries.filter(x=>x[0]==='v1').some(x=>{const b=Buffer.from(x[1]||'','hex');return b.length===expected.length&&crypto.timingSafeEqual(b,expected);});
 }
-
-async function clickup(path, opts = {}) {
-  const res = await fetch(CLICKUP_BASE + path, {
-    ...opts,
-    headers: { 'Content-Type': 'application/json', Authorization: CLICKUP_API_TOKEN },
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`ClickUp ${path}: ${res.status} ${await res.text()}`);
-  return res.json();
-}
-
-function postComment(taskId, text) {
-  return clickup(`/task/${taskId}/comment`, { method: 'POST', body: JSON.stringify({ comment_text: text }) });
-}
-
-// Notify Chat channel about payment
-async function notifyPayment(session, label) {
-  if (!CHAT_CHANNEL_ID || !CLICKUP_API_TOKEN) return;
-
-  const clientName = session.metadata?.client || session.customer_details?.name || 'Client';
-  const eventName = session.metadata?.event || '';
-  const amount = session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : 'Unknown';
-  const method = session.payment_method_types?.[0] === 'us_bank_account' ? 'ACH' : 'Card';
-
-  const msg = `\ud83d\udcb0 **${label} Received**\n\n**Client:** ${clientName}\n**Event:** ${eventName}\n**Amount:** ${amount}\n**Method:** ${method}\n**Status:** Funds received`;
-
-  try {
-    await fetch(`https://api.clickup.com/api/v3/chat/${CHAT_CHANNEL_ID}/message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: CLICKUP_API_TOKEN },
-      body: JSON.stringify({ content: msg }),
-    });
-  } catch (e) { console.error('Chat notification failed:', e.message); }
-}
-
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
-  if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ message: 'Method not allowed' }) };
-
-  if (!STRIPE_WEBHOOK_SECRET || !CLICKUP_API_TOKEN) {
-    console.error('Missing STRIPE_WEBHOOK_SECRET or CLICKUP_API_TOKEN');
-    return { statusCode: 500, headers, body: JSON.stringify({ message: 'Server config error' }) };
+exports.handler=async(event)=>{
+ const reply=(status,body)=>({statusCode:status,headers,body:JSON.stringify(body)});
+ if(event.httpMethod!=='POST')return reply(405,{error:'Method not allowed'});
+ if(!process.env.STRIPE_WEBHOOK_SECRET||!process.env.CLICKUP_API_TOKEN)return reply(503,{error:'Webhook unavailable'});
+ const body=event.isBase64Encoded?Buffer.from(event.body||'','base64').toString('utf8'):event.body||'';
+ if(!validSignature(body,(event.headers||{})['stripe-signature']||(event.headers||{})['Stripe-Signature']))return reply(401,{error:'Invalid signature'});
+ let e;try{e=JSON.parse(body);}catch(_){return reply(400,{error:'Invalid JSON'});}
+ if(!['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(e.type))return reply(200,{ignored:true});
+ const s=e.data&&e.data.object;
+ if(!s||s.payment_status!=='paid')return reply(200,{pending:true});
+ const md=s.metadata||{};
+ const known=Object.values(PORTALS).find(p=>p.linkId&&p.linkId===s.payment_link);
+ const taskId=known?known.taskId:(md.clickup_task_id||md.taskId);
+ if(!taskId){console.error('Paid Stripe session has no agreement routing:',s.id);return reply(422,{error:'Missing agreement routing'});}
+ if(known&&((md.clickup_task_id||md.taskId)&&taskId!==(md.clickup_task_id||md.taskId)))return reply(422,{error:'Agreement routing mismatch'});
+ if(s.currency!=='usd'||!Number.isInteger(s.amount_total)||s.amount_total<=0)return reply(422,{error:'Unexpected payment currency or amount'});
+ if(known&&s.amount_total!==known.amount)return reply(422,{error:'Deposit amount mismatch'});
+ try{
+  const task=await api('/task/'+encodeURIComponent(taskId));
+  if(known){const email=(task.custom_fields||[]).find(f=>f.id==='3f38f15e-6aa4-4481-9365-d4a911d68195');if(!email||String(email.value||'').toLowerCase()!==known.email)throw new Error('Agreement email mismatch');}
+  const existing=await receipts(taskId);
+  if(!existing.some(r=>r.sessionId===s.id)){
+   const receipt={v:1,eventId:e.id,sessionId:s.id,taskId,paymentLink:s.payment_link||null,currency:s.currency,amount:s.amount_total,paidAt:new Date(e.created*1000).toISOString()};
+   await api('/task/'+encodeURIComponent(taskId)+'/comment',{method:'POST',body:JSON.stringify({comment_text:seal(receipt)})});
+   const label=md.installment?'Installment '+md.installment:'Deposit / payment';
+   const text=label+' received via Stripe\nAmount: $'+(s.amount_total/100).toFixed(2)+'\nClient: '+(md.client||s.customer_details?.email||'Client')+'\nStripe payment: '+(s.payment_intent||s.id)+'\nVerified receipt saved. Remaining balance, if any, is still due.';
+   await api('/task/'+encodeURIComponent(taskId)+'/comment',{method:'POST',body:JSON.stringify({comment_text:text})});
+   if(md.deal_task_id)await api('/task/'+encodeURIComponent(md.deal_task_id)+'/comment',{method:'POST',body:JSON.stringify({comment_text:text})});
+   if(process.env.CLICKUP_CHAT_CHANNEL_ID){try{await fetch('https://api.clickup.com/api/v3/chat/'+process.env.CLICKUP_CHAT_CHANNEL_ID+'/message',{method:'POST',headers:{Authorization:process.env.CLICKUP_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({content:text})});}catch(err){console.error('Chat notification failed',err.message);}}
   }
-
-  const sigHeader = event.headers['stripe-signature'] || event.headers['Stripe-Signature'] || '';
-  const payload = event.isBase64Encoded
-    ? Buffer.from(event.body || '', 'base64').toString('utf8')
-    : event.body || '';
-
-  if (!verifySignature(payload, sigHeader)) {
-    console.error('Invalid Stripe signature');
-    return { statusCode: 401, headers, body: JSON.stringify({ message: 'Invalid signature' }) };
-  }
-
-  let stripeEvent;
-  try { stripeEvent = JSON.parse(payload); }
-  catch { return { statusCode: 400, headers, body: JSON.stringify({ message: 'Invalid JSON' }) }; }
-
-  const handled = ['checkout.session.completed', 'checkout.session.async_payment_succeeded'];
-  if (!handled.includes(stripeEvent.type)) {
-    return { statusCode: 200, headers, body: JSON.stringify({ message: 'Event ignored', type: stripeEvent.type }) };
-  }
-
-  const session = stripeEvent.data?.object;
-  if (!session) return { statusCode: 200, headers, body: JSON.stringify({ message: 'No session data' }) };
-
-  // Bank transfers fire "completed" while still pending; log them when
-  // async_payment_succeeded arrives instead.
-  if (session.payment_status !== 'paid') {
-    console.log('Session not paid yet:', session.id, session.payment_status);
-    return { statusCode: 200, headers, body: JSON.stringify({ message: 'Pending' }) };
-  }
-
-  const md = session.metadata || {};
-  const taskId = md.clickup_task_id || md.taskId;
-  const label = md.installment
-    ? `Installment ${md.installment}${md.installments_total ? ' of ' + md.installments_total : ''}`
-    : 'Payment';
-
-  console.log('Payment received:', session.id, session.amount_total, md);
-
-  if (!taskId) {
-    console.log('No task id in metadata, skipping ClickUp update');
-    await notifyPayment(session, label);
-    return { statusCode: 200, headers, body: JSON.stringify({ received: true, untagged: true }) };
-  }
-
-  try {
-    const task = await clickup(`/task/${taskId}`);
-    if (!task) {
-      console.error('Task not found:', taskId);
-      return { statusCode: 200, headers, body: JSON.stringify({ received: true, message: 'Task not found' }) };
-    }
-    if ((task.status?.status || '').toLowerCase() === DONE) {
-      console.log('Already logged, skipping:', taskId);
-      return { statusCode: 200, headers, body: JSON.stringify({ received: true, duplicate: true }) };
-    }
-
-    const amount = typeof session.amount_total === 'number'
-      ? `$${(session.amount_total / 100).toFixed(2)}`
-      : (md.amount ? `$${md.amount}` : 'amount confirmed');
-    const date = new Date((stripeEvent.created || Date.now() / 1000) * 1000).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Denver',
-    });
-    const text = `\ud83d\udcb0 **${label} received via Stripe**\n\n` +
-      `Amount: ${amount}\n` +
-      `Client: ${md.client || session.customer_details?.email || 'Client'}\n` +
-      `Date: ${date}\n` +
-      `Stripe payment: ${session.payment_intent || session.id}`;
-
-    await postComment(taskId, text);
-
-    try {
-      await clickup(`/task/${taskId}/field/${PAYMENT_STATUS_FIELD}`, {
-        method: 'POST', body: JSON.stringify({ value: PAYMENT_RECEIVED_OPTION }),
-      });
-    } catch (e) { console.error('Payment Status field update failed (continuing):', e.message); }
-
-    try {
-      await clickup(`/task/${taskId}`, { method: 'PUT', body: JSON.stringify({ status: DONE }) });
-    } catch (e) { console.error('Status update failed (continuing):', e.message); }
-
-    if (md.deal_task_id) {
-      try { await postComment(md.deal_task_id, text); }
-      catch (e) { console.error('Deal comment failed (continuing):', e.message); }
-    }
-
-    console.log(`Logged ${label} on ${taskId}`);
-  } catch (e) {
-    // A 500 makes Stripe retry later, which is what we want for a ClickUp blip.
-    console.error('ClickUp update error:', e.message);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
-  }
-
-  await notifyPayment(session, label);
-  return { statusCode: 200, headers, body: JSON.stringify({ received: true }) };
+  // Retrying an event repairs field updates without issuing another receipt.
+  await api('/task/'+encodeURIComponent(taskId)+'/field/'+FIELD,{method:'POST',body:JSON.stringify({value:RECEIVED})});
+  // A deposit must not close the main agreement. Only installment tasks close.
+  if(md.installment&&!known)await api('/task/'+encodeURIComponent(taskId),{method:'PUT',body:JSON.stringify({status:'completed'})});
+  return reply(200,{received:true});
+ }catch(err){console.error('Stripe receipt failed:',err.message);return reply(500,{error:'Payment recording failed; retry required'});}
 };
