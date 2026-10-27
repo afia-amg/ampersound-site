@@ -112,7 +112,7 @@ window.PORTAL = AMG.wedding({
   { "item": "Real-time timeline and vendor cues all day", "mic": true, "sound": false }
  ],
  "runOfShow": [
-  { "time": "2:00 PM", "event": "Load-in. Ceremony mic staged, Great Hall setup begins", "who": "sound", "quiet": true },
+  { "time": "1:30 PM", "event": "Load-in. Ceremony mic staged, Great Hall setup begins", "who": "sound", "quiet": true },
   { "time": "2:40 PM", "event": "Sound check with your musicians and the officiant mic", "who": "both", "quiet": true },
   { "time": "3:00 PM", "event": "Guests arrive. Prelude from your musicians", "who": "mic" },
   { "time": "3:50 PM", "event": "Guests seated. Welcome and unplugged-ceremony note", "who": "mic" },
@@ -190,69 +190,24 @@ window.PORTAL = AMG.wedding({
   "callLabel": "Book a quick follow-up call",
   "callUrl": "https://scheduler.zoom.us/afia-chin-roberts/discovery-meeting-with-ampersound-media-group"
  },
- "agreement": {
-  "intro": "This is the full agreement between us, with your actual numbers built in. If anything needs adjusting, we are wide open to that conversation.",
-  "clauses": [
-   {
-    "title": "Deposit & Booking",
-    "body": "A non-refundable retainer of {{deposit}}, fifty percent of the total, reserves Friday, August 27, 2027 exclusively for you. We take one wedding per day. Card, bank transfer, and check all work."
-   },
-   {
-    "title": "Balance Due",
-    "body": "The remaining {{balance}} is due no later than August 13, 2027, fourteen days before the wedding."
-   },
-   {
-    "title": "Services",
-    "body": "{{option}} (Afia + Adam), covering 6 hours from 3:00 PM to 9:00 PM at the Castle at Wadley Farms in Lindon, Utah: MC and hosting for the full day, wireless microphones for the ceremony and toasts, curated cocktail hour music in the north wing, a live DJ for the reception, and real-time timeline coordination. All equipment, setup, and breakdown included."
-   },
-   {
-    "title": "Military Appreciation",
-    "body": "The 10% military rate is applied above, with thanks for Josh's service."
-   },
-   {
-    "title": "Travel",
-    "body": "Local tier, about twenty-five miles from our base. Travel is {{travel}}. Gear transport included."
-   },
-   {
-    "title": "Live Musicians",
-    "body": "Your ceremony musicians lead the ceremony music. We coordinate cues and sound check with them, and handle microphones for the officiant and vows."
-   },
-   {
-    "title": "Weather & Outdoor Ceremony",
-    "body": "We build plan A and plan B with you, plus an agreed decision time on the day. Moving the ceremony indoors costs nothing extra and changes nothing here."
-   },
-   {
-    "title": "Cancellation by Client",
-    "body": "If plans change more than sixty days out, the retainer is forfeited and nothing further is owed. Inside sixty days, the full amount is due because we will have turned away other couples for your date."
-   },
-   {
-    "title": "Cancellation by Ampersound",
-    "body": "If something on our end prevents us from being there, you get a full refund of everything paid, retainer included, within seven business days. We will also help you find a replacement we trust."
-   },
-   {
-    "title": "Force Majeure",
-    "body": "If something outside anyone's control prevents the wedding, we find a new date together at no extra cost. If no date works, everything paid comes back."
-   },
-   {
-    "title": "Timeline & Coordination",
-    "body": "We build your run of show with you in this portal, lock the final version fourteen days before the wedding, and share it with Wadley Farms, your photographer, and your musicians. On the day, questions come to us instead of you."
-   },
-   {
-    "title": "Equipment & Setup",
-    "body": "We ask for about an hour of venue access before guests arrive to set up and sound check. Setup and breakdown are on our clock, so all six hours go to your celebration."
-   },
-   {
-    "title": "Extended Hours",
-    "body": "Past 9:00 PM, additional time is $350 per hour, within the venue's 10 PM close. Give us the nod on the night and we settle up afterward."
-   },
-   {
-    "title": "Liability & Insurance",
-    "body": "We carry full liability insurance and will send a certificate to Wadley Farms on request. We are responsible for our gear and our performance, not venue conditions, vendor delays, or guest conduct outside our control."
-   },
-   {
-    "title": "Photo & Video Release",
-    "body": "We would love to share moments from your wedding in our portfolio. If you would rather keep things private, tell us in writing at any point and we will leave it out."
-   }
+ "agreementTerms": {
+  "client": "Rose Lee and Josh",
+  "eventDateLong": "Friday, August 27, 2027",
+  "venue": "The Castle at Wadley Farms, Lindon, Utah (outdoor ceremony, cocktails in the north wing, reception in the Great Hall)",
+  "start": "3:00 PM",
+  "end": "9:00 PM",
+  "guests": "about 90 expected (110 to 120 invited)",
+  "crew": "Afia + Adam",
+  "scope": "MC and hosting for the full day, wireless microphones for the ceremony and toasts, curated cocktail hour music in the north wing, a live DJ for the reception, and real-time timeline coordination.",
+  "discount": "This includes a 10% military appreciation rate of $150.00 off the $1,500.00 Event Flow rate.",
+  "balanceDue": "August 13, 2027",
+  "travelNote": "The Castle at Wadley Farms is about 25 miles from our base, inside the 50-mile no-fee radius.",
+  "overtimeRate": 150,
+  "overtimeNote": "Overtime must end before the venue's 10:00 PM close.",
+  "special": [
+   { "title": "Military Appreciation", "body": "The 10% military rate ($150.00) is applied with thanks for Josh's service." },
+   { "title": "Live Musicians", "body": "Client's ceremony musicians lead the ceremony music. Ampersound coordinates cues, sound checks with the musicians, and provides microphones for the officiant and vows." },
+   { "title": "Outdoor Ceremony & Weather", "body": "Ampersound builds a plan A and plan B with Client, with an agreed decision time on the event day. Moving the ceremony indoors costs nothing extra and changes nothing in this agreement." }
   ]
  },
  "paymentLink": "https://buy.stripe.com/bJecN467f1dl1QG2QPbwk0a",
@@ -263,7 +218,7 @@ window.PORTAL = AMG.wedding({
  ],
  "songNotes": "Rose and Josh already have a playlist started. Drop the link here and Adam builds the night around it.",
  "timeline": [
-  { "time": "2:00 PM", "event": "Ampersound load-in and setup" },
+  { "time": "1:30 PM", "event": "Ampersound load-in and setup" },
   { "time": "2:40 PM", "event": "Sound check with musicians and officiant mic" },
   { "time": "3:00 PM", "event": "Guests arrive. Prelude from your musicians" },
   { "time": "3:50 PM", "event": "Guests seated. Welcome" },
