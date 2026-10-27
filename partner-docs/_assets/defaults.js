@@ -5,6 +5,36 @@
  * each page. A client page passes only what is actually specific to that client
  * and calls AMG.wedding() to get a complete PORTAL record.
  */
+
+/* Signature export. The pad draws light ink on a transparent canvas so it reads
+ * on the dark portal, which makes the saved PNG almost invisible on white in
+ * ClickUp. When the signature canvas (#sig) is exported, recolor the strokes to
+ * dark ink on a white background. Every other canvas exports unchanged.
+ */
+(function () {
+  if (typeof HTMLCanvasElement === "undefined") return;
+  var original = HTMLCanvasElement.prototype.toDataURL;
+  HTMLCanvasElement.prototype.toDataURL = function () {
+    if (this.id !== "sig") return original.apply(this, arguments);
+    try {
+      var copy = document.createElement("canvas");
+      copy.width = this.width;
+      copy.height = this.height;
+      var ctx = copy.getContext("2d");
+      ctx.drawImage(this, 0, 0);
+      ctx.globalCompositeOperation = "source-in";
+      ctx.fillStyle = "#14161a";
+      ctx.fillRect(0, 0, copy.width, copy.height);
+      ctx.globalCompositeOperation = "destination-over";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, copy.width, copy.height);
+      return original.call(copy, "image/png");
+    } catch (e) {
+      return original.apply(this, arguments);
+    }
+  };
+})();
+
 window.AMG = (function () {
   var VENDORS = [
     { group: "Beverage & Bar", items: [
