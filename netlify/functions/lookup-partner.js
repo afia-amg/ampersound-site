@@ -44,9 +44,9 @@ const CLIENT_PORTALS = {
   'kategeis@hotmail.com': '/partner-docs/katie-ryan/',
   'ashleyveenendaal23@gmail.com': '/partner-docs/katie-ryan/',
   'jesseradike1@gmail.com': '/partner-docs/jesse-zariah/',
-  'spinsbooknook@gmail.com': '/partner-docs/aspen-hyrum/',
 };
 
+// Only partners with a real agreement page get a link. Add a line here when one is published.
 const AGREEMENT_URLS = {
   'Donnielle Schroeder': '/partner-docs/donnielle/agreement.html',
 };
@@ -210,7 +210,8 @@ function formatPartnerData(task) {
     });
   }
 
-  const agreementUrl = AGREEMENT_URLS[task.name] || '/partner-docs/' + task.name.toLowerCase().replace(/\s+/g, '-') + '/agreement.html';
+  // No guessed URLs: a partner without a published agreement page gets no link.
+  const agreementUrl = AGREEMENT_URLS[task.name] || null;
 
   const agreements = [{
     title: task.name + ' Partnership Agreement',
