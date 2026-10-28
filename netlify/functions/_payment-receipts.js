@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const BASE = 'https://api.clickup.com/api/v2';
 const PREFIX = 'AMG_STRIPE_RECEIPT_V1:';
+const SIGNED_PREFIX = 'Agreement signed digitally';
 // Server-owned configuration, never take agreement ids or paid flags from a browser.
 const PORTALS = {
  'rose-josh': {email:'rose.josh.home@gmail.com', taskId:'86bct9jkz', linkId:'plink_1UVEajBKPpxdHQElGhLmUODv', amount:67500},
@@ -58,6 +59,21 @@ async function receipts(taskId){
  for(const c of rows){const r=unseal(text(c));if(r&&r.taskId===taskId)unique.set(r.sessionId,r);}
  return [...unique.values()];
 }
+// The signature on the ClickUp agreement is the record of truth, so a client who
+// signed on one device is never asked to sign again on another.
+async function signatureRecord(task){
+ const rows=await comments(task.id);
+ for(const c of rows){
+  const t=text(c);
+  if(t.indexOf(SIGNED_PREFIX)===0){
+   const n=/Signed by:\s*(.+)/.exec(t), d=/Date:\s*(\S+)/.exec(t);
+   return {signedName:n?n[1].trim():null, signedAt:d?d[1].trim():null};
+  }
+ }
+ const st=String((task.status&&task.status.status)||'').toLowerCase(), ty=String((task.status&&task.status.type)||'');
+ if(st==='signed'||ty==='done'||ty==='closed')return {signedName:null,signedAt:null};
+ return null;
+}
 async function findAgreement(config){
  if(config.taskId)return api('/task/'+config.taskId);
  for(let page=0;page<100;page++){
@@ -70,4 +86,4 @@ async function findAgreement(config){
  }
  throw new Error('Agreement scan limit');
 }
-exports.PORTALS=PORTALS;exports.api=api;exports.seal=seal;exports.unseal=unseal;exports.receipts=receipts;exports.findAgreement=findAgreement;
+exports.PORTALS=PORTALS;exports.api=api;exports.seal=seal;exports.unseal=unseal;exports.receipts=receipts;exports.findAgreement=findAgreement;exports.signatureRecord=signatureRecord;

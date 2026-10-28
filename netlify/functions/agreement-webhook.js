@@ -1,5 +1,5 @@
 'use strict';
-const {api,findAgreement}=require('./_payment-receipts');
+const {api,findAgreement,signatureRecord}=require('./_payment-receipts');
 const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'https://ampersoundmediagroup.com','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS'};
 exports.handler=async(event)=>{
  const reply=(status,data)=>({statusCode:status,headers,body:JSON.stringify(data)});
@@ -18,6 +18,10 @@ exports.handler=async(event)=>{
    if(status==='draft')await api('/task/'+task.id,{method:'PUT',body:JSON.stringify({status:'sent'})});
    return reply(200,{ok:true,taskId:task.id});
   }
+  // One signature per agreement. A second device or a queued retry never files
+  // a duplicate or moves the agreement's status backward.
+  const prior=await signatureRecord(task);
+  if(prior)return reply(200,{ok:true,taskId:task.id,alreadySigned:true,signedName:prior.signedName,signedAt:prior.signedAt});
   const m=/^data:(image\/png);base64,([A-Za-z0-9+/=\r\n]+)$/.exec(p.signature||'');
   if(!m||!p.signerName||!p.signedAt||!Number.isFinite(new Date(p.signedAt).getTime()))return reply(400,{ok:false,error:'Signature, signer and timestamp required'});
   const bytes=Buffer.from(m[2],'base64');

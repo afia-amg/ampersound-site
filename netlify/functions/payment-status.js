@@ -1,5 +1,5 @@
 'use strict';
-const {PORTALS,findAgreement,receipts}=require('./_payment-receipts');
+const {PORTALS,findAgreement,receipts,signatureRecord}=require('./_payment-receipts');
 const headers={'Content-Type':'application/json','Cache-Control':'no-store, private, max-age=0','X-Content-Type-Options':'nosniff'};
 exports.handler=async(event)=>{
  const reply=(status,body)=>({statusCode:status,headers,body:JSON.stringify(body)});
@@ -14,16 +14,19 @@ exports.handler=async(event)=>{
    const rr=await receipts(i.taskId);
    installments.push({num:i.num,paid:rr.some(r=>r.amount===i.amount),source:'stripe-webhook'});
   }
-  if(config.legacyBooked)return reply(200,{verified:false,unlocked:true,source:'existing-booking',installments});
+  if(config.legacyBooked)return reply(200,{verified:false,unlocked:true,source:'existing-booking',signed:true,installments});
   const task=await findAgreement(config);
-  if(!task)return reply(200,{verified:false,unlocked:false,installments});
+  if(!task)return reply(200,{verified:false,unlocked:false,signed:false,installments});
   const email=(task.custom_fields||[]).find(f=>f.id==='3f38f15e-6aa4-4481-9365-d4a911d68195');
   if(!email||String(email.value||'').toLowerCase()!==config.email)throw new Error('Agreement email mismatch');
+  let sig=null;
+  try{sig=await signatureRecord(task);}catch(e){console.error('Signature lookup failed:',e.message);}
+  const signedFields={signed:!!sig,signedName:sig?sig.signedName:null,signedAt:sig?sig.signedAt:null};
   const deposit=(task.custom_fields||[]).find(f=>f.id==='f18252f2-13c7-4b04-a8d3-2b38dc096791');
   const expected=config.amount||Math.round(Number(deposit&&deposit.value)*100);
   if(!Number.isInteger(expected)||expected<=0)throw new Error('Missing expected deposit');
   const rr=await receipts(task.id);
   const receipt=rr.find(r=>r.amount===expected&&(!config.linkId||r.paymentLink===config.linkId));
-  return reply(200,{verified:!!receipt,unlocked:!!receipt,source:'stripe-webhook',paidAt:receipt?receipt.paidAt:null,installments});
+  return reply(200,{verified:!!receipt,unlocked:!!receipt,source:'stripe-webhook',paidAt:receipt?receipt.paidAt:null,installments,...signedFields});
  }catch(e){console.error('Payment status unavailable:',e.message);return reply(503,{verified:false,unlocked:false,error:'Payment verification unavailable'});}
 };
