@@ -72,6 +72,8 @@ body{font-family:'Open Sans',sans-serif;font-size:15px;line-height:1.6;color:var
 </div>
 <script>
 const LOOKUP_URL='/.netlify/functions/lookup-agreement';
+// Whole dollars show as $1,275; anything with cents always shows two digits ($637.50).
+function money(n){n=Number(n);return '$'+n.toLocaleString('en-US',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});}
 async function lookupAgreements(){const ei=document.getElementById('lookupEmail'),email=ei.value.trim(),err=document.getElementById('lookupError'),btn=document.getElementById('lookupBtn');err.classList.remove('visible');ei.classList.remove('invalid');if(!email||!email.includes('@')){ei.classList.add('invalid');err.textContent='Please enter a valid email address.';err.classList.add('visible');return}btn.classList.add('loading');btn.disabled=true;try{const res=await fetch(LOOKUP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.message||'Lookup failed')}const{agreements}=await res.json();renderResults(agreements,email)}catch(e){err.textContent=e.message||'Something went wrong.';err.classList.add('visible')}finally{btn.classList.remove('loading');btn.disabled=false}}
 
 function renderResults(agreements,email){
@@ -111,7 +113,7 @@ function renderResults(agreements,email){
 }
 
 function renderCard(a, badgeClass, badgeLabel) {
-  return `<div class="agreement-card"><div class="event-name">${a.eventName}</div><div class="event-date">${a.eventDate}${a.venue?' &middot; '+a.venue:''}</div><div class="agreement-meta"><div class="meta-item"><label>Services</label><span>${a.services||'See document'}</span></div><div class="meta-item"><label>Total Fee</label><span>${a.totalFee?'$'+Number(a.totalFee).toLocaleString():'See document'}</span></div><div class="meta-item"><label>Deposit</label><span>${a.deposit?'$'+Number(a.deposit).toLocaleString():'See document'}</span></div><div class="meta-item"><label>Event Type</label><span>${a.eventType||'N/A'}</span></div></div><div class="agreement-status ${badgeClass}"><span class="dot"></span>${badgeLabel}</div><div class="agreement-actions">${a.actions}</div></div>`;
+  return `<div class="agreement-card"><div class="event-name">${a.eventName}</div><div class="event-date">${a.eventDate}${a.venue?' &middot; '+a.venue:''}</div><div class="agreement-meta"><div class="meta-item"><label>Services</label><span>${a.services||'See document'}</span></div><div class="meta-item"><label>Total Fee</label><span>${a.totalFee?money(a.totalFee):'See document'}</span></div><div class="meta-item"><label>Deposit</label><span>${a.deposit?money(a.deposit):'See document'}</span></div><div class="meta-item"><label>Event Type</label><span>${a.eventType||'N/A'}</span></div></div><div class="agreement-status ${badgeClass}"><span class="dot"></span>${badgeLabel}</div><div class="agreement-actions">${a.actions}</div></div>`;
 }
 
 function resetLookup(){document.getElementById('lookupCard').style.display='block';document.getElementById('resultsSection').classList.remove('visible');document.getElementById('resultsContainer').innerHTML='';document.getElementById('lookupEmail').value=''}
