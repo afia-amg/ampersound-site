@@ -187,3 +187,49 @@ test('browser payment claims are discarded and cannot unlock planning',()=>{
  assert.equal(b.api.unlocked,false);assert.equal(b.local().booking.paidAt,undefined);
  assert.equal(b.local().installmentsPaid,undefined);assert.equal(b.local().outbox.length,0);
 });
+// Portal reviews: filed on the client's Post-Event task, mirrored to the agreement,
+// and only accepted from booked clients after their event.
+function reviewBackend({legacy=true,eventMs=Date.now()-3*864e5,existing=true}={}){
+ const calls=[];
+ const task={id:'test-only',name:'Test | Wedding | 2026-01-01',custom_fields:[
+  {id:EMAIL_FIELD,value:config.email},{id:DEPOSIT_FIELD,value:637.50},{id:DATA_FIELD,value:'{"songs":{"notes":"Keep"}}'},
+  {id:'4006b42c-6597-49ea-bbb6-beb6bcc323b8',value:String(eventMs)},{id:'4299965c-96e2-430e-947a-ac16e9068aee',value:'Test Wedding'}]};
+ const deps={PORTALS:{test:{...config,legacyBooked:legacy}},findAgreement:async()=>task,receipts:async()=>[],
+  api:async(url,options={})=>{calls.push({url,method:options.method||'GET',body:options.body?JSON.parse(options.body):null});
+   if(url.startsWith('/list/901418578200/task?'))return {tasks:existing?[{id:'post-1',custom_fields:[{id:'6662e48d-f76c-4bf4-aa23-1d56037dd61c',value:config.email}]}]:[],last_page:true};
+   if(url==='/list/901418578200/task')return {id:'post-new'};
+   return {};}};
+ const context={exports:{},require:name=>{assert.equal(name,'./_payment-receipts');return deps;},
+  process:{env:{CLICKUP_API_TOKEN:'mock',STRIPE_WEBHOOK_SECRET:'mock'}},console:quiet};
+ vm.runInNewContext(read('netlify/functions/portal-review.js'),context,{filename:'portal-review.js'});
+ const writes=()=>calls.filter(c=>c.method!=='GET');
+ return {calls,writes,call:async body=>{const r=await context.exports.handler({httpMethod:'POST',body:JSON.stringify({slug:'test',...body})});return {status:r.statusCode,...JSON.parse(r.body)};}};
+}
+const goodReview={rating:5,testimonial:'They made the whole night feel effortless.',highlight:'First dance',name:'Test Couple',permission:'Yes'};
+test('portal review files on the Post-Event task and mirrors to the agreement',async()=>{
+ const b=reviewBackend();const r=await b.call(goodReview);
+ assert.equal(r.status,200);assert.equal(r.postEventTaskId,'post-1');
+ const w=b.writes();
+ assert.ok(w.some(c=>c.url==='/task/post-1/field/39d4731e-5ae4-41be-8c3f-bb8701814691'&&c.body.value===goodReview.testimonial));
+ assert.ok(w.some(c=>c.url==='/task/post-1/field/6bee26d1-b86e-46ef-b523-50f6261f702e'&&c.body.value===5));
+ assert.ok(w.some(c=>c.url==='/task/post-1'&&c.method==='PUT'&&c.body.status==='received'));
+ const mirror=JSON.parse(w.find(c=>c.url==='/task/test-only/field/'+DATA_FIELD).body.value);
+ assert.equal(mirror.review.testimonial,goodReview.testimonial);assert.equal(mirror.songs.notes,'Keep');
+});
+test('portal review creates a Post-Event task when none exists',async()=>{
+ const b=reviewBackend({existing:false});const r=await b.call(goodReview);
+ assert.equal(r.status,200);assert.equal(r.postEventTaskId,'post-new');
+ assert.ok(b.writes().some(c=>c.url==='/list/901418578200/task'&&c.method==='POST'));
+});
+test('portal review stays closed before the event and for unpaid clients',async()=>{
+ for(const opts of [{eventMs:Date.now()+864e5},{legacy:false}]){
+  const b=reviewBackend(opts);const r=await b.call(goodReview);
+  assert.equal(r.status,403);assert.equal(b.writes().length,0);
+ }
+});
+test('portal review rejects bad ratings and empty reviews without writes',async()=>{
+ for(const bad of [{...goodReview,rating:9},{...goodReview,testimonial:'ok'}]){
+  const b=reviewBackend();const r=await b.call(bad);
+  assert.equal(r.status,400);assert.equal(b.calls.length,0);
+ }
+});
