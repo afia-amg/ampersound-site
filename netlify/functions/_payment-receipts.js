@@ -6,8 +6,7 @@ const SIGNED_PREFIX = 'Agreement signed digitally';
 // Server-owned configuration, never take agreement ids or paid flags from a browser.
 const PORTALS = {
  'rose-josh': {email:'rose.josh.home@gmail.com', taskId:'86bct9jkz', linkId:'plink_1UVEajBKPpxdHQElGhLmUODv', amount:67500},
- // linkId (plink_...) still needed so the Stripe webhook can route this deposit.
- 'angela-joe': {email:'angelahussain99@gmail.com', taskId:'86bctjffd', amount:63750},
+ 'angela-joe': {email:'angelahussain99@gmail.com', taskId:'86bctjffd', linkId:'plink_1UVa9PBKPpxdHQEl78mAIESl', amount:63750},
  'payton-rhys': {email:'phlypay44@gmail.com'},
  'michael-iris': {email:'michael.eastman.1.2106301@member.theknot.com'},
  'lkq-corporation': {email:'mganpi65@gmail.com'},
