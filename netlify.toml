@@ -1,2 +1,13 @@
+[build]
+  command = "node --test tests/portal-regression.test.cjs && node -e \"require('fs').writeFileSync('portal-regression-status.json', JSON.stringify({passed:true,commit:process.env.COMMIT_REF||null,builtAt:new Date().toISOString()}))\""
+
+[build.environment]
+  NODE_VERSION = "22"
+
 [functions]
   directory = "netlify/functions"
+
+[[headers]]
+  for = "/portal-regression-status.json"
+  [headers.values]
+    Cache-Control = "no-store"
