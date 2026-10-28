@@ -28,6 +28,18 @@ function readData(task){
 }
 function fmt(iso){try{return new Date(iso).toLocaleString('en-US',{timeZone:'America/Denver',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' MT';}catch(e){return '';}}
 function clean(a){return (Array.isArray(a)?a:[]).map(x=>String(x||'').trim()).filter(Boolean);}
+// Sort only the human-readable ClickUp copy. Preserve the client's row order
+// in the stored JSON and portal. Unspecified or invalid times stay at the end.
+function timelineMinutes(value){
+ const t=String(value||'').trim().toLowerCase().replace(/\./g,'');
+ const m=t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+ if(!m)return Infinity;
+ let h=Number(m[1]),minutes=Number(m[2]||0);
+ if(minutes>59)return Infinity;
+ if(m[3]){if(h<1||h>12)return Infinity;h=h%12+(m[3]==='pm'?12:0);}
+ else if(h>23)return Infinity;
+ return h*60+minutes;
+}
 function summarize(d){
  const L=d.labels||{},out=[];
  if(d.option)out.push('Package option: '+((L.option&&L.option.name)||d.option));
@@ -45,7 +57,7 @@ function summarize(d){
  }
  if(d.timeline){
   out.push('','TIMELINE (updated '+fmt(d.timelineAt)+')');
-  (d.timeline.moments||[]).forEach(m=>{if(m&&(m.time||m.event))out.push((m.time||'TBD')+'  '+(m.event||''));});
+  (d.timeline.moments||[]).filter(Boolean).slice().sort((a,b)=>{const x=timelineMinutes(a.time),y=timelineMinutes(b.time);return x===y?0:x<y?-1:1;}).forEach(m=>{if(m.time||m.event)out.push((m.time||'TBD')+'  '+(m.event||''));});
   if(d.timeline.notes)out.push('Notes: '+d.timeline.notes);
  }
  return out.join('\n').trim();
