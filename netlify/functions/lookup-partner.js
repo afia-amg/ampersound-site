@@ -16,6 +16,9 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const PARTNER_LIST_ID = '901417758955';
 const AGREEMENTS_LIST_ID = '901418268145';
 
+// Agreements in these statuses are dead deals and never shown to the public.
+const HIDDEN_STATUSES = ['lost', 'closed lost', 'cancelled', 'canceled', 'declined', 'not booked'];
+
 // Custom field IDs
 const CF = {
   // Partnership list
@@ -115,6 +118,8 @@ async function findClient(email) {
   const data = await res.json();
 
   const task = (data.tasks || []).find(t => {
+    const st = t.status ? (t.status.status || '').toLowerCase() : '';
+    if (HIDDEN_STATUSES.includes(st)) return false;
     // Match on Client Email field
     const emailField = (t.custom_fields || []).find(f => f.id === CF.clientEmail);
     if (emailField && typeof emailField.value === 'string' && emailField.value.toLowerCase() === email) return true;
@@ -136,17 +141,20 @@ async function findClient(email) {
 
   const portalUrl = CLIENT_PORTALS[email] || getField(CF.agreementDoc) || null;
   const statusName = task.status ? (task.status.status || '').toLowerCase() : '';
+  // Greet the couple ("Katie & Ryan"), not whoever signed for them (often a planner).
+  const eventName = getField(CF.eventName);
+  const couple = eventName && eventName.includes('&') ? eventName.replace(/\s+(wedding|celebration|reception)$/i, '').trim() : null;
 
   return {
-    name: getField(CF.clientName) || task.name,
+    name: couple || getField(CF.clientName) || task.name,
     partnerType: 'client',
     portalUrl: portalUrl,
-    eventName: getField(CF.eventName),
+    eventName: eventName,
     eventDate: getField(CF.eventDate),
     venue: getField(CF.venueName),
     documents: [],
     agreements: [{
-      title: (getField(CF.eventName) || task.name) + ' — Service Agreement',
+      title: (eventName || task.name) + ' — Service Agreement',
       type: 'Signature Celebration',
       summary: `Event at ${getField(CF.venueName) || 'TBD'}`,
       status: statusName === 'signed' || statusName === 'paid' ? 'signed' : 'pending',
