@@ -73,7 +73,7 @@ exports.handler=async(event)=>{
    if(!task)return reply(200,{ok:true,unlocked:false,data:{}});
    const d=readData(task),data={option:d.option,optionAt:d.optionAt};
    // Planning tabs only open once a booking is verified, so their data does too.
-   if(unlocked){data.songs=d.songs;data.songsAt=d.songsAt;data.timeline=d.timeline;data.timelineAt=d.timelineAt;}
+   if(unlocked){data.songs=d.songs;data.songsAt=d.songsAt;data.timeline=d.timeline;data.timelineAt=d.timelineAt;data.review=d.review;data.reviewAt=d.reviewAt;}
    return reply(200,{ok:true,unlocked,data});
   }
   if(event.httpMethod!=='POST')return reply(405,{ok:false,error:'Method not allowed'});
