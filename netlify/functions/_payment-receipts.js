@@ -7,9 +7,6 @@ const SIGNED_MARK = 'Agreement signed digitally';
 const PORTALS = {
  'rose-josh': {email:'rose.josh.home@gmail.com', taskId:'86bct9jkz', linkId:'plink_1UVEajBKPpxdHQElGhLmUODv', amount:67500},
  'angela-joe': {email:'angelahussain99@gmail.com', taskId:'86bctjffd', linkId:'plink_1UVa9PBKPpxdHQEl78mAIESl', amount:63750},
- 'payton-rhys': {email:'phlypay44@gmail.com'},
- 'michael-iris': {email:'michael.eastman.1.2106301@member.theknot.com'},
- 'lkq-corporation': {email:'mganpi65@gmail.com'},
  'jaylin-goines': {email:'jaylingoines131594@gmail.com'},
  // Internal test record (TEST | Portal signature check). Not a client.
  'portal-test': {email:'signature-test@ampersoundmediagroup.com', taskId:'86bct9u1m', legacyBooked:true},
