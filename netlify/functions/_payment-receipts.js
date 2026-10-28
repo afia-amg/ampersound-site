@@ -7,7 +7,8 @@ const SIGNED_MARK = 'Agreement signed digitally';
 const PORTALS = {
  'rose-josh': {email:'rose.josh.home@gmail.com', taskId:'86bct9jkz', linkId:'plink_1UVEajBKPpxdHQElGhLmUODv', amount:67500},
  'angela-joe': {email:'angelahussain99@gmail.com', taskId:'86bctjffd', linkId:'plink_1UVa9PBKPpxdHQEl78mAIESl', amount:63750},
- 'jaylin-goines': {email:'jaylingoines131594@gmail.com'},
+ // Paid outside Stripe (Apple Cash), confirmed by Afia 2026-10-28.
+ 'jaylin-goines': {email:'jaylingoines131594@gmail.com', legacyBooked:true},
  // Internal test record (TEST | Portal signature check). Not a client.
  'portal-test': {email:'signature-test@ampersoundmediagroup.com', taskId:'86bct9u1m', legacyBooked:true},
  // Existing booked planning portals are grandfathered explicitly on the server.
