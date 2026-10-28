@@ -2,7 +2,7 @@
 const crypto = require('crypto');
 const BASE = 'https://api.clickup.com/api/v2';
 const PREFIX = 'AMG_STRIPE_RECEIPT_V1:';
-const SIGNED_PREFIX = 'Agreement signed digitally';
+const SIGNED_MARK = 'Agreement signed digitally';
 // Server-owned configuration, never take agreement ids or paid flags from a browser.
 const PORTALS = {
  'rose-josh': {email:'rose.josh.home@gmail.com', taskId:'86bct9jkz', linkId:'plink_1UVEajBKPpxdHQElGhLmUODv', amount:67500},
@@ -11,6 +11,8 @@ const PORTALS = {
  'michael-iris': {email:'michael.eastman.1.2106301@member.theknot.com'},
  'lkq-corporation': {email:'mganpi65@gmail.com'},
  'jaylin-goines': {email:'jaylingoines131594@gmail.com'},
+ // Internal test record (TEST | Portal signature check). Not a client.
+ 'portal-test': {email:'signature-test@ampersoundmediagroup.com', taskId:'86bct9u1m', legacyBooked:true},
  // Existing booked planning portals are grandfathered explicitly on the server.
  // These grants are not evidence of a new Stripe payment.
  'angelica-nathan': {email:'liffcakeparties@gmail.com', legacyBooked:true},
@@ -59,14 +61,17 @@ async function receipts(taskId){
  return [...unique.values()];
 }
 // The signature on the ClickUp agreement is the record of truth, so a client who
-// signed on one device is never asked to sign again on another.
+// signed on one device is never asked to sign again on another. Reads both the
+// current plain note and the older bold-formatted note.
+function isoOrNull(v){const t=new Date(String(v||'').replace(/\s+at\s+/i,' ').replace(/\*/g,'').trim());return isNaN(t.getTime())?null:t.toISOString();}
 async function signatureRecord(task){
  const rows=await comments(task.id);
  for(const c of rows){
   const t=text(c);
-  if(t.indexOf(SIGNED_PREFIX)===0){
-   const n=/Signed by:\s*(.+)/.exec(t), d=/Date:\s*(\S+)/.exec(t);
-   return {signedName:n?n[1].trim():null, signedAt:d?d[1].trim():null};
+  if(t.indexOf(SIGNED_MARK)!==-1){
+   const n=/Signed by:\**\s*([^\n*]+)/.exec(t), d=/Date:\**\s*([^\n]+)/.exec(t);
+   const when=(d&&isoOrNull(d[1]))||(c.date?new Date(Number(c.date)).toISOString():null);
+   return {signedName:n?n[1].trim():null, signedAt:when};
   }
  }
  const st=String((task.status&&task.status.status)||'').toLowerCase(), ty=String((task.status&&task.status.type)||'');
