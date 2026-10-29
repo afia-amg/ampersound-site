@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const P='/home/user/work/4024844514025283207/candidate/netlify/functions';
+const P=path.resolve(__dirname,'../netlify/functions');
 function load(file, integ, pays){const src=fs.readFileSync(path.join(P,file),'utf8'),c={exports:{},module:{exports:{}},process:{env:{CLICKUP_API_TOKEN:'x'}},console:{error(){}},require(n){if(n==='./_integration')return integ;if(n==='./_payment-receipts')return pays;throw Error(n)}};c.module.exports=c.exports;vm.runInNewContext(src,c,{filename:file});return c.module.exports}
 const fields={email:'3f38f15e-6aa4-4481-9365-d4a911d68195',eventName:'4299965c-96e2-430e-947a-ac16e9068aee',eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8',eventType:'f36884b1-eb6a-40b4-b1eb-ab75d0370ebc'};
 const scalar=(t,id)=>{const f=(t.custom_fields||[]).find(x=>x.id===id||Array.isArray(id)&&id.includes(x.id));return f&&f.value};
