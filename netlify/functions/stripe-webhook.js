@@ -1,52 +1,20 @@
 'use strict';
-// Only this signature-verified endpoint can issue portal-unlock receipts.
 const crypto=require('crypto');
-const {PORTALS,api,seal,receipts}=require('./_payment-receipts');
-const FIELD='96105ecf-6396-4fb1-90aa-93b37c9dfc48';
-const RECEIVED='7601cdf4-5cee-49ef-a8bf-802350a5bdcc';
-const headers={'Content-Type':'application/json'};
-function validSignature(body,header){
- const secret=process.env.STRIPE_WEBHOOK_SECRET;if(!secret||!header)return false;
- const entries=header.split(',').map(x=>x.split('='));
- const timestamp=(entries.find(x=>x[0]==='t')||[])[1];
- if(!/^\d+$/.test(timestamp||'')||Math.abs(Date.now()/1000-Number(timestamp))>300)return false;
- const expected=crypto.createHmac('sha256',secret).update(timestamp+'.'+body).digest();
- return entries.filter(x=>x[0]==='v1').some(x=>{const b=Buffer.from(x[1]||'','hex');return b.length===expected.length&&crypto.timingSafeEqual(b,expected);});
+const {PORTALS,PAYMENTS_LIST,api,seal,receiptsForAgreement,receipts,signatureRecord}=require('./_payment-receipts');
+const {AGREEMENTS_LIST,AGREEMENT_FIELDS,scalarField,semanticType,findAgreementByIdentity,syncLeadStage}=require('./_integration');
+const PAYMENT_FIELD='96105ecf-6396-4fb1-90aa-93b37c9dfc48',PAYMENT_RECEIVED='7601cdf4-5cee-49ef-a8bf-802350a5bdcc',headers={'Content-Type':'application/json'};
+function validSignature(body,header){const secret=process.env.STRIPE_WEBHOOK_SECRET;if(!secret||!header)return false;const e=header.split(',').map(x=>x.split('=')),t=(e.find(x=>x[0]==='t')||[])[1];if(!/^\d+$/.test(t||'')||Math.abs(Date.now()/1000-Number(t))>300)return false;const expected=crypto.createHmac('sha256',secret).update(t+'.'+body).digest();return e.filter(x=>x[0]==='v1').some(x=>{const b=Buffer.from(x[1]||'','hex');return b.length===expected.length&&crypto.timingSafeEqual(b,expected)})}
+function listId(t){return String(t&&t.list&&t.list.id||t&&t.list_id||'')}
+function taskAmountCents(t){
+ const f=(t.custom_fields||[]).find(x=>/amount|payment|installment/i.test(String(x.name||''))&&x.value!==null&&x.value!==undefined);
+ const n=f?Number(typeof f.value==='object'?f.value.value:f.value):NaN;
+ if(Number.isFinite(n)&&n>0)return Math.round(n*100);
+ const text=String(t.name||'')+' '+String(t.description||''),m=/\$\s*([\d,]+(?:\.\d{1,2})?)/.exec(text);
+ return m?Math.round(Number(m[1].replace(/,/g,''))*100):null;
 }
-exports.handler=async(event)=>{
- const reply=(status,body)=>({statusCode:status,headers,body:JSON.stringify(body)});
- if(event.httpMethod!=='POST')return reply(405,{error:'Method not allowed'});
- if(!process.env.STRIPE_WEBHOOK_SECRET||!process.env.CLICKUP_API_TOKEN)return reply(503,{error:'Webhook unavailable'});
- const body=event.isBase64Encoded?Buffer.from(event.body||'','base64').toString('utf8'):event.body||'';
- if(!validSignature(body,(event.headers||{})['stripe-signature']||(event.headers||{})['Stripe-Signature']))return reply(401,{error:'Invalid signature'});
- let e;try{e=JSON.parse(body);}catch(_){return reply(400,{error:'Invalid JSON'});}
- if(!['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(e.type))return reply(200,{ignored:true});
- const s=e.data&&e.data.object;
- if(!s||s.payment_status!=='paid')return reply(200,{pending:true});
- const md=s.metadata||{};
- const known=Object.values(PORTALS).find(p=>p.linkId&&p.linkId===s.payment_link);
- const taskId=known?known.taskId:(md.clickup_task_id||md.taskId);
- if(!taskId){console.error('Paid Stripe session has no agreement routing:',s.id);return reply(422,{error:'Missing agreement routing'});}
- if(known&&((md.clickup_task_id||md.taskId)&&taskId!==(md.clickup_task_id||md.taskId)))return reply(422,{error:'Agreement routing mismatch'});
- if(s.currency!=='usd'||!Number.isInteger(s.amount_total)||s.amount_total<=0)return reply(422,{error:'Unexpected payment currency or amount'});
- if(known&&s.amount_total!==known.amount)return reply(422,{error:'Deposit amount mismatch'});
- try{
-  const task=await api('/task/'+encodeURIComponent(taskId));
-  if(known){const email=(task.custom_fields||[]).find(f=>f.id==='3f38f15e-6aa4-4481-9365-d4a911d68195');if(!email||String(email.value||'').toLowerCase()!==known.email)throw new Error('Agreement email mismatch');}
-  const existing=await receipts(taskId);
-  if(!existing.some(r=>r.sessionId===s.id)){
-   const receipt={v:1,eventId:e.id,sessionId:s.id,taskId,paymentLink:s.payment_link||null,currency:s.currency,amount:s.amount_total,paidAt:new Date(e.created*1000).toISOString()};
-   await api('/task/'+encodeURIComponent(taskId)+'/comment',{method:'POST',body:JSON.stringify({comment_text:seal(receipt)})});
-   const label=md.installment?'Installment '+md.installment:'Deposit / payment';
-   const text=label+' received via Stripe\nAmount: $'+(s.amount_total/100).toFixed(2)+'\nClient: '+(md.client||s.customer_details?.email||'Client')+'\nStripe payment: '+(s.payment_intent||s.id)+'\nVerified receipt saved. Remaining balance, if any, is still due.';
-   await api('/task/'+encodeURIComponent(taskId)+'/comment',{method:'POST',body:JSON.stringify({comment_text:text})});
-   if(md.deal_task_id)await api('/task/'+encodeURIComponent(md.deal_task_id)+'/comment',{method:'POST',body:JSON.stringify({comment_text:text})});
-   if(process.env.CLICKUP_CHAT_CHANNEL_ID){try{await fetch('https://api.clickup.com/api/v3/chat/'+process.env.CLICKUP_CHAT_CHANNEL_ID+'/message',{method:'POST',headers:{Authorization:process.env.CLICKUP_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({content:text})});}catch(err){console.error('Chat notification failed',err.message);}}
-  }
-  // Retrying an event repairs field updates without issuing another receipt.
-  await api('/task/'+encodeURIComponent(taskId)+'/field/'+FIELD,{method:'POST',body:JSON.stringify({value:RECEIVED})});
-  // A deposit must not close the main agreement. Only installment tasks close.
-  if(md.installment&&!known)await api('/task/'+encodeURIComponent(taskId),{method:'PUT',body:JSON.stringify({status:'completed'})});
-  return reply(200,{received:true});
- }catch(err){console.error('Stripe receipt failed:',err.message);return reply(500,{error:'Payment recording failed; retry required'});}
-};
+function metaIdentity(s,md){return{email:String(md.email||md.client_email||md.customer_email||s.customer_details&&s.customer_details.email||'').trim().toLowerCase(),date:md.event_date||md.eventDate||md.date,type:md.event_type||md.eventType}}
+function taskMatches(t,id,requireComplete=false){const email=String(scalarField(t,AGREEMENT_FIELDS.email)||'').trim().toLowerCase(),date=String(scalarField(t,AGREEMENT_FIELDS.eventDate)||'').slice(0,10),type=semanticType(scalarField(t,AGREEMENT_FIELDS.eventType));if(requireComplete&&(!id.email||!id.date||!id.type))return false;return(!id.email||!!email&&email===id.email)&&(!id.date||!!date&&date===String(id.date).slice(0,10))&&(!id.type||!!type&&type===semanticType(id.type))}
+async function resolveAgreement(s,md){const known=Object.values(PORTALS).find(p=>p.linkId&&p.linkId===s.payment_link);let agreementId=md.agreement_task_id||md.agreementTaskId||'',installmentId=md.installment_task_id||md.installmentTaskId||'';const supplied=md.taskId||md.task_id||'';if(!installmentId&&supplied&&known&&known.installments){const x=known.installments.find(i=>i.taskId===supplied);if(x)installmentId=supplied}if(!agreementId&&supplied&&!installmentId)agreementId=supplied;if(known){agreementId=known.taskId;if(supplied&&supplied!==agreementId&&!installmentId){const x=(known.installments||[]).find(i=>i.taskId===supplied);if(x)installmentId=supplied;else throw Error('Agreement routing mismatch')}}let task=agreementId?await api('/task/'+encodeURIComponent(agreementId)):null;if(!task&&known)task=await api('/task/'+encodeURIComponent(known.taskId));if(!task){const found=await findAgreementByIdentity(metaIdentity(s,md));if(!found)throw Error('No unambiguous agreement for payment');task=found;agreementId=task.id}if(listId(task)!==AGREEMENTS_LIST)throw Error('Resolved task is not an agreement');const identity=metaIdentity(s,md),explicitAgreement=!known&&!!agreementId;if(!taskMatches(task,identity,explicitAgreement))throw Error(explicitAgreement&&!identity.email&&!identity.date&&!identity.type?'Incomplete agreement identity':'Agreement identity mismatch');let installment=null;if(installmentId){installment=await api('/task/'+encodeURIComponent(installmentId));if(listId(installment)!==PAYMENTS_LIST)throw Error('Installment task is not in payment list');if(!taskMatches(installment,identity,true))throw Error('Installment identity mismatch');const knownInstallment=Object.values(PORTALS).flatMap(x=>x.installments||[]).find(x=>x.taskId===installment.id);const expectedAmount=knownInstallment?knownInstallment.amount:taskAmountCents(installment);if(!Number.isInteger(expectedAmount)||expectedAmount<=0)throw Error('Installment amount unavailable');return{task,installment,known,expectedInstallmentAmount:expectedAmount}}return{task,installment,known,expectedInstallmentAmount:null}}
+async function paymentAnnouncement(text){if(!process.env.CLICKUP_CHAT_CHANNEL_ID)return;try{await fetch('https://api.clickup.com/api/v3/chat/'+encodeURIComponent(process.env.CLICKUP_CHAT_CHANNEL_ID)+'/message',{method:'POST',headers:{Authorization:process.env.CLICKUP_API_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({content:text})})}catch(err){console.error('Chat notification failed:',err.message)}}
+function retryable(err){return !/Ambiguous|mismatch|Incomplete|No unambiguous|not an agreement|not in payment list|routing/i.test(String(err&&err.message||err))}
+exports.handler=async event=>{const reply=(status,body)=>({statusCode:status,headers,body:JSON.stringify(body)});if(event.httpMethod!=='POST')return reply(405,{error:'Method not allowed'});if(!process.env.STRIPE_WEBHOOK_SECRET||!process.env.CLICKUP_API_TOKEN)return reply(503,{error:'Webhook unavailable'});const body=event.isBase64Encoded?Buffer.from(event.body||'','base64').toString('utf8'):event.body||'';if(!validSignature(body,(event.headers||{})['stripe-signature']||(event.headers||{})['Stripe-Signature']))return reply(401,{error:'Invalid signature'});let e;try{e=JSON.parse(body)}catch(_){return reply(400,{error:'Invalid JSON'})}if(!['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(e.type))return reply(200,{ignored:true});const s=e.data&&e.data.object,md=s&&s.metadata||{};if(!s||s.payment_status!=='paid')return reply(200,{pending:true});if(s.currency!=='usd'||!Number.isInteger(s.amount_total)||s.amount_total<=0)return reply(422,{error:'Unexpected payment currency or amount'});try{const{task,installment,known,expectedInstallmentAmount}=await resolveAgreement(s,md);if(known&&s.amount_total!==known.amount)return reply(422,{error:'Deposit amount mismatch'});if(installment&&s.amount_total!==expectedInstallmentAmount)return reply(422,{error:'Installment amount mismatch'});const email=String(s.customer_details&&s.customer_details.email||md.email||'').trim().toLowerCase(),actual=String(scalarField(task,AGREEMENT_FIELDS.email)||'').toLowerCase();if(email&&actual&&email!==actual)throw Error('Agreement email mismatch');const existing=await receiptsForAgreement(task.id,installment?[installment.id]:[]);if(!existing.some(r=>r.sessionId===s.id)){const receipt={v:1,eventId:e.id,sessionId:s.id,taskId:task.id,installmentTaskId:installment&&installment.id||null,num:md.installment||null,paymentLink:s.payment_link||null,currency:s.currency,amount:s.amount_total,paidAt:new Date(e.created*1000).toISOString(),installment:md.installment||null};await api('/task/'+encodeURIComponent(task.id)+'/comment',{method:'POST',body:JSON.stringify({comment_text:seal(receipt)})});if(installment)await api('/task/'+encodeURIComponent(installment.id)+'/comment',{method:'POST',body:JSON.stringify({comment_text:seal({...receipt,taskId:installment.id})})});const label=md.installment?'Installment '+md.installment:'Deposit / payment',text=label+' received via Stripe\nAmount: $'+(s.amount_total/100).toFixed(2)+'\nClient: '+(md.client||email||'Client')+'\nStripe payment: '+(s.payment_intent||s.id)+'\nVerified receipt saved. Remaining balance, if any, is still due.';await api('/task/'+encodeURIComponent(task.id)+'/comment',{method:'POST',body:JSON.stringify({comment_text:text})});if(md.deal_task_id)await api('/task/'+encodeURIComponent(md.deal_task_id)+'/comment',{method:'POST',body:JSON.stringify({comment_text:text})});await paymentAnnouncement(text)}await api('/task/'+encodeURIComponent(task.id)+'/field/'+PAYMENT_FIELD,{method:'POST',body:JSON.stringify({value:PAYMENT_RECEIVED})});if(installment)await api('/task/'+encodeURIComponent(installment.id),{method:'PUT',body:JSON.stringify({status:'completed'})});const installmentIds=[];if(installment)installmentIds.push(installment.id);const portal=Object.values(PORTALS).find(p=>p.taskId===task.id);if(portal)for(const i of portal.installments||[])installmentIds.push(i.taskId);const after=await receiptsForAgreement(task.id,installmentIds),sum=after.reduce((n,r)=>n+Number(r.amount||0),0),deposit=Number(scalarField(task,AGREEMENT_FIELDS.deposit)||0)*100,signed=await signatureRecord(task);let leadSync={updated:false,reason:'signature-or-deposit-missing'};if(signed&&deposit>0&&sum>=deposit){try{leadSync=await syncLeadStage(task,'deposit',md)}catch(err){if(retryable(err))return reply(503,{error:'Lead stage sync temporarily unavailable; retry required'});leadSync={updated:false,reason:'ambiguous-or-unavailable'}}}return reply(200,{received:true,authenticatedReceipts:after.length,depositSatisfied:deposit>0&&sum>=deposit,signed:!!signed,leadSync})}catch(err){console.error('Stripe receipt failed:',err.message);return reply(retryable(err)?503:422,{error:retryable(err)?'Payment recording failed; retry required':err.message})}};

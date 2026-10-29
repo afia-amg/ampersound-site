@@ -1,5 +1,5 @@
 [build]
-  command = "node --test tests/portal-regression.test.cjs && node -e \"require('fs').writeFileSync('portal-regression-status.json', JSON.stringify({passed:true,commit:process.env.COMMIT_REF||null,builtAt:new Date().toISOString()}))\""
+  command = "node --test tests/*.cjs && node -e \"require('fs').writeFileSync('portal-regression-status.json', JSON.stringify({passed:true,commit:process.env.COMMIT_REF||null,builtAt:new Date().toISOString()}))\""
 
 [build.environment]
   NODE_VERSION = "22"

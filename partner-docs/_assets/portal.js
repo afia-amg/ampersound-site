@@ -32,7 +32,7 @@ function flushOutbox(){(readStore().outbox||[]).slice().forEach(function(i){if(i
 var chosen=store.option||(P.staffingOptions&&P.staffingOptions.length?(P.staffingOptions.find(function(o){return o.recommended;})||P.staffingOptions[0]).id:null);
 function currentOption(){return P.staffingOptions&&P.staffingOptions.length?(P.staffingOptions.find(function(o){return o.id===chosen;})||P.staffingOptions[0]):null;}
 function current(){var o=currentOption();return o?o.pricing:P.pricing;}
-function agreementPayload(action,extra){var p=current(),o=currentOption(),out={action:action,client:P.client.name,contact:P.client.contacts,email:P.client.primaryEmail,event_date:P.client.eventDate,total_fee:p.total,deposit:p.deposit,package:o?o.name:P.client.packageName};Object.keys(extra||{}).forEach(function(k){out[k]=extra[k];});return out;}
+function agreementPayload(action,extra){var p=current(),o=currentOption(),out={action:action,client:P.client.name,contact:P.client.contacts,email:P.client.primaryEmail,event_date:P.client.eventDate,event_type:P.client.eventType||'',event_name:P.client.eventName||'',total_fee:p.total,deposit:p.deposit,package:o?o.name:P.client.packageName};Object.keys(extra||{}).forEach(function(k){out[k]=extra[k];});return out;}
 var TABS=[],tab=P.mode==='proposal'?'proposal':'overview',step=0,maxStep=booking.signedAt?3:2;
 // The signature recorded on the ClickUp agreement wins over this browser's memory,
 // so a client who signed on another device is never asked to sign again.
