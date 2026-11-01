@@ -75,8 +75,14 @@ test('cue sheet: header auth, privacy, GO/undo, check-ins and alerts', async () 
   await post(h, { e: 'demo', t: token, action: 'alert', text: 'Stuck in traffic', level: 'urgent' });
   const after = await get(h, { e: 'demo', k });
   assert.equal(after.body.alerts[0].text, 'Stuck in traffic'); assert.equal(after.body.alerts[0].level, 'urgent');
-  photo.rev = 2;
-  try { assert.equal((await get(h, { e: 'demo', t: token })).status, 404); } finally { photo.rev = 1; }
+  const originalRev = photo.rev;
+  photo.rev = (originalRev || 1) + 1;
+  try {
+    assert.equal((await get(h, { e: 'demo', t: token })).status, 404);
+    const replacement = h._test.tokenFor('demo', photo);
+    assert.notEqual(replacement, token);
+    assert.equal((await get(h, { e: 'demo', t: replacement })).status, 200);
+  } finally { photo.rev = originalRev; }
 });
 test('browser transport keeps coordinator secrets out of GET URLs and POST bodies', async () => {
   const requests = [];
