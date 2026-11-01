@@ -1,24 +1,15 @@
 'use strict';
-// Day-of Cue Sheet events. Server-side only: this file is never served to browsers.
-// Vendor links are derived from CUE_SECRET + event + vendor id + rev, so no link
-// lives in the repo. Bump a vendor's `rev` to turn their old link off.
-// Times are minutes after midnight in the event's time zone.
+// Server-side event configuration. Increment a vendor revision to revoke its old link.
 const t = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
-
 const EVENTS = {
   demo: {
-    name: 'Ava & Marcus',
-    kind: 'wedding',
-    date: '2027-06-12',
-    dateLabel: 'Sat, Jun 12, 2027',
-    venue: 'Red Butte Garden, SLC',
-    tz: 'America/Denver',
-    taskId: '86bcw638q',
+    name: 'Ava & Marcus', kind: 'wedding', date: '2027-06-12', dateLabel: 'Sat, Jun 12, 2027',
+    venue: 'Red Butte Garden, SLC', tz: 'America/Denver', taskId: '86bcw638q',
     coordinator: { name: 'Afia', phone: '+15127994646', phoneLabel: '(512) 799-4646' },
     lanes: ['Run of show'],
     vendors: [
       { id: 'amg', name: 'Ampersound Media Group', role: 'DJ + MC', contact: 'afia@ampersoundmediagroup.com', arrival: t('15:30'), rev: 1 },
-      { id: 'photo', name: 'Lumen & Lace Photo', role: 'Photography', contact: '', arrival: t('13:30'), rev: 1 },
+      { id: 'photo', name: 'Lumen & Lace Photo', role: 'Photography', contact: '', arrival: t('13:30'), rev: 2 },
       { id: 'video', name: 'Fieldnote Films', role: 'Videography', contact: '', arrival: t('14:00'), rev: 1 },
       { id: 'florals', name: 'Wild Sage Florals', role: 'Florals', contact: '', arrival: t('13:00'), rev: 1 },
       { id: 'catering', name: 'Copper Table Catering', role: 'Catering', contact: '', arrival: t('15:00'), rev: 1 },
@@ -44,5 +35,4 @@ const EVENTS = {
     ],
   },
 };
-
 module.exports = { EVENTS };
