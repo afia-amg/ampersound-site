@@ -5,7 +5,7 @@
   const slug = location.pathname.split('/').filter(Boolean)[1] || '';
   const app = document.getElementById('app');
   const KEY = 'cue:coordinator-key';
-  let lastSig = '', key = store.get(KEY) || '', data = null, skew = 0, laneSel = null, busy = false, failed = 0, seenAlerts = null;
+  let lastSig = '', key = store.get(KEY) || '', data = null, skew = 0, laneSel = null, busy = false, failed = 0, seenAlerts = null, resetArmed = false, resetTimer = null;
 
   function gate(err) {
     app.innerHTML = `
@@ -114,7 +114,7 @@
           </ol>
           <div class="row2" style="margin-top:1rem">
             <button class="btn ghost" id="undo" type="button" ${Object.keys(s.calls).length ? '' : 'disabled'}>Undo last GO</button>
-            <button class="btn ghost" id="reset" type="button">Reset the day</button>
+            <button class="btn ghost" id="reset" type="button" aria-live="polite" style="${resetArmed ? 'border-color:var(--bad);color:var(--bad)' : ''}">${resetArmed ? 'Tap again to reset' : 'Reset the day'}</button>
           </div>
         </div>
         <div>
@@ -133,7 +133,20 @@
     if ($('go')) $('go').onclick = () => L.next && go(L.next);
     if ($('finish')) $('finish').onclick = () => act({ action: 'finish', momentId: L.live.id });
     $('undo').onclick = () => act({ action: 'undo' }, () => toast('Last GO undone'));
-    $('reset').onclick = () => { if (confirm('Reset the day? This clears every GO and check-in. The schedule stays.')) act({ action: 'reset' }, () => toast('Day reset')); };
+    // Two taps instead of a browser pop-up: pop-ups are blocked inside some phone browsers.
+    $('reset').onclick = () => {
+      if (!resetArmed) {
+        resetArmed = true;
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => { resetArmed = false; render(); }, 5000);
+        render();
+        toast('Tap Reset again to clear every GO and check-in. The schedule stays.');
+        return;
+      }
+      resetArmed = false;
+      clearTimeout(resetTimer);
+      act({ action: 'reset' }, () => toast('Day reset'));
+    };
     $('signout').onclick = () => { store.del(KEY); key = ''; data = null; gate(); };
     app.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => { const m = data.moments.find((x) => x.id === b.dataset.go); if (m) go(m); }));
     app.querySelectorAll('[data-lane]').forEach((b) => (b.onclick = () => { laneSel = b.dataset.lane; render(); }));
