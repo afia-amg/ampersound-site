@@ -13,7 +13,9 @@ function harness() {
     if (method === 'POST' && u.endsWith('/comment')) { const b = JSON.parse(opts.body); db.posts.push(b.comment_text); db.comments.push({ comment_text: b.comment_text }); return ok({ id: 'c' }); }
     return { ok: false, status: 500, json: async () => ({}) };
   };
-  process.env.CLICKUP_API_TOKEN = 'token'; process.env.CUE_SECRET = 'test-secret-passphrase';
+  process.env.CLICKUP_API_TOKEN = 'token';
+  process.env.CUE_SECRET = 'test-legacy-secret';
+  process.env.CUE_SECRET_V2 = 'test-secret-passphrase-v2';
   delete require.cache[FN];
   return { db, h: require(FN) };
 }
@@ -31,14 +33,18 @@ const post = async (h, b) => {
   const r = await h.handler({ httpMethod: 'POST', body: JSON.stringify(p), headers });
   return { status: r.statusCode, body: JSON.parse(r.body) };
 };
-test('cue sheet: header auth, privacy, GO/undo, check-ins and alerts', async () => {
+test('cue sheet: V2-only auth, privacy, GO/undo, check-ins and alerts', async () => {
   const { db, h } = harness();
   const { EVENTS } = require('../netlify/functions/_cue-events');
   const ev = EVENTS.demo, photo = ev.vendors.find((v) => v.id === 'photo');
   const token = h._test.tokenFor('demo', photo);
-  const saved = process.env.CUE_SECRET; delete process.env.CUE_SECRET;
-  assert.equal((await h.handler({ httpMethod: 'GET', queryStringParameters: { e: 'demo', t: token } })).statusCode, 503);
-  process.env.CUE_SECRET = saved;
+  const saved = process.env.CUE_SECRET_V2;
+  delete process.env.CUE_SECRET_V2;
+  assert.equal((await h.handler({ httpMethod: 'GET', queryStringParameters: { e: 'demo', t: token } })).statusCode, 503, 'legacy secret alone must fail closed');
+  process.env.CUE_SECRET_V2 = saved;
+  assert.equal((await get(h, { e: 'demo', k: process.env.CUE_SECRET })).status, 401, 'legacy coordinator passcode is refused');
+  const legacyToken = require('node:crypto').createHmac('sha256', process.env.CUE_SECRET).update(`demo:${photo.id}:${photo.rev || 1}`).digest('base64url').slice(0, 16);
+  assert.equal((await get(h, { e: 'demo', t: legacyToken })).status, 404, 'legacy vendor tokens are refused');
   assert.equal((await get(h, { e: 'demo', t: 'nope' })).status, 404);
   assert.equal((await get(h, { e: 'demo', k: 'wrong' })).status, 401);
   assert.equal((await get(h, { e: 'missing', t: token })).status, 404);

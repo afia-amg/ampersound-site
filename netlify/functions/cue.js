@@ -1,5 +1,6 @@
 'use strict';
 // Live Cue Sheet: coordinator credentials are accepted only in Authorization headers.
+// V2 is mandatory. The legacy CUE_SECRET is never used as a fallback.
 const crypto = require('crypto');
 const { EVENTS } = require('./_cue-events');
 
@@ -15,7 +16,7 @@ async function api(path, opts = {}) {
   return r.json();
 }
 function tokenFor(slug, vendor) {
-  return crypto.createHmac('sha256', process.env.CUE_SECRET).update(`${slug}:${vendor.id}:${vendor.rev || 1}`).digest('base64url').slice(0, 16);
+  return crypto.createHmac('sha256', process.env.CUE_SECRET_V2).update(`${slug}:${vendor.id}:${vendor.rev || 1}`).digest('base64url').slice(0, 16);
 }
 function same(a, b) {
   const x = Buffer.from(String(a || '')), y = Buffer.from(String(b || ''));
@@ -25,7 +26,7 @@ function vendorByToken(slug, ev, token) {
   return ev.vendors.find((v) => same(tokenFor(slug, v), token)) || null;
 }
 function isCoordinator(key) {
-  return !!key && same(key, process.env.CUE_SECRET);
+  return !!key && same(key, process.env.CUE_SECRET_V2);
 }
 function wallMinutes(ms, tz) {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(ms));
@@ -133,7 +134,7 @@ function undo(state) {
   return true;
 }
 exports.handler = async (event) => {
-  if (!process.env.CLICKUP_API_TOKEN || !process.env.CUE_SECRET) return reply(503, { ok: false, error: 'Cue Sheet is not set up yet' });
+  if (!process.env.CLICKUP_API_TOKEN || !process.env.CUE_SECRET_V2) return reply(503, { ok: false, error: 'Cue Sheet is not set up yet' });
   const origin = 'https://' + ((event.headers && (event.headers['x-forwarded-host'] || event.headers.host)) || 'ampersoundmediagroup.com');
   try {
     const q = event.queryStringParameters || {};
@@ -142,7 +143,6 @@ exports.handler = async (event) => {
       try { p = JSON.parse(event.body || '{}'); } catch (_) { return reply(400, { ok: false, error: 'Invalid JSON' }); }
     } else if (event.httpMethod !== 'GET') { return reply(405, { ok: false, error: 'Method not allowed' }); }
     if (!p || typeof p !== 'object' || Array.isArray(p)) return reply(400, { ok: false, error: 'Invalid request' });
-    // Reject the old transport, even when a valid header is also present. Never echo credentials.
     if (Object.prototype.hasOwnProperty.call(q, 'k') || Object.prototype.hasOwnProperty.call(p, 'k')) {
       return reply(400, { ok: false, error: 'Use the updated console to sign in' });
     }
