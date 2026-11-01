@@ -141,3 +141,21 @@ textarea:focus,input:focus{border-color:var(--gold)}
 .gate h1{font-family:var(--head);font-size:1.75rem;line-height:1.1}
 .gate p{color:var(--faint)}
 .err{color:var(--bad);font-size:0.9375rem;min-height:1.4em}
+
+/* ---------- phone fit: nothing may push the console wider than the screen ---------- */
+.grid>*,.desk,.ctrl,.ctrl .btn,.btn.go,.btn.go small,.list li .x,.vend li .x,.modes{min-width:0}
+.desk,.grid{max-width:100%}
+.btn.go small{flex:1 1 auto}
+.clock{flex-wrap:wrap}
+.clock .pill{white-space:nowrap}
+.left{gap:0.75rem;flex-wrap:wrap}
+.desk p.meta{overflow-wrap:anywhere}
+@media (max-width:480px){
+  .wrap{padding:0 1rem}
+  .desk{padding:1rem}
+  .btn.go{font-size:1.25rem;letter-spacing:0.12em;padding:0 1rem}
+  .clock b{font-size:2rem}
+  .sched li .go{padding:0 0.7rem}
+  .list li{gap:0.6rem}
+  .list li .t{width:4.6rem}
+}
