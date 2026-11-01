@@ -11,3 +11,22 @@
   for = "/portal-regression-status.json"
   [headers.values]
     Cache-Control = "no-store"
+
+# Cue Sheet: private vendor links and the coordinator console.
+# Real files (like /cue/_assets/*) are served first; these only catch the pretty URLs.
+[[redirects]]
+  from = "/cue/:event/control"
+  to = "/cue/control.html"
+  status = 200
+
+[[redirects]]
+  from = "/cue/:event/:code"
+  to = "/cue/vendor.html"
+  status = 200
+
+[[headers]]
+  for = "/cue/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-cache"
