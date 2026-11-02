@@ -1,12 +1,24 @@
 'use strict';
 // Live Cue Sheet: coordinator credentials are accepted only in Authorization headers.
 // V2 is mandatory. The legacy CUE_SECRET is never used as a fallback.
+//
+// Show-day safety model:
+// - Vendor check-ins, alerts, and alert acknowledgments are append-only ClickUp comments.
+//   They are derived on every read and never rewritten, so they cannot be lost to a race.
+// - Only show-flow actions (GO, finish, undo, reset, clock mode) and the pre-show check
+//   write the Cue State field. Show-flow actions carry the console's `rev`; a stale console
+//   gets 409 plus the current state instead of silently overwriting another device.
+// - Each reset or switch to Show day starts a new `session`. Everything before `since` is
+//   rehearsal and is ignored: GOs, check-ins and alerts never leak into the real show.
+// - Show day cannot start until every pre-show check item is ticked.
 const crypto = require('crypto');
 const { EVENTS } = require('./_cue-events');
 
 const BASE = 'https://api.clickup.com/api/v2';
 const STATE_FIELD = '745508ca-6e71-4541-8d49-a10a9acab836';
 const MARK = 'AMG_CUE_V1:';
+const READY = ['timeline', 'caller', 'contacts', 'links', 'signal', 'printed'];
+const FLOW = ['go', 'finish', 'undo', 'reset', 'mode'];
 const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, private, max-age=0', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Robots-Tag': 'noindex' };
 const reply = (status, body) => ({ statusCode: status, headers, body: JSON.stringify(body) });
 
@@ -43,17 +55,19 @@ function fmt(min) {
   const m = ((Math.round(min) % 1440) + 1440) % 1440, h = Math.floor(m / 60), mm = String(m % 60).padStart(2, '0');
   return `${h % 12 || 12}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
 }
-const blank = () => ({ v: 1, mode: 'practice', anchor: null, calls: {}, done: {}, checkins: {}, seen: [] });
+const blank = () => ({ v: 1, mode: 'practice', anchor: null, calls: {}, done: {}, checkins: {}, seen: [], rev: 0, session: 1, since: 0, ready: {} });
 function readState(task) {
   const f = (task.custom_fields || []).find((x) => x.id === STATE_FIELD);
-  try {
-    const d = f && f.value ? JSON.parse(f.value) : null;
-    return d && typeof d === 'object' ? { ...blank(), ...d } : blank();
-  } catch (_) { return blank(); }
+  let d = null;
+  try { d = f && f.value ? JSON.parse(f.value) : null; } catch (_) { d = null; }
+  const s = d && typeof d === 'object' && !Array.isArray(d) ? { ...blank(), ...d } : blank();
+  for (const k of ['calls', 'done', 'checkins', 'ready']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
+  s.rev = Number(s.rev) || 0; s.session = Number(s.session) || 1; s.since = Number(s.since) || 0;
+  return s;
 }
 async function writeState(taskId, state) {
   state.updatedAt = Date.now();
-  if (state.seen.length > 200) state.seen = state.seen.slice(-200);
+  state.seen = [];
   await api('/task/' + encodeURIComponent(taskId) + '/field/' + STATE_FIELD, { method: 'POST', body: JSON.stringify({ value: JSON.stringify(state) }) });
 }
 const cache = new Map();
@@ -78,15 +92,21 @@ function events(comments) {
   }
   return out.sort((a, b) => a.at - b.at);
 }
-function fold(state, evs) {
-  let changed = false;
-  for (const e of evs) {
-    if (e.type !== 'checkin' || state.seen.includes(e.id)) continue;
-    if (!state.checkins[e.vendor]) state.checkins[e.vendor] = { at: e.at, show: e.show };
-    state.seen.push(e.id);
-    changed = true;
+// Everything the show knows that came from comments, for the current session only.
+function derive(state, evs) {
+  const cur = evs.filter((e) => Number(e.at) >= state.since);
+  const checkins = {};
+  for (const e of cur) if (e.type === 'checkin' && !checkins[e.vendor]) checkins[e.vendor] = { at: e.at, show: e.show };
+  const status = {};
+  for (const e of cur) {
+    if ((e.type !== 'ack' && e.type !== 'resolve') || !e.ref) continue;
+    const st = status[e.ref] || (status[e.ref] = { ack: null, resolved: null });
+    if (!st.ack) st.ack = { at: e.at, by: e.by };
+    if (e.type === 'resolve' && !st.resolved) st.resolved = { at: e.at, by: e.by };
   }
-  return changed;
+  const alerts = cur.filter((e) => e.type === 'alert').map((a) => ({ ...a, ack: (status[a.id] || {}).ack || null, resolved: (status[a.id] || {}).resolved || null }));
+  state.checkins = checkins;
+  return { alerts };
 }
 function publicMoment(m) {
   return { id: m.id, time: m.time, dur: m.dur, title: m.title, location: m.location || '', lane: m.lane || null, vendors: m.vendors || [], notes: m.notes || '' };
@@ -95,21 +115,23 @@ function basics(slug, ev) {
   return { slug, name: ev.name, kind: ev.kind, dateLabel: ev.dateLabel, venue: ev.venue, tz: ev.tz, lanes: ev.lanes, coordinator: ev.coordinator };
 }
 function liveView(state) {
-  return { mode: state.mode, anchor: state.anchor, calls: state.calls, done: state.done, updatedAt: state.updatedAt || null };
+  return { mode: state.mode, anchor: state.anchor, calls: state.calls, done: state.done, rev: state.rev, session: state.session, since: state.since, updatedAt: state.updatedAt || null };
 }
-function vendorView(slug, ev, v, state, now) {
+function vendorView(slug, ev, v, state, alerts, now) {
+  const mine = alerts.filter((a) => a.vendor === v.id).slice(-5).reverse()
+    .map((a) => ({ id: a.id, at: a.at, show: a.show, level: a.level, text: a.text, ack: !!a.ack, ackAt: a.ack ? a.ack.at : null, resolved: !!a.resolved }));
   return {
     ok: true, now, event: basics(slug, ev),
     vendor: { id: v.id, name: v.name, role: v.role, arrival: v.arrival, checkedIn: state.checkins[v.id] || null },
     moments: ev.moments.map((m) => (m.vendors.includes(v.id) ? publicMoment(m) : { id: m.id, time: m.time, dur: m.dur, title: m.title, lane: m.lane || null, vendors: [] })),
-    roles: Object.fromEntries(ev.vendors.map((x) => [x.id, x.role])), state: liveView(state),
+    roles: Object.fromEntries(ev.vendors.map((x) => [x.id, x.role])), state: liveView(state), myAlerts: mine,
   };
 }
-function coordinatorView(slug, ev, state, evs, now, origin) {
+function coordinatorView(slug, ev, state, alerts, now, origin) {
   return {
-    ok: true, now, event: basics(slug, ev), moments: ev.moments.map(publicMoment),
+    ok: true, now, event: basics(slug, ev), moments: ev.moments.map(publicMoment), ready: READY.filter((k) => state.ready[k]),
     vendors: ev.vendors.map((v) => ({ id: v.id, name: v.name, role: v.role, contact: v.contact || '', arrival: v.arrival, checkedIn: state.checkins[v.id] || null, link: `${origin}/cue/${slug}/${tokenFor(slug, v)}` })),
-    alerts: evs.filter((e) => e.type === 'alert').slice(-30).reverse(), state: liveView(state),
+    alerts: alerts.slice(-30).reverse(), state: liveView(state),
   };
 }
 function go(state, ev, m, now) {
@@ -132,6 +154,13 @@ function undo(state) {
   for (const c of call.closed || []) delete state.done[c];
   if (!Object.keys(state.calls).length && state.mode !== 'live') state.anchor = null;
   return true;
+}
+// Start a clean session: rehearsal GOs, check-ins and alerts stay in ClickUp history but stop counting.
+function freshSession(state, now) {
+  Object.assign(state, { anchor: null, calls: {}, done: {}, checkins: {}, session: state.session + 1, since: now });
+}
+async function comment(taskId, text, rec, notify) {
+  await api('/task/' + encodeURIComponent(taskId) + '/comment', { method: 'POST', body: JSON.stringify({ comment_text: `${text}\n\n${MARK}${JSON.stringify(rec)}`, notify_all: !!notify }) });
 }
 exports.handler = async (event) => {
   if (!process.env.CLICKUP_API_TOKEN || !process.env.CUE_SECRET_V2) return reply(503, { ok: false, error: 'Cue Sheet is not set up yet' });
@@ -157,10 +186,10 @@ exports.handler = async (event) => {
     if (!coord && !vendor) return reply(auth ? 401 : 404, { ok: false, error: auth ? 'Wrong coordinator passcode' : 'This link is turned off' });
     const now = Date.now();
     if (event.httpMethod === 'GET') {
+      // Reads never write. Check-ins and alert status are derived from comments every time.
       const { task, comments } = await loadTask(ev.taskId, coord);
-      const state = readState(task), evs = events(comments);
-      if (fold(state, evs) && coord) { try { await writeState(ev.taskId, state); } catch (e) { console.error('Fold write failed:', e.message); } }
-      return reply(200, coord ? coordinatorView(slug, ev, state, evs, now, origin) : vendorView(slug, ev, vendor, state, now));
+      const state = readState(task), { alerts } = derive(state, events(comments));
+      return reply(200, coord ? coordinatorView(slug, ev, state, alerts, now, origin) : vendorView(slug, ev, vendor, state, alerts, now));
     }
     const action = String(p.action || '');
     if (vendor) {
@@ -169,30 +198,62 @@ exports.handler = async (event) => {
       if (action === 'alert' && !text) return reply(400, { ok: false, error: 'Write what is going on' });
       const level = p.level === 'urgent' ? 'urgent' : 'note';
       const { task } = await loadTask(ev.taskId, false);
-      const show = showMinutes(readState(task), ev, now) ?? wallMinutes(now, ev.tz);
-      const rec = { id: crypto.randomUUID(), type: action, vendor: vendor.id, by: vendor.name, at: now, show, level, text };
+      const st = readState(task);
+      const show = showMinutes(st, ev, now) ?? wallMinutes(now, ev.tz);
+      const rec = { id: crypto.randomUUID(), type: action, vendor: vendor.id, by: vendor.name, at: now, show, level, text, session: st.session };
       const human = action === 'checkin' ? `✅ ${vendor.name} (${vendor.role}) checked in · ${fmt(show)}` : `${level === 'urgent' ? '🚨 URGENT' : '📣 Heads up'} from ${vendor.name}: ${text}`;
-      await api('/task/' + encodeURIComponent(ev.taskId) + '/comment', { method: 'POST', body: JSON.stringify({ comment_text: `${human}\n\n${MARK}${JSON.stringify(rec)}`, notify_all: true }) });
+      await comment(ev.taskId, human, rec, true);
       cache.delete(ev.taskId);
-      return reply(200, { ok: true, at: now, show });
+      return reply(200, { ok: true, id: rec.id, at: now, show, session: st.session });
     }
     const { task, comments } = await loadTask(ev.taskId, true);
-    const state = readState(task); fold(state, events(comments));
+    const state = readState(task), evs = events(comments);
+    let { alerts } = derive(state, evs);
+    const view = () => coordinatorView(slug, ev, state, alerts, now, origin);
+
+    if (action === 'ack' || action === 'resolve') {
+      const a = alerts.find((x) => x.id === p.alertId);
+      if (!a) return reply(404, { ok: false, error: 'Alert not found' });
+      const rec = { id: crypto.randomUUID(), type: action, ref: a.id, by: ev.coordinator.name, at: now };
+      await comment(ev.taskId, `${action === 'ack' ? '👀 Seen' : '✔ Resolved'} by ${ev.coordinator.name}: ${a.by}, "${a.text}"`, rec, false);
+      cache.delete(ev.taskId);
+      ({ alerts } = derive(state, evs.concat(rec)));
+      return reply(200, view());
+    }
+    if (action === 'ready') {
+      if (!READY.includes(p.item)) return reply(400, { ok: false, error: 'Unknown check item' });
+      if (p.on) state.ready[p.item] = now; else delete state.ready[p.item];
+      await writeState(ev.taskId, state); cache.delete(ev.taskId);
+      return reply(200, view());
+    }
+    if (!FLOW.includes(action)) return reply(400, { ok: false, error: 'Unknown action' });
+    if (p.rev !== undefined && Number(p.rev) !== state.rev) {
+      return reply(409, { ...view(), ok: false, error: 'Another device changed the show. Check the screen, then tap again.' });
+    }
     if (action === 'go' || action === 'finish') {
       const m = ev.moments.find((x) => x.id === p.momentId);
       if (!m) return reply(404, { ok: false, error: 'Moment not found' });
       if (action === 'go') go(state, ev, m, now); else if (state.calls[m.id]) state.done[m.id] = now;
     } else if (action === 'undo') {
-      if (!undo(state)) return reply(409, { ok: false, error: 'Nothing to undo' });
+      if (!undo(state)) return reply(409, { ...view(), ok: false, error: 'Nothing to undo' });
     } else if (action === 'reset') {
-      Object.assign(state, { ...blank(), mode: state.mode, seen: state.seen });
-    } else if (action === 'mode') { state.mode = p.mode === 'live' ? 'live' : 'practice'; state.anchor = null;
-    } else { return reply(400, { ok: false, error: 'Unknown action' }); }
+      freshSession(state, now);
+    } else if (action === 'mode') {
+      const to = p.mode === 'live' ? 'live' : 'practice';
+      if (to === 'live' && state.mode !== 'live') {
+        const missing = READY.filter((k) => !state.ready[k]);
+        if (missing.length) return reply(409, { ...view(), ok: false, error: 'Finish the pre-show check first', missing });
+        freshSession(state, now);
+      }
+      state.mode = to; state.anchor = null;
+    }
+    state.rev += 1;
     await writeState(ev.taskId, state); cache.delete(ev.taskId);
-    return reply(200, coordinatorView(slug, ev, state, events(comments), now, origin));
+    ({ alerts } = derive(state, evs));
+    return reply(200, view());
   } catch (e) {
     console.error('Cue error:', e.message);
     return reply(503, { ok: false, error: 'Cue Sheet is unavailable, try again in a moment' });
   }
 };
-exports._test = { tokenFor, vendorByToken, go, undo, fold, events, showMinutes, wallMinutes, readState, blank };
+exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY };

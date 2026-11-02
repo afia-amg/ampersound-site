@@ -17,6 +17,13 @@
     const g = (k) => Number((p.find((x) => x.type === k) || {}).value || 0);
     return g('hour') * 60 + g('minute') + g('second') / 60;
   }
+  // Real-world clock time of a timestamp at the event, for "last synced" labels.
+  const at = (ms, tz) => (ms ? fmt(wall(ms, tz)) : '--:--');
+  const ago = (ms) => {
+    if (!ms) return 'never';
+    const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    return s < 10 ? 'just now' : s < 60 ? `${s}s ago` : `${Math.floor(s / 60)} min ago`;
+  };
   function showNow(state, tz, skew) {
     const ms = Date.now() + (skew || 0);
     if (state.mode === 'live') return wall(ms, tz);
@@ -57,7 +64,7 @@
     const r = await fetch(url, opts);
     let data = {};
     try { data = await r.json(); } catch (_) { /* empty */ }
-    if (!r.ok || !data.ok) { const e = new Error(data.error || 'Something went wrong'); e.status = r.status; throw e; }
+    if (!r.ok || !data.ok) { const e = new Error(data.error || 'Something went wrong'); e.status = r.status; e.data = data; throw e; }
     return data;
   }
 
@@ -79,6 +86,7 @@
     clearTimeout(el._t);
     el._t = setTimeout(() => el.classList.remove('show'), 1600);
   }
+  function buzz(pattern) { if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (_) { /* ignore */ } } }
   function poll(fn, every) {
     let timer = null;
     const tick = async () => { clearTimeout(timer); try { await fn(); } finally { timer = setTimeout(tick, document.hidden ? every * 4 : every); } };
@@ -93,5 +101,5 @@
     set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) { mem[k] = String(v); } },
     del: (k) => { try { localStorage.removeItem(k); } catch (_) { delete mem[k]; } },
   };
-  window.CUE = { store, esc, fmt, countdown, showNow, stateOf, lane, driftLabel, call, toast, flash, poll };
+  window.CUE = { store, esc, fmt, countdown, at, ago, showNow, stateOf, lane, driftLabel, call, toast, flash, buzz, poll };
 })();
