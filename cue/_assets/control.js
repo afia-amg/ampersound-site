@@ -13,7 +13,7 @@
     ['signal', 'Signal tested at the spot where you will call GO'],
     ['printed', 'Printed run sheet in hand, in case the app goes down'],
   ];
-  const FLOW = ['go', 'finish', 'undo', 'reset', 'mode'];
+  const FLOW = ['go', 'finish', 'undo', 'reset', 'mode', 'closeout', 'reopen'];
   let lastSig = '', key = store.get(KEY) || '', data = null, skew = 0, laneSel = null, busy = false, failed = 0, lastOk = 0;
   let seenAlerts = null, armed = null, armTimer = null, sending = null;
   let draft = '', draftLevel = 'note', draftTo = ''; // message draft: kept outside the DOM so refreshes never wipe it
@@ -61,7 +61,7 @@
       if (fresh.some((a) => a.level === 'urgent')) buzz([300, 120, 300, 120, 300]);
     }
     seenAlerts = new Set(d.alerts.map((a) => a.id));
-    const sig = JSON.stringify([d.state, d.alerts, d.vendors, d.ready, open.length, d.broadcasts]);
+    const sig = JSON.stringify([d.state, d.alerts, d.vendors, d.ready, open.length, d.broadcasts, d.closed, d.review]);
     const same = data && sig === lastSig && !wasStale;
     data = d; lastSig = sig;
     if (!laneSel || !d.event.lanes.includes(laneSel)) laneSel = d.event.lanes[0];
@@ -135,8 +135,64 @@
     </section>`;
   }
 
+  // After close out the console becomes a wrap-up screen: who tapped the review link, and Reopen.
+  function renderClosed() {
+    const ev = data.event, c = data.closed, stale = failed >= 2;
+    const tapped = new Set((data.review && data.review.tapped) || []), total = data.vendors.length;
+    const offDay = data.linksOffAt ? new Date(data.linksOffAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: ev.tz }) : '';
+    app.innerHTML = `<div class="screen">
+      <header class="top">
+        <img src="https://lh3.googleusercontent.com/d/1EVb28hX3L68EwR2jVu7703wRA_3dN3co" alt="AMG">
+        <div class="ev"><b>${esc(ev.name)} · Control</b><span>${esc(ev.dateLabel)} · ${esc(ev.venue)}</span></div>
+        <div class="sync"><i class="dot ${stale ? 'bad' : 'live'}"></i><span id="syncval">${stale ? 'Offline since ' + at(lastOk, ev.tz) : 'Synced ' + ago(lastOk)}</span></div>
+      </header>
+      <section class="desk wrapup">
+        <div class="kicker live">Closed out · ${esc(at(c.at, ev.tz))} · ${esc(c.by)}</div>
+        <div class="big">That's a wrap.</div>
+        <p class="meta">${c.wrapped ? 'The ClickUp task is now WRAPPED.' : '<span class="warn" style="display:inline">The task did not move to WRAPPED. Move it by hand in ClickUp.</span>'} Vendors see a thank-you with your Google review link instead of the timeline${offDay ? `, and their links turn off on ${esc(offDay)}` : ''}.</p>
+        <div class="tally"><b>${tapped.size}</b><span>of ${total} vendors opened the review link</span></div>
+        <p class="meta">Opening the link isn't proof they posted. Check Google for the actual reviews.</p>
+      </section>
+      <div class="grid">
+        <div>
+          <h2 class="h2" style="margin-top:1.5rem">Google review</h2>
+          <ul class="vend">
+            ${data.vendors.map((v) => { const phone = /^[+\d][\d\s().-]{6,}$/.test(v.contact || '') ? v.contact.replace(/[^\d+]/g, '') : ''; const body = encodeURIComponent(`Thank you for ${ev.name}, ${v.name}! If we earned it, a quick Google review helps us a lot: ${data.review.url}  - Ampersound Media Group`); return `<li><div class="x"><b>${esc(v.name)}</b><small class="${tapped.has(v.id) ? 'in' : ''}">${esc(v.role)} · ${tapped.has(v.id) ? '✓ Opened the review link' : 'Not yet'}</small></div>${tapped.has(v.id) || !phone ? '' : `<a class="icon" href="sms:${esc(phone)}?&body=${body}" aria-label="Text ${esc(v.name)} a review nudge">Nudge</a>`}</li>`; }).join('')}
+          </ul>
+          <div class="row2" style="margin-top:1rem">
+            <button class="btn ghost" type="button" id="copyReview">Copy review link</button>
+            <button class="btn ghost" type="button" id="reopen" style="${armed === 'reopen' ? 'border-color:var(--bad);color:var(--bad)' : ''}" ${busy ? 'disabled' : ''}>${armed === 'reopen' ? 'Tap again to reopen' : 'Reopen the show'}</button>
+          </div>
+        </div>
+        <div>
+          <h2 class="h2" style="margin-top:1.5rem">Before you go</h2>
+          <ul class="list wraplist">
+            <li><span class="x">✓ Every alert resolved</span></li>
+            <li><span class="x">${c.wrapped ? '✓' : '☐'} ClickUp task moved to WRAPPED</span></li>
+            <li><span class="x">✓ Vendors thanked and asked for a Google review</span></li>
+            <li><span class="x">☐ Debrief notes go on the Post-Event task (Rex creates it)</span></li>
+          </ul>
+        </div>
+      </div>
+      <p class="foot">Ampersound Media Group · Sound. Presence. Atmosphere. · <button type="button" id="signout" style="background:none;border:none;color:var(--gold-text);cursor:pointer;font-size:inherit">Sign out on this device</button></p>
+    </div>`;
+    const $ = (id) => document.getElementById(id);
+    $('copyReview').onclick = async () => { try { await navigator.clipboard.writeText(data.review.url); toast('Review link copied'); } catch (_) { prompt('Copy this link', data.review.url); } };
+    $('reopen').onclick = () => {
+      if (armed !== 'reopen') return arm('reopen', 'Tap Reopen again. Vendors get the timeline back and the task leaves WRAPPED.');
+      disarm(); safe({ action: 'reopen' }, 'Reopened. The show is live again.');
+    };
+    $('signout').onclick = () => { store.del(KEY); key = ''; data = null; gate(); };
+  }
+  async function closeOut() {
+    try {
+      if (await act({ action: 'closeout' })) { toast("Closed out. Vendors now see your thank-you and the Google review link."); buzz(120); }
+    } catch (_) { toast("Didn't close out. Nothing changed. Try again."); }
+  }
+
   function render() {
     if (!data || !key) return;
+    if (data.closed) return renderClosed();
     const ev = data.event, s = data.state, multi = ev.lanes.length > 1;
     const now = showNow(s, ev.tz, skew);
     const L = lane(data.moments.map((m) => ({ ...m, lane: multi ? m.lane : null })), s, laneKey());
@@ -218,6 +274,12 @@
             <button class="btn ghost" id="undo" type="button" ${Object.keys(s.calls).length && !busy ? '' : 'disabled'}>Undo last GO</button>
             <button class="btn ghost" id="reset" type="button" aria-live="polite" style="${armed === 'reset' ? 'border-color:var(--bad);color:var(--bad)' : ''}">${armed === 'reset' ? 'Tap again to reset' : 'Reset the day'}</button>
           </div>
+          ${isLive ? `<section class="card closeout ${wrapped ? 'ready' : ''}" style="margin-top:1rem">
+            <h2 class="h2">Close out the event</h2>
+            <p class="meta">Moves the task to WRAPPED and thanks every vendor with your Google review link. Their timeline and phone numbers come down.</p>
+            ${open.length ? `<p class="warn">Resolve ${open.length === 1 ? 'the open alert' : 'all ' + open.length + ' open alerts'} first.</p>` : ''}
+            <button class="btn ${wrapped ? '' : 'ghost'}" id="closeout" type="button" ${open.length || busy || stale ? 'disabled' : ''} style="${armed === 'closeout' ? 'border-color:var(--gold);color:var(--gold-text)' : ''}">${armed === 'closeout' ? 'Tap again to close out' : '🏁 Close out and ask for reviews'}</button>
+          </section>` : ''}
         </div>
         <div>
           <h2 class="h2">Alerts${open.length ? ' · ' + open.length + ' open' : ''}</h2>
@@ -268,6 +330,10 @@
       disarm(); safe({ action: 'reset' }, 'Day reset. Clean slate.');
     };
     $('signout').onclick = () => { store.del(KEY); key = ''; data = null; gate(); };
+    if ($('closeout')) $('closeout').onclick = () => {
+      if (armed !== 'closeout') return arm('closeout', 'Tap Close out again. Vendors get the thank-you and the review link, and the show freezes.');
+      disarm(); closeOut();
+    };
     app.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => { const m = data.moments.find((x) => x.id === b.dataset.go); if (m) go(m); }));
     app.querySelectorAll('[data-lane]').forEach((b) => (b.onclick = () => { laneSel = b.dataset.lane; render(); }));
     app.querySelectorAll('[data-mode]').forEach((b) => (b.onclick = () => {
@@ -284,7 +350,7 @@
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.code !== 'Space' || !data || !key || /^(INPUT|TEXTAREA|BUTTON|A|SELECT)$/.test((document.activeElement || {}).tagName || '')) return;
+    if (e.code !== 'Space' || !data || !key || data.closed || /^(INPUT|TEXTAREA|BUTTON|A|SELECT)$/.test((document.activeElement || {}).tagName || '')) return;
     const multi = data.event.lanes.length > 1;
     const L = lane(data.moments.map((m) => ({ ...m, lane: multi ? m.lane : null })), data.state, laneKey());
     if (L.next) { e.preventDefault(); go(L.next); }
@@ -293,6 +359,7 @@
   // Every second, update only the clock, countdown and sync label so buttons never move under a finger.
   function tick() {
     if (!data || !key) return;
+    if (data.closed) { const sv = document.getElementById('syncval'); if (sv && failed < 2) sv.textContent = 'Synced ' + ago(lastOk); return; }
     const ev = data.event, s = data.state, multi = ev.lanes.length > 1;
     const now = showNow(s, ev.tz, skew);
     const L = lane(data.moments.map((m) => ({ ...m, lane: multi ? m.lane : null })), s, laneKey());
