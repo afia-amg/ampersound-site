@@ -13,8 +13,30 @@
   function localCheckin(session) {
     try { const c = JSON.parse(store.get(doneKey) || 'null'); return c && c.session === session ? c : null; } catch (_) { return null; }
   }
+  // After close out: a thank-you and the Google review link. Nothing else to do.
+  function renderClosed() {
+    const ev = data.event, v = data.vendor, r = data.review || {};
+    app.innerHTML = `<section class="thanks">
+        <img src="https://lh3.googleusercontent.com/d/1EVb28hX3L68EwR2jVu7703wRA_3dN3co" alt="Ampersound Media Group">
+        <div class="kicker live">${esc(ev.name)} · ${esc(ev.dateLabel)}</div>
+        <div class="big">That's a wrap.</div>
+        <p class="lede">Thank you, ${esc(v.name)}. Working beside you is what made the day run.</p>
+        <p class="ask">If we earned it, a Google review helps a small team more than almost anything. It takes a minute.</p>
+        <a class="btn" id="review" href="${esc(r.url)}" target="_blank" rel="noopener">⭐ Leave us a Google review</a>
+        ${r.tapped ? '<p class="meta done">Thank you! If the review page didn\'t open, tap the button again.</p>' : ''}
+        <p class="foot">From Afia &amp; Adam · Ampersound Media Group<br>Sound. Presence. Atmosphere.</p>
+      </section>`;
+    // Count the tap, but never block the link on it: the review page opens either way.
+    document.getElementById('review').onclick = () => {
+      if (r.tapped) return;
+      r.tapped = true;
+      call(null, { e: slug, t: code, action: 'review' }).catch(() => { r.tapped = false; });
+      setTimeout(render, 300);
+    };
+  }
   function render() {
     if (!data) return;
+    if (data.closed) return renderClosed();
     const ev = data.event, v = data.vendor, s = data.state, moments = data.moments;
     const now = showNow(s, ev.tz, skew);
     const ordered = moments.slice().sort((a, b) => a.time - b.time);
@@ -102,6 +124,16 @@
       const d = await call({ e: slug, t: code });
       skew = d.now - Date.now();
       lastOk = Date.now(); savedCopy = false;
+      if (d.closed) {
+        // Closed out: swap to the thank-you screen and drop the alert sheet and saved check-in.
+        closeSheet(); store.del(doneKey); store.set(lastKey, JSON.stringify({ d, at: lastOk }));
+        const sig = JSON.stringify([d.closed, d.review]);
+        if (data && !data.closed) buzz(80);
+        const same = data && data.closed && sig === lastSig && failed === 0;
+        data = d; lastSig = sig; failed = 0;
+        if (!same) render();
+        return;
+      }
       const live = d.moments.filter((m) => stateOf(m, d.state) === 'live').sort((a, b) => (d.state.calls[b.id].seq || d.state.calls[b.id].at) - (d.state.calls[a.id].seq || d.state.calls[a.id].at))[0];
       if (data && live && live.id !== lastLive) flash(live.title, (live.vendors || []).includes(d.vendor.id) ? "That's you" : '');
       lastLive = live ? live.id : null;
@@ -153,7 +185,10 @@
   const scrim = document.querySelector('.scrim'), sheet = document.querySelector('.sheet');
   const text = sheet.querySelector('textarea'), send = sheet.querySelector('#send');
   function openSheet() { scrim.classList.add('open'); sheet.classList.add('open'); sheet.removeAttribute('inert'); setTimeout(() => text.focus(), 250); }
-  function closeSheet() { scrim.classList.remove('open'); sheet.classList.remove('open'); sheet.setAttribute('inert', ''); }
+  function closeSheet() {
+    if (!scrim || !sheet) return;
+    scrim.classList.remove('open'); sheet.classList.remove('open'); sheet.setAttribute('inert', '');
+  }
   scrim.onclick = closeSheet;
   sheet.querySelector('.x').onclick = closeSheet;
   sheet.querySelectorAll('.seg button').forEach((b) => (b.onclick = () => {

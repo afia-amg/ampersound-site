@@ -210,3 +210,22 @@ textarea:focus,input:focus{border-color:var(--gold)}
 .bc select:focus{border-color:var(--gold)}
 .meta.contact{margin:-0.25rem 0 0.75rem}
 .meta.contact b{color:var(--text)}
+
+/* ---------- close out: thank-you + Google review ---------- */
+.thanks{min-height:88vh;min-height:88dvh;display:flex;flex-direction:column;justify-content:center;gap:0.9rem;padding:2rem 0 1rem}
+.thanks img{height:44px;width:auto;align-self:flex-start;margin-bottom:0.75rem}
+.thanks .big{margin:0}
+.thanks .lede{font-size:1.125rem;font-weight:600;line-height:1.45;color:var(--text);text-wrap:pretty}
+.thanks .ask{font-size:1rem;color:var(--dim);text-wrap:pretty;margin-bottom:0.4rem}
+.thanks .btn{min-height:60px;font-size:1.0625rem}
+.thanks .meta.done{color:var(--ok)}
+.thanks .foot{text-align:left;padding:1.5rem 0 0}
+.closeout{border-left:3px solid var(--line)}
+.closeout.ready{border-left-color:var(--gold)}
+.closeout .meta{margin:0.35rem 0 0.75rem}
+.closeout .warn{margin:-0.25rem 0 0.75rem}
+.wrapup .meta{max-width:60ch}
+.tally{display:flex;align-items:baseline;gap:0.6rem;margin:1rem 0 0.25rem}
+.tally b{font-family:var(--head);font-weight:800;font-size:2.4rem;line-height:1;color:var(--gold-text);font-variant-numeric:tabular-nums}
+.tally span{color:var(--dim)}
+.wraplist li{padding:0.45rem 0.6rem}
