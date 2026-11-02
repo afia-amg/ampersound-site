@@ -1,13 +1,17 @@
 /* Vendor page: /cue/<event>/<private-link-code>. No login; the code is the pass. */
 (function () {
   'use strict';
-  const { store, esc, fmt, showNow, stateOf, call, toast, flash, poll } = window.CUE;
+  const { store, esc, fmt, at, ago, showNow, stateOf, lane, call, toast, flash, buzz, poll } = window.CUE;
   const parts = location.pathname.split('/').filter(Boolean); // ["cue", event, code]
   const slug = parts[1] || '', code = parts[2] || '';
   const app = document.getElementById('app');
-  let lastSig = '', data = null, skew = 0, lastLive = null, failed = 0, level = 'note', sending = false;
-  const doneKey = `cue:${slug}:${code}:checkin`;
+  const URGENT_WAIT = 2 * 60 * 1000; // unanswered urgent alert: tell the vendor to call
+  let lastSig = '', data = null, skew = 0, lastLive = null, failed = 0, level = 'note', sending = false, lastOk = 0, savedCopy = false, refresh = null;
+  const doneKey = `cue:${slug}:${code}:checkin`, lastKey = `cue:${slug}:${code}:last`;
 
+  function localCheckin(session) {
+    try { const c = JSON.parse(store.get(doneKey) || 'null'); return c && c.session === session ? c : null; } catch (_) { return null; }
+  }
   function render() {
     if (!data) return;
     const ev = data.event, v = data.vendor, s = data.state, moments = data.moments;
@@ -18,39 +22,50 @@
     const myLive = mine.find((m) => stateOf(m, s) === 'live');
     const myNext = mine.find((m) => stateOf(m, s) === 'pending');
     const hero = myLive || myNext;
-    const checked = v.checkedIn || (store.get(doneKey) ? { show: Number(store.get(doneKey)) } : null);
-    const stale = failed >= 2;
+    // Running late or early: shift pending times by the drift of that moment's stage.
+    const drift = (m) => Math.round(lane(moments, s, m.lane || null).drift);
+    const when = (m) => { const d = stateOf(m, s) === 'pending' ? drift(m) : 0; return d ? `~${fmt(m.time + d)} <s>${fmt(m.time)}</s>` : fmt(m.time); };
+    const lateBy = hero ? drift(hero) : 0;
+    const local = localCheckin(s.session);
+    const checked = v.checkedIn || (local ? { show: Number(local.show) } : null);
+    const stale = failed >= 2 || savedCopy;
+    const alerts = data.myAlerts || [];
+    const waiting = alerts.filter((a) => a.level === 'urgent' && !a.ack && !a.resolved && Date.now() + skew - a.at > URGENT_WAIT);
 
     app.innerHTML = `
       <header class="top">
         <img src="https://lh3.googleusercontent.com/d/1EVb28hX3L68EwR2jVu7703wRA_3dN3co" alt="AMG">
         <div class="ev"><b>${esc(ev.name)}</b><span>${esc(ev.dateLabel)}</span></div>
-        <div class="sync"><i class="dot ${stale ? 'bad' : 'live'}"></i>${stale ? 'Reconnecting' : 'Live'}</div>
+        <div class="sync"><i class="dot ${stale ? 'bad' : 'live'}"></i><span id="syncval">${stale ? 'Offline' : 'Updated ' + ago(lastOk)}</span></div>
       </header>
-      ${stale ? '<div class="banner">No signal right now. This page catches up the moment you\'re back online.</div>' : ''}
+      ${stale ? `<div class="banner" role="alert">${savedCopy ? 'No signal. This is your saved copy' : 'No signal since ' + esc(at(lastOk, ev.tz))}. Times may be out of date. If anything feels off, call ${esc(ev.coordinator.name)}.</div>` : ''}
+      ${waiting.length ? `<div class="banner" role="alert">🚨 ${esc(ev.coordinator.name)} hasn't seen your urgent alert yet. <a href="tel:${esc(ev.coordinator.phone)}"><b>Call now</b></a></div>` : ''}
       <h1 class="hi">Hi, ${esc(v.name)}</h1>
       ${checked
         ? `<div class="here">✓ Checked in${checked.show != null && !Number.isNaN(checked.show) ? ' at ' + fmt(checked.show) : ''}</div>`
         : `<section class="card">
             <div class="arrive">📍 <span>Arrive by <b>${fmt(v.arrival)}</b> · ${esc(ev.venue)}</span></div>
-            <button class="btn" id="checkin" type="button">I'm here, check me in</button>
+            <button class="btn" id="checkin" type="button" ${stale ? 'disabled' : ''}>I'm here, check me in</button>
+            ${stale ? '<p class="meta" style="margin-top:0.5rem">Check-in needs signal. Text or call instead.</p>' : ''}
           </section>`}
       <section class="card">
         <div class="kicker ${myLive ? 'live' : ''}">${myLive ? "You're on now" : hero ? 'Your next moment' : "You're all done"}</div>
         <div class="big">${esc(hero ? hero.title : 'Thank you!')}</div>
-        ${hero ? `<div class="meta">${fmt(hero.time)}${hero.location ? ' · ' + esc(hero.location) : ''}${myLive && now != null ? ' · ' + timeLeft(myLive, s, now) : ''}</div>` : ''}
+        ${hero ? `<div class="meta">${when(hero)}${hero.location ? ' · ' + esc(hero.location) : ''}${myLive && now != null ? ' · ' + timeLeft(myLive, s, now) : ''}</div>` : ''}
+        ${hero && !myLive && lateBy ? `<div class="note">${lateBy > 0 ? `Running about ${lateBy} min behind.` : `Running about ${-lateBy} min ahead.`} Times below are adjusted.</div>` : ''}
         ${hero && hero.notes ? `<div class="note">${esc(hero.notes)}</div>` : ''}
       </section>
       <div class="nowline"><i class="dot ${live ? 'live' : ''}"></i><span>At the event now:</span><b>${esc(live ? live.title : 'Starting soon')}</b></div>
       <div class="label">Your day</div>
       <ol class="list">
-        ${mine.map((m) => { const st = stateOf(m, s); return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : ''}"><span class="t">${fmt(m.time)}</span><span class="x">${esc(m.title)}<small>${esc(m.location || '')}</small></span>${st === 'done' ? '✓' : ''}</li>`; }).join('')}
+        ${mine.map((m) => { const st = stateOf(m, s); return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : ''}"><span class="t">${when(m)}</span><span class="x">${esc(m.title)}<small>${esc(m.location || '')}</small></span>${st === 'done' ? '✓' : ''}</li>`; }).join('')}
       </ol>
+      ${alerts.length ? `<div class="label">Your alerts</div><ul class="alerts">${alerts.map((a) => `<li><i class="dot ${a.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(a.text)}</div><small>${fmt(a.show)} · <span class="st ${a.resolved ? 'ok' : a.ack ? '' : 'new'}">${a.resolved ? 'Resolved' : a.ack ? 'Seen by ' + esc(ev.coordinator.name) : 'Not seen yet'}</span></small></div></li>`).join('')}</ul>` : ''}
       <div class="row2" style="margin-top:1rem">
-        <button class="btn ghost" id="alert" type="button">📣 Send alert</button>
+        <button class="btn ghost" id="alert" type="button" ${stale ? 'disabled' : ''}>📣 Send alert</button>
         <a class="btn ghost" href="tel:${esc(ev.coordinator.phone)}">📞 Call ${esc(ev.coordinator.name)}</a>
       </div>
-      <p class="foot">No account needed. This page always shows the latest.<br>${esc(ev.coordinator.name)} · ${esc(ev.coordinator.phoneLabel)}</p>`;
+      <p class="foot">No account needed. Urgent? Send the alert and call.<br>${esc(ev.coordinator.name)} · ${esc(ev.coordinator.phoneLabel)}</p>`;
 
     const ci = document.getElementById('checkin');
     if (ci) ci.onclick = checkIn;
@@ -65,17 +80,26 @@
     try {
       const d = await call({ e: slug, t: code });
       skew = d.now - Date.now();
+      lastOk = Date.now(); savedCopy = false;
       const live = d.moments.filter((m) => stateOf(m, d.state) === 'live').sort((a, b) => (d.state.calls[b.id].seq || d.state.calls[b.id].at) - (d.state.calls[a.id].seq || d.state.calls[a.id].at))[0];
       if (data && live && live.id !== lastLive) flash(live.title, (live.vendors || []).includes(d.vendor.id) ? "That's you" : '');
       lastLive = live ? live.id : null;
       if (d.vendor.checkedIn) store.del(doneKey);
-      const sig = JSON.stringify([d.state, d.vendor]);
+      if (data && (d.myAlerts || []).some((a) => a.ack && !(data.myAlerts || []).find((x) => x.id === a.id && x.ack))) { toast(`${d.event.coordinator.name} has seen your alert.`); buzz(80); }
+      store.set(lastKey, JSON.stringify({ d, at: lastOk }));
+      const sig = JSON.stringify([d.state, d.vendor, d.myAlerts]);
       const same = data && sig === lastSig && failed === 0;
       data = d; lastSig = sig; failed = 0;
       if (!same) render();
     } catch (e) {
-      if (e.status === 404 || e.status === 401) return gone();
+      if (e.status === 404 || e.status === 401) { store.del(lastKey); return gone(); }
       failed++;
+      if (!data) {
+        // Offline on first open: show the last copy this phone saw, clearly marked.
+        let saved = null;
+        try { saved = JSON.parse(store.get(lastKey) || 'null'); } catch (_) { saved = null; }
+        if (saved && saved.d) { data = saved.d; lastOk = saved.at; savedCopy = true; skew = 0; }
+      }
       if (data) render(); else app.innerHTML = `<div class="center"><h2>Can't reach the Cue Sheet</h2><p>Check your signal. This page will keep trying.</p></div>`;
     }
   }
@@ -88,7 +112,7 @@
     b.disabled = true; b.textContent = 'Checking you in…';
     try {
       const r = await call(null, { e: slug, t: code, action: 'checkin' });
-      store.set(doneKey, String(r.show));
+      store.set(doneKey, JSON.stringify({ session: r.session, show: r.show }));
       toast("You're checked in. The coordinator can see it.");
       render();
     } catch (e) {
@@ -115,15 +139,21 @@
     sending = true; send.disabled = true; send.textContent = 'Sending…';
     try {
       await call(null, { e: slug, t: code, action: 'alert', text: msg, level });
-      text.value = ''; closeSheet(); toast('Sent. The coordinator has it.');
+      text.value = ''; closeSheet();
+      toast(level === 'urgent' ? 'Sent. Not seen yet. If it is an emergency, call now.' : "Sent. You'll see when it's been read.");
+      if (refresh) refresh();
     } catch (e) {
-      toast("Didn't send. Your message is still there, try again.");
+      toast("Didn't send. Your message is still there. Try again or call.");
     } finally {
       sending = false; send.textContent = 'Send to coordinator'; send.disabled = !text.value.trim();
     }
   };
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
 
-  if (!slug || !code) gone(); else poll(load, 12000);
+  if (!slug || !code) gone(); else refresh = poll(load, 12000);
+  setInterval(() => {
+    const sv = document.getElementById('syncval');
+    if (sv && failed < 2 && !savedCopy) sv.textContent = 'Updated ' + ago(lastOk);
+  }, 5000);
   setInterval(() => { if (!document.querySelector('.sheet.open')) render(); }, 60000);
 })();

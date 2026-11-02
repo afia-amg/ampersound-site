@@ -3,14 +3,14 @@ const assert = require('node:assert/strict'), path = require('node:path'), fs = 
 const FN = path.resolve(__dirname, '..', 'netlify/functions/cue.js');
 const STATE_FIELD = '745508ca-6e71-4541-8d49-a10a9acab836';
 function harness() {
-  const db = { field: null, comments: [], writes: 0, posts: [] };
+  const db = { field: null, comments: [], writes: 0, posts: [], notify: [] };
   global.fetch = async (url, opts = {}) => {
     const u = String(url), method = opts.method || 'GET';
     const ok = (body) => ({ ok: true, status: 200, json: async () => body });
     if (method === 'GET' && /\/task\/[^/]+$/.test(u)) return ok({ id: 'task', custom_fields: [{ id: STATE_FIELD, value: db.field }] });
     if (method === 'GET' && u.endsWith('/comment')) return ok({ comments: db.comments.slice().reverse() });
     if (method === 'POST' && u.includes('/field/' + STATE_FIELD)) { db.field = JSON.parse(opts.body).value; db.writes++; return ok({}); }
-    if (method === 'POST' && u.endsWith('/comment')) { const b = JSON.parse(opts.body); db.posts.push(b.comment_text); db.comments.push({ comment_text: b.comment_text }); return ok({ id: 'c' }); }
+    if (method === 'POST' && u.endsWith('/comment')) { const b = JSON.parse(opts.body); db.posts.push(b.comment_text); db.notify.push(b.notify_all); db.comments.push({ comment_text: b.comment_text }); return ok({ id: 'c' }); }
     return { ok: false, status: 500, json: async () => ({}) };
   };
   process.env.CLICKUP_API_TOKEN = 'token';
@@ -33,6 +33,7 @@ const post = async (h, b) => {
   const r = await h.handler({ httpMethod: 'POST', body: JSON.stringify(p), headers });
   return { status: r.statusCode, body: JSON.parse(r.body) };
 };
+const tick = () => new Promise((r) => setTimeout(r, 5));
 test('cue sheet: V2-only auth, privacy, GO/undo, check-ins and alerts', async () => {
   const { db, h } = harness();
   const { EVENTS } = require('../netlify/functions/_cue-events');
@@ -75,8 +76,10 @@ test('cue sheet: V2-only auth, privacy, GO/undo, check-ins and alerts', async ()
   assert.equal(c.body.vendors.find((x) => x.id === 'photo').link, 'https://example.test/cue/demo/' + token);
   const ci = await post(h, { e: 'demo', t: token, action: 'checkin' });
   assert.equal(ci.status, 200); assert.ok(db.posts.at(-1).startsWith('✅ Lumen & Lace Photo'));
+  const writesBeforeRead = db.writes;
   const coord = await get(h, { e: 'demo', k });
-  assert.ok(coord.body.vendors.find((x) => x.id === 'photo').checkedIn); assert.ok(JSON.parse(db.field).checkins.photo);
+  assert.ok(coord.body.vendors.find((x) => x.id === 'photo').checkedIn);
+  assert.equal(db.writes, writesBeforeRead, 'reads never write Cue State (no read/write race with GO)');
   assert.equal((await post(h, { e: 'demo', t: token, action: 'alert', text: '  ' })).status, 400);
   await post(h, { e: 'demo', t: token, action: 'alert', text: 'Stuck in traffic', level: 'urgent' });
   const after = await get(h, { e: 'demo', k });
@@ -89,6 +92,92 @@ test('cue sheet: V2-only auth, privacy, GO/undo, check-ins and alerts', async ()
     assert.notEqual(replacement, token);
     assert.equal((await get(h, { e: 'demo', t: replacement })).status, 200);
   } finally { photo.rev = originalRev; }
+});
+test('alerts are accountable: seen and resolved reach the vendor', async () => {
+  const { db, h } = harness();
+  const { EVENTS } = require('../netlify/functions/_cue-events');
+  const photo = EVENTS.demo.vendors.find((v) => v.id === 'photo'), token = h._test.tokenFor('demo', photo);
+  const video = EVENTS.demo.vendors.find((v) => v.id === 'video'), vtoken = h._test.tokenFor('demo', video);
+  const k = process.env.CUE_SECRET_V2;
+  const sent = await post(h, { e: 'demo', t: token, action: 'alert', text: 'Lost a lens', level: 'urgent' });
+  assert.equal(sent.status, 200); assert.ok(sent.body.id);
+  assert.equal(db.notify.at(-1), true, 'vendor alerts notify');
+  let mine = (await get(h, { e: 'demo', t: token })).body.myAlerts;
+  assert.equal(mine.length, 1); assert.equal(mine[0].ack, false); assert.equal(mine[0].resolved, false);
+  assert.equal((await get(h, { e: 'demo', t: vtoken })).body.myAlerts.length, 0, 'vendors only see their own alerts');
+  assert.equal((await post(h, { e: 'demo', t: token, action: 'ack', alertId: sent.body.id })).status, 403, 'vendors cannot acknowledge');
+  assert.equal((await post(h, { e: 'demo', k, action: 'ack', alertId: 'nope' })).status, 404);
+  const writes = db.writes;
+  let c = await post(h, { e: 'demo', k, action: 'ack', alertId: sent.body.id });
+  assert.equal(c.status, 200); assert.ok(c.body.alerts[0].ack); assert.equal(c.body.alerts[0].resolved, null);
+  assert.equal(db.notify.at(-1), false, 'acknowledgments do not spam notifications');
+  assert.equal(db.writes, writes, 'acknowledgments are append-only comments, not state writes');
+  mine = (await get(h, { e: 'demo', t: token })).body.myAlerts;
+  assert.equal(mine[0].ack, true); assert.equal(mine[0].resolved, false);
+  c = await post(h, { e: 'demo', k, action: 'resolve', alertId: sent.body.id });
+  assert.ok(c.body.alerts[0].resolved);
+  assert.ok(db.posts.at(-1).startsWith('✔ Resolved by Afia'));
+  assert.equal((await get(h, { e: 'demo', t: token })).body.myAlerts[0].resolved, true);
+});
+test('stale consoles cannot overwrite the show', async () => {
+  const { db, h } = harness();
+  const k = process.env.CUE_SECRET_V2;
+  const rev0 = (await get(h, { e: 'demo', k })).body.state.rev;
+  assert.equal(rev0, 0);
+  let c = await post(h, { e: 'demo', k, action: 'go', momentId: 'm01', rev: rev0 });
+  assert.equal(c.status, 200); assert.equal(c.body.state.rev, 1);
+  const writes = db.writes;
+  c = await post(h, { e: 'demo', k, action: 'go', momentId: 'm02', rev: rev0 });
+  assert.equal(c.status, 409, 'second device acting on an old screen is refused');
+  assert.equal(c.body.state.rev, 1); assert.ok(c.body.event, 'conflict returns the current show so the console can refresh');
+  assert.equal(db.writes, writes); assert.ok(!JSON.parse(db.field).calls.m02);
+  assert.equal((await post(h, { e: 'demo', k, action: 'undo', rev: rev0 })).status, 409, 'stale undo cannot erase someone else\'s GO');
+  assert.ok(JSON.parse(db.field).calls.m01);
+  c = await post(h, { e: 'demo', k, action: 'ack', alertId: 'x', rev: rev0 });
+  assert.equal(c.status, 404, 'non-show actions are not blocked by rev');
+});
+test('practice and show day are separate sessions behind a pre-show check', async () => {
+  const { db, h } = harness();
+  const { EVENTS } = require('../netlify/functions/_cue-events');
+  const photo = EVENTS.demo.vendors.find((v) => v.id === 'photo'), token = h._test.tokenFor('demo', photo);
+  const k = process.env.CUE_SECRET_V2;
+  const { READY } = h._test;
+  await post(h, { e: 'demo', k, action: 'go', momentId: 'm01' });
+  const ci = await post(h, { e: 'demo', t: token, action: 'checkin' });
+  assert.equal(ci.body.session, 1);
+  await post(h, { e: 'demo', t: token, action: 'alert', text: 'Rehearsal ping' });
+  let c = await get(h, { e: 'demo', k });
+  assert.ok(c.body.vendors.find((v) => v.id === 'photo').checkedIn); assert.equal(c.body.alerts.length, 1);
+  c = await post(h, { e: 'demo', k, action: 'mode', mode: 'live', rev: c.body.state.rev });
+  assert.equal(c.status, 409); assert.equal(c.body.missing.length, READY.length, 'Show day is locked until the pre-show check is done');
+  assert.equal((await post(h, { e: 'demo', k, action: 'ready', item: 'bogus', on: true })).status, 400);
+  assert.equal((await post(h, { e: 'demo', t: token, action: 'ready', item: 'timeline', on: true })).status, 403, 'vendors cannot tick the check');
+  for (const item of READY) c = await post(h, { e: 'demo', k, action: 'ready', item, on: true });
+  assert.deepEqual(c.body.ready, READY);
+  c = await post(h, { e: 'demo', k, action: 'ready', item: 'signal', on: false });
+  assert.equal((await post(h, { e: 'demo', k, action: 'mode', mode: 'live', rev: c.body.state.rev })).status, 409, 'unticking an item re-locks Show day');
+  c = await post(h, { e: 'demo', k, action: 'ready', item: 'signal', on: true });
+  await tick();
+  c = await post(h, { e: 'demo', k, action: 'mode', mode: 'live', rev: c.body.state.rev });
+  assert.equal(c.status, 200); assert.equal(c.body.state.mode, 'live');
+  assert.deepEqual(c.body.state.calls, {}, 'practice GOs do not carry into the show');
+  assert.equal(c.body.state.session, 2);
+  assert.ok(!c.body.vendors.find((v) => v.id === 'photo').checkedIn, 'practice check-ins do not carry into the show');
+  assert.equal(c.body.alerts.length, 0, 'practice alerts do not carry into the show');
+  assert.deepEqual(c.body.ready, READY, 'the pre-show check survives the switch');
+  const v = await get(h, { e: 'demo', t: token });
+  assert.equal(v.body.state.session, 2, 'vendors learn the new session, so their saved check-in is ignored');
+  assert.equal(v.body.vendor.checkedIn, null); assert.equal(v.body.myAlerts.length, 0);
+  await tick();
+  const real = await post(h, { e: 'demo', t: token, action: 'checkin' });
+  assert.equal(real.body.session, 2);
+  c = await get(h, { e: 'demo', k });
+  assert.ok(c.body.vendors.find((x) => x.id === 'photo').checkedIn);
+  await tick();
+  c = await post(h, { e: 'demo', k, action: 'reset', rev: c.body.state.rev });
+  assert.equal(c.body.state.session, 3); assert.equal(c.body.state.mode, 'live', 'reset keeps the clock mode');
+  assert.ok(!c.body.vendors.find((x) => x.id === 'photo').checkedIn, 'reset clears check-ins');
+  assert.ok(db.posts.length >= 3, 'history stays in ClickUp comments');
 });
 test('browser transport keeps coordinator secrets out of GET URLs and POST bodies', async () => {
   const requests = [];
@@ -108,4 +197,9 @@ test('browser transport keeps coordinator secrets out of GET URLs and POST bodie
   }
   await context.window.CUE.call({ e: 'demo', t: 'vendor-test-token' });
   assert.equal(requests[2].opts.headers.Authorization, undefined, 'vendor requests have no coordinator secret');
+});
+test('browser transport exposes conflict payloads so a stale console can refresh', async () => {
+  const context = { window: {}, URLSearchParams, fetch: async () => ({ ok: false, status: 409, json: async () => ({ ok: false, error: 'Another device changed the show.', state: { rev: 4 } }) }) };
+  vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../cue/_assets/cue-core.js'), 'utf8'), context);
+  await assert.rejects(context.window.CUE.call(null, { e: 'demo', action: 'go' }), (e) => e.status === 409 && e.data.state.rev === 4);
 });

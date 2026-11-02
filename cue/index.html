@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0f1114">
+<title>Event Day Portal · Ampersound Media Group</title>
+<link rel="icon" href="https://lh3.googleusercontent.com/d/1Uz1btQc6SB1x1d1vcKD-9xF0aTwBB4XC" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/cue/_assets/cue.css">
+<style>
+.hub{padding-bottom:2rem}
+.hub .lede{color:var(--dim);margin:0 0 1.5rem}
+.hub h1{font-family:var(--head);font-weight:800;font-size:clamp(2rem,9vw,2.75rem);line-height:1.02;letter-spacing:-0.03em;margin:0.5rem 0 0.75rem}
+.hub h2{font-family:var(--head);font-weight:700;font-size:1.125rem;margin-bottom:0.35rem}
+.hub .card p{color:var(--dim);font-size:0.9375rem;margin-bottom:0.9rem}
+.hub label{display:block;font-size:0.875rem;color:var(--faint);margin-bottom:0.35rem}
+.hub input{margin-bottom:0.6rem}
+.hub .err{min-height:1.4em;margin-bottom:0.25rem}
+.hub .help{display:flex;flex-direction:column;gap:0.6rem}
+.hub .back{display:inline-block;margin-top:1.25rem;font-size:0.875rem;text-decoration:none}
+</style>
+</head>
+<body>
+<main class="wrap hub">
+  <header class="top"><a href="/"><img src="https://lh3.googleusercontent.com/d/1EVb28hX3L68EwR2jVu7703wRA_3dN3co" alt="Ampersound Media Group"></a></header>
+  <p class="kicker live">Event Day Portal</p>
+  <h1>Your live timeline, on your phone.</h1>
+  <p class="lede">Vendors and coordinators working an Ampersound event start here.</p>
+
+  <section class="card">
+    <h2>Working an event with us?</h2>
+    <p>Your coordinator texts you a private link. Paste it here, or just tap it in your texts. No account needed.</p>
+    <label for="link">Your private link</label>
+    <input type="text" id="link" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ampersoundmediagroup.com/cue/…">
+    <div class="err" id="linkErr" role="alert"></div>
+    <button class="btn" type="button" id="openLink">Open my timeline</button>
+  </section>
+
+  <section class="card">
+    <h2>Lost your link?</h2>
+    <p>Links are private to each vendor, so we can't look them up here. Message us and we'll resend it.</p>
+    <div class="help">
+      <a class="btn ghost" href="sms:+15127994646?&body=Hi%20Afia%2C%20can%20you%20resend%20my%20Event%20Day%20link%3F%20Event%3A%20">Text Afia · (512) 799-4646</a>
+      <a class="btn ghost" href="mailto:contact@ampersoundmediagroup.com?subject=Event%20Day%20link">Email us</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Coordinators</h2>
+    <p>Run the show. Enter the event code from your setup sheet.</p>
+    <label for="code">Event code</label>
+    <input type="text" id="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. demo">
+    <div class="err" id="codeErr" role="alert"></div>
+    <button class="btn ghost" type="button" id="openConsole">Open the console</button>
+  </section>
+
+  <a class="back" href="/">← Back to ampersoundmediagroup.com</a>
+</main>
+<script>
+(function () {
+  'use strict';
+  var SAFE = /^[a-z0-9][a-z0-9-]{0,63}$/i;
+  // Only ever navigate to this site's own /cue/<event>/<code> pages.
+  function vendorPath(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return null;
+    if (!/^https?:\/\//i.test(s)) s = 'https://' + s.replace(/^\/+/, '');
+    var u;
+    try { u = new URL(s); } catch (_) { return null; }
+    var host = u.hostname.toLowerCase().replace(/^www\./, '');
+    if (host !== location.hostname.toLowerCase().replace(/^www\./, '') && host !== 'ampersoundmediagroup.com') return null;
+    var p = u.pathname.split('/').filter(Boolean);
+    if (p.length !== 3 || p[0] !== 'cue' || !SAFE.test(p[1]) || p[2] === 'control' || !/^[A-Za-z0-9_-]{8,64}$/.test(p[2])) return null;
+    return '/cue/' + p[1] + '/' + p[2];
+  }
+  function bind(inputId, btnId, run) {
+    var i = document.getElementById(inputId), b = document.getElementById(btnId);
+    b.onclick = run;
+    i.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); run(); } };
+  }
+  bind('link', 'openLink', function () {
+    var path = vendorPath(document.getElementById('link').value);
+    var err = document.getElementById('linkErr');
+    if (!path) { err.textContent = "That doesn't look like an Event Day link. Check the text from your coordinator."; return; }
+    err.textContent = '';
+    location.href = path;
+  });
+  bind('code', 'openConsole', function () {
+    var code = document.getElementById('code').value.trim().toLowerCase();
+    var err = document.getElementById('codeErr');
+    if (!SAFE.test(code)) { err.textContent = 'Event codes are letters, numbers and dashes.'; return; }
+    err.textContent = '';
+    location.href = '/cue/' + code + '/control';
+  });
+  window.__cueHub = { vendorPath: vendorPath };
+})();
+</script>
+</body>
+</html>

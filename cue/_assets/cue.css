@@ -134,6 +134,7 @@ textarea:focus,input:focus{border-color:var(--gold)}
 .sched li{cursor:default}
 .sched li .go{flex:none;min-height:40px;padding:0 0.9rem;border-radius:8px;border:1px solid var(--line);background:transparent;font-family:var(--head);font-weight:700;letter-spacing:0.12em;cursor:pointer}
 .sched li.next .go{background:var(--gold);color:#16130d;border-color:var(--gold)}
+.sched li .go:disabled{opacity:0.45;cursor:not-allowed}
 .modes{display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;color:var(--faint);flex-wrap:wrap}
 .modes .seg{grid-template-columns:auto auto}
 .modes .seg button{min-height:40px;padding:0 0.9rem;font-size:0.875rem}
@@ -141,6 +142,23 @@ textarea:focus,input:focus{border-color:var(--gold)}
 .gate h1{font-family:var(--head);font-size:1.75rem;line-height:1.1}
 .gate p{color:var(--faint)}
 .err{color:var(--bad);font-size:0.9375rem;min-height:1.4em}
+
+/* ---------- show-day safety: pre-show check, alert status, armed controls ---------- */
+.seg button:disabled{opacity:0.45;cursor:not-allowed}
+.seg button.armed{background:var(--bad-soft);color:var(--bad)}
+.check ul{list-style:none;display:flex;flex-direction:column;gap:0.25rem}
+.check label{display:flex;gap:0.75rem;align-items:flex-start;min-height:44px;padding:0.5rem 0;cursor:pointer;font-size:0.9375rem}
+.check input{width:22px;height:22px;flex:none;margin-top:0.1rem;accent-color:var(--gold)}
+.check small.warn,.warn{display:block;color:var(--bad);font-size:0.875rem}
+.st{font-weight:600}
+.st.new{color:var(--bad)}
+.st.ok{color:var(--ok)}
+.alerts li .x{min-width:0;flex:1}
+.alerts li .acts{display:flex;gap:0.4rem;flex:none;align-items:center}
+.alerts li.hot{background:var(--bad-soft)}
+.list li .t s{display:block;color:var(--faint);font-weight:400;font-size:0.875rem}
+.meta s{color:var(--faint)}
+.printable{display:none}
 
 /* ---------- phone fit: nothing may push the console wider than the screen ---------- */
 .grid>*,.desk,.ctrl,.ctrl .btn,.btn.go,.btn.go small,.list li .x,.vend li .x,.modes{min-width:0}
@@ -158,4 +176,20 @@ textarea:focus,input:focus{border-color:var(--gold)}
   .sched li .go{padding:0 0.7rem}
   .list li{gap:0.6rem}
   .list li .t{width:4.6rem}
+  .alerts li{flex-wrap:wrap}
+}
+
+/* ---------- printed fallback run sheet ---------- */
+@media print{
+  body{background:#fff;color:#000;font-size:11pt}
+  .screen,.toast,.flash,.scrim,.sheet{display:none !important}
+  .wrap.wide{max-width:none;padding:0}
+  .printable{display:block !important;color:#000}
+  .printable h1{font-family:var(--head);font-size:18pt;margin-bottom:4pt}
+  .printable h2{font-family:var(--head);font-size:13pt;margin:14pt 0 4pt}
+  .printable p{margin:4pt 0}
+  .printable table{width:100%;border-collapse:collapse;margin-top:6pt}
+  .printable th,.printable td{border:1px solid #999;padding:4pt 6pt;text-align:left;vertical-align:top}
+  .printable th{background:#eee}
+  .printable tr{break-inside:avoid}
 }
