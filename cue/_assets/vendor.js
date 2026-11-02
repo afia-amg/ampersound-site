@@ -41,9 +41,9 @@
         <div class="sync"><i class="dot ${stale ? 'bad' : 'live'}"></i><span id="syncval">${stale ? 'Offline' : 'Updated ' + ago(lastOk)}</span></div>
       </header>
       ${stale ? `<div class="banner" role="alert">${savedCopy ? 'No signal. This is your saved copy' : 'No signal since ' + esc(at(lastOk, ev.tz))}. Times may be out of date. If anything feels off, call ${esc(ev.coordinator.name)}.</div>` : ''}
-      ${waiting.length ? `<div class="banner" role="alert">🚨 ${esc(ev.coordinator.name)} hasn't seen your urgent alert yet. <a href="tel:${esc(ev.coordinator.phone)}"><b>Call now</b></a></div>` : ''}
+      ${waiting.length ? `<div class="banner" role="alert">🚨 ${esc(ev.coordinator.name)} hasn't seen your urgent alert yet. ${ev.coordinator.phone ? `<a href="tel:${esc(ev.coordinator.phone)}"><b>Call now</b></a>` : '<b>Find them in person now.</b>'}</div>` : ''}
       ${fresh.map((b) => `<section class="card msg ${b.level === 'urgent' ? 'urgent' : ''}" role="alert">
-        <div class="kicker">${b.level === 'urgent' ? '🚨 Urgent' : '📢 To everyone'} · Coordinator · ${fmt(b.show)}</div>
+        <div class="kicker">${b.level === 'urgent' ? '🚨 Urgent' : b.direct ? '💬 Just for you' : '📢 To everyone'}${b.level === 'urgent' && b.direct ? ' · Just for you' : ''} · Coordinator · ${fmt(b.show)}</div>
         <div class="msg-text">${esc(b.text)}</div>
         <button class="btn" type="button" data-gotit="${esc(b.id)}" ${stale || marking.has(b.id) ? 'disabled' : ''}>${marking.has(b.id) ? 'Sending…' : 'Got it'}</button>
       </section>`).join('')}
@@ -68,12 +68,12 @@
         ${mine.map((m) => { const st = stateOf(m, s); return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : ''}"><span class="t">${when(m)}</span><span class="x">${esc(m.title)}<small>${esc(m.location || '')}</small></span>${st === 'done' ? '✓' : ''}</li>`; }).join('')}
       </ol>
       ${alerts.length ? `<div class="label">Your alerts</div><ul class="alerts">${alerts.map((a) => `<li><i class="dot ${a.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(a.text)}</div><small>${fmt(a.show)} · <span class="st ${a.resolved ? 'ok' : a.ack ? '' : 'new'}">${a.resolved ? 'Resolved' : a.ack ? 'Seen by ' + esc(ev.coordinator.name) : 'Not seen yet'}</span></small></div></li>`).join('')}</ul>` : ''}
-      ${read.length ? `<div class="label">Messages from the coordinator</div><ul class="alerts">${read.map((b) => `<li><i class="dot ${b.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(b.text)}</div><small>${fmt(b.show)} · <span class="st ok">✓ Got it</span></small></div></li>`).join('')}</ul>` : ''}
-      <div class="row2" style="margin-top:1rem">
+      ${read.length ? `<div class="label">Messages from the coordinator</div><ul class="alerts">${read.map((b) => `<li><i class="dot ${b.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(b.text)}</div><small>${b.direct ? 'Just for you · ' : ''}${fmt(b.show)} · <span class="st ok">✓ Got it</span></small></div></li>`).join('')}</ul>` : ''}
+      <div class="${ev.coordinator.phone ? 'row2' : ''}" style="margin-top:1rem">
         <button class="btn ghost" id="alert" type="button" ${stale ? 'disabled' : ''}>📣 Send alert</button>
-        <a class="btn ghost" href="tel:${esc(ev.coordinator.phone)}">📞 Call ${esc(ev.coordinator.name)}</a>
+        ${ev.coordinator.phone ? `<a class="btn ghost" href="tel:${esc(ev.coordinator.phone)}">📞 Call ${esc(ev.coordinator.name)}</a>` : ''}
       </div>
-      <p class="foot">No account needed. Urgent? Send the alert and call.<br>${esc(ev.coordinator.name)} · ${esc(ev.coordinator.phoneLabel)}</p>`;
+      <p class="foot">No account needed. Urgent? Send the alert${ev.coordinator.phone ? ' and call' : ''}.<br>Point of contact: ${esc(ev.coordinator.name)}${ev.coordinator.phoneLabel ? ' · ' + esc(ev.coordinator.phoneLabel) : ''}</p>`;
 
     const ci = document.getElementById('checkin');
     if (ci) ci.onclick = checkIn;
@@ -110,7 +110,7 @@
       const msgs = d.broadcasts || [];
       if (seenMsgs) {
         const incoming = msgs.filter((b) => !seenMsgs.has(b.id));
-        incoming.forEach((b) => toast(`${b.level === 'urgent' ? '🚨' : '📢'} Coordinator: ${b.text}`));
+        incoming.forEach((b) => toast(`${b.level === 'urgent' ? '🚨' : b.direct ? '💬' : '📢'} Coordinator: ${b.text}`));
         if (incoming.length) buzz(incoming.some((b) => b.level === 'urgent') ? [300, 120, 300, 120, 300] : [120, 80, 120]);
       }
       seenMsgs = new Set(msgs.map((b) => b.id));

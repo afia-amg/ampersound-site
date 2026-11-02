@@ -3,11 +3,11 @@ const assert = require('node:assert/strict'), path = require('node:path'), fs = 
 const FN = path.resolve(__dirname, '..', 'netlify/functions/cue.js');
 const STATE_FIELD = '745508ca-6e71-4541-8d49-a10a9acab836';
 function harness() {
-  const db = { field: null, comments: [], writes: 0, posts: [], notify: [] };
+  const db = { field: null, comments: [], writes: 0, posts: [], notify: [], extra: [] };
   global.fetch = async (url, opts = {}) => {
     const u = String(url), method = opts.method || 'GET';
     const ok = (body) => ({ ok: true, status: 200, json: async () => body });
-    if (method === 'GET' && /\/task\/[^/]+$/.test(u)) return ok({ id: 'task', custom_fields: [{ id: STATE_FIELD, value: db.field }] });
+    if (method === 'GET' && /\/task\/[^/]+$/.test(u)) return ok({ id: 'task', custom_fields: [{ id: STATE_FIELD, value: db.field }, ...db.extra] });
     if (method === 'GET' && u.endsWith('/comment')) return ok({ comments: db.comments.slice().reverse() });
     if (method === 'POST' && u.includes('/field/' + STATE_FIELD)) { db.field = JSON.parse(opts.body).value; db.writes++; return ok({}); }
     if (method === 'POST' && u.endsWith('/comment')) { const b = JSON.parse(opts.body); db.posts.push(b.comment_text); db.notify.push(b.notify_all); db.comments.push({ comment_text: b.comment_text }); return ok({ id: 'c' }); }
@@ -237,4 +237,52 @@ test('coordinator messages reach every vendor and track who got it', async () =>
   c = await post(h, { e: 'demo', k, action: 'reset', rev: c.body.state.rev });
   assert.equal(c.body.broadcasts.length, 0, 'practice messages do not carry into a new session');
   assert.equal((await get(h, { e: 'demo', t: token })).body.broadcasts.length, 0);
+});
+test('point of contact comes from ClickUp fields, never borrowing the wrong phone', async () => {
+  const { db, h } = harness();
+  const { EVENTS } = require('../netlify/functions/_cue-events');
+  const { CONTACT_NAME, CONTACT_PHONE, phoneOf } = h._test;
+  const photo = EVENTS.demo.vendors.find((v) => v.id === 'photo'), token = h._test.tokenFor('demo', photo);
+  const k = process.env.CUE_SECRET_V2, def = EVENTS.demo.coordinator;
+  assert.deepEqual(phoneOf('+1 801 555 0100'), { phone: '+18015550100', phoneLabel: '(801) 555-0100' });
+  assert.equal(phoneOf('(801) 555-0100').phone, '+18015550100'); assert.equal(phoneOf('555'), null);
+  let v = await get(h, { e: 'demo', t: token });
+  assert.deepEqual(v.body.event.coordinator, def, 'blank fields keep the default contact');
+  // Vendor reads are cached for a few seconds; a coordinator read always refreshes the cache.
+  const fresh = async () => { await get(h, { e: 'demo', k }); return get(h, { e: 'demo', t: token }); };
+  db.extra = [{ id: CONTACT_NAME, value: 'Jordan (Bloom Planning)' }, { id: CONTACT_PHONE, value: '+1 801 555 0100' }];
+  v = await fresh();
+  assert.equal(v.body.event.coordinator.name, 'Jordan (Bloom Planning)');
+  assert.equal(v.body.event.coordinator.phone, '+18015550100'); assert.equal(v.body.event.coordinator.phoneLabel, '(801) 555-0100');
+  const c = await get(h, { e: 'demo', k });
+  assert.equal(c.body.event.coordinator.name, 'Jordan (Bloom Planning)', 'the console shows the same contact');
+  db.extra = [{ id: CONTACT_NAME, value: 'Jordan' }];
+  v = await fresh();
+  assert.equal(v.body.event.coordinator.name, 'Jordan'); assert.equal(v.body.event.coordinator.phone, '', 'a new name never inherits the default phone');
+  db.extra = [{ id: CONTACT_PHONE, value: '8015550199' }];
+  v = await fresh();
+  assert.equal(v.body.event.coordinator.name, def.name); assert.equal(v.body.event.coordinator.phone, '+18015550199');
+  assert.deepEqual(EVENTS.demo.coordinator, def, 'event config is never mutated');
+});
+test('direct messages reach only the vendor they are for', async () => {
+  const { db, h } = harness();
+  const { EVENTS } = require('../netlify/functions/_cue-events');
+  const k = process.env.CUE_SECRET_V2;
+  const photo = EVENTS.demo.vendors.find((v) => v.id === 'photo'), token = h._test.tokenFor('demo', photo);
+  const video = EVENTS.demo.vendors.find((v) => v.id === 'video'), vtoken = h._test.tokenFor('demo', video);
+  assert.equal((await post(h, { e: 'demo', k, action: 'broadcast', text: 'Hi', to: 'nobody' })).status, 400);
+  let c = await post(h, { e: 'demo', k, action: 'broadcast', text: 'Bring the long lens to the ballroom', to: 'photo' });
+  assert.equal(c.status, 200); assert.equal(c.body.broadcasts[0].to, 'photo');
+  assert.ok(db.posts.at(-1).startsWith('📢 To Lumen & Lace Photo from Afia'));
+  const id = c.body.sent;
+  const mine = (await get(h, { e: 'demo', t: token })).body.broadcasts;
+  assert.equal(mine.length, 1); assert.equal(mine[0].direct, true);
+  assert.equal((await get(h, { e: 'demo', t: vtoken })).body.broadcasts.length, 0, 'other vendors never see it');
+  assert.equal((await post(h, { e: 'demo', t: vtoken, action: 'gotit', ref: id })).status, 404, 'other vendors cannot mark it');
+  assert.equal((await post(h, { e: 'demo', t: token, action: 'gotit', ref: id })).status, 200);
+  await post(h, { e: 'demo', k, action: 'broadcast', text: 'Everyone: 5 min to doors' });
+  c = await get(h, { e: 'demo', k });
+  assert.equal(c.body.broadcasts.length, 2); assert.deepEqual(c.body.broadcasts.find((b) => b.id === id).gotIt, ['photo']);
+  const vb = (await get(h, { e: 'demo', t: vtoken })).body.broadcasts;
+  assert.equal(vb.length, 1); assert.equal(vb[0].direct, false);
 });
