@@ -7,6 +7,7 @@
   const app = document.getElementById('app');
   const URGENT_WAIT = 2 * 60 * 1000; // unanswered urgent alert: tell the vendor to call
   let lastSig = '', data = null, skew = 0, lastLive = null, failed = 0, level = 'note', sending = false, lastOk = 0, savedCopy = false, refresh = null;
+  let seenMsgs = null; const marking = new Set();
   const doneKey = `cue:${slug}:${code}:checkin`, lastKey = `cue:${slug}:${code}:last`;
 
   function localCheckin(session) {
@@ -30,6 +31,7 @@
     const checked = v.checkedIn || (local ? { show: Number(local.show) } : null);
     const stale = failed >= 2 || savedCopy;
     const alerts = data.myAlerts || [];
+    const msgs = data.broadcasts || [], fresh = msgs.filter((b) => !b.gotIt), read = msgs.filter((b) => b.gotIt);
     const waiting = alerts.filter((a) => a.level === 'urgent' && !a.ack && !a.resolved && Date.now() + skew - a.at > URGENT_WAIT);
 
     app.innerHTML = `
@@ -40,6 +42,11 @@
       </header>
       ${stale ? `<div class="banner" role="alert">${savedCopy ? 'No signal. This is your saved copy' : 'No signal since ' + esc(at(lastOk, ev.tz))}. Times may be out of date. If anything feels off, call ${esc(ev.coordinator.name)}.</div>` : ''}
       ${waiting.length ? `<div class="banner" role="alert">🚨 ${esc(ev.coordinator.name)} hasn't seen your urgent alert yet. <a href="tel:${esc(ev.coordinator.phone)}"><b>Call now</b></a></div>` : ''}
+      ${fresh.map((b) => `<section class="card msg ${b.level === 'urgent' ? 'urgent' : ''}" role="alert">
+        <div class="kicker">${b.level === 'urgent' ? '🚨 Urgent' : '📢 To everyone'} · ${esc(b.by)} · ${fmt(b.show)}</div>
+        <div class="msg-text">${esc(b.text)}</div>
+        <button class="btn" type="button" data-gotit="${esc(b.id)}" ${stale || marking.has(b.id) ? 'disabled' : ''}>${marking.has(b.id) ? 'Sending…' : 'Got it'}</button>
+      </section>`).join('')}
       <h1 class="hi">Hi, ${esc(v.name)}</h1>
       ${checked
         ? `<div class="here">✓ Checked in${checked.show != null && !Number.isNaN(checked.show) ? ' at ' + fmt(checked.show) : ''}</div>`
@@ -61,6 +68,7 @@
         ${mine.map((m) => { const st = stateOf(m, s); return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : ''}"><span class="t">${when(m)}</span><span class="x">${esc(m.title)}<small>${esc(m.location || '')}</small></span>${st === 'done' ? '✓' : ''}</li>`; }).join('')}
       </ol>
       ${alerts.length ? `<div class="label">Your alerts</div><ul class="alerts">${alerts.map((a) => `<li><i class="dot ${a.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(a.text)}</div><small>${fmt(a.show)} · <span class="st ${a.resolved ? 'ok' : a.ack ? '' : 'new'}">${a.resolved ? 'Resolved' : a.ack ? 'Seen by ' + esc(ev.coordinator.name) : 'Not seen yet'}</span></small></div></li>`).join('')}</ul>` : ''}
+      ${read.length ? `<div class="label">Messages from ${esc(ev.coordinator.name)}</div><ul class="alerts">${read.map((b) => `<li><i class="dot ${b.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(b.text)}</div><small>${fmt(b.show)} · <span class="st ok">✓ Got it</span></small></div></li>`).join('')}</ul>` : ''}
       <div class="row2" style="margin-top:1rem">
         <button class="btn ghost" id="alert" type="button" ${stale ? 'disabled' : ''}>📣 Send alert</button>
         <a class="btn ghost" href="tel:${esc(ev.coordinator.phone)}">📞 Call ${esc(ev.coordinator.name)}</a>
@@ -70,6 +78,19 @@
     const ci = document.getElementById('checkin');
     if (ci) ci.onclick = checkIn;
     document.getElementById('alert').onclick = openSheet;
+    app.querySelectorAll('[data-gotit]').forEach((b) => (b.onclick = () => gotIt(b.dataset.gotit)));
+  }
+  async function gotIt(id) {
+    if (marking.has(id)) return;
+    marking.add(id); render();
+    try {
+      await call(null, { e: slug, t: code, action: 'gotit', ref: id });
+      const b = (data.broadcasts || []).find((x) => x.id === id);
+      if (b) b.gotIt = true;
+      toast(`Thanks. ${data.event.coordinator.name} can see you got it.`);
+    } catch (_) {
+      toast("Didn't go through. Check your signal and tap Got it again.");
+    } finally { marking.delete(id); render(); }
   }
   function timeLeft(m, s, now) {
     const left = s.calls[m.id].show + m.dur - now;
@@ -86,8 +107,15 @@
       lastLive = live ? live.id : null;
       if (d.vendor.checkedIn) store.del(doneKey);
       if (data && (d.myAlerts || []).some((a) => a.ack && !(data.myAlerts || []).find((x) => x.id === a.id && x.ack))) { toast(`${d.event.coordinator.name} has seen your alert.`); buzz(80); }
+      const msgs = d.broadcasts || [];
+      if (seenMsgs) {
+        const incoming = msgs.filter((b) => !seenMsgs.has(b.id));
+        incoming.forEach((b) => toast(`${b.level === 'urgent' ? '🚨' : '📢'} ${b.by}: ${b.text}`));
+        if (incoming.length) buzz(incoming.some((b) => b.level === 'urgent') ? [300, 120, 300, 120, 300] : [120, 80, 120]);
+      }
+      seenMsgs = new Set(msgs.map((b) => b.id));
       store.set(lastKey, JSON.stringify({ d, at: lastOk }));
-      const sig = JSON.stringify([d.state, d.vendor, d.myAlerts]);
+      const sig = JSON.stringify([d.state, d.vendor, d.myAlerts, msgs]);
       const same = data && sig === lastSig && failed === 0;
       data = d; lastSig = sig; failed = 0;
       if (!same) render();

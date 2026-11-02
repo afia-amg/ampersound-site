@@ -193,3 +193,15 @@ textarea:focus,input:focus{border-color:var(--gold)}
   .printable th{background:#eee}
   .printable tr{break-inside:avoid}
 }
+
+/* ---------- messages to everyone ---------- */
+.card.msg{border-left:3px solid var(--gold)}
+.card.msg.urgent{background:var(--bad-soft);border-left-color:var(--bad)}
+.card.msg.urgent .kicker{color:var(--bad)}
+.msg-text{font-size:1.125rem;font-weight:600;line-height:1.4;margin:0.4rem 0 0.9rem;overflow-wrap:anywhere}
+.bc textarea{min-height:80px}
+.bc-row{display:flex;gap:0.6rem;align-items:stretch;margin-top:0.6rem;flex-wrap:wrap}
+.bc-row .seg{flex:none;grid-template-columns:auto auto}
+.bc-row .seg button{padding:0 0.9rem;min-height:52px}
+.bc-row .btn{flex:1 1 9rem;width:auto}
+.bc .alerts li .x>div{overflow-wrap:anywhere}

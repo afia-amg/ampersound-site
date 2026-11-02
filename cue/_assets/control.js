@@ -16,6 +16,7 @@
   const FLOW = ['go', 'finish', 'undo', 'reset', 'mode'];
   let lastSig = '', key = store.get(KEY) || '', data = null, skew = 0, laneSel = null, busy = false, failed = 0, lastOk = 0;
   let seenAlerts = null, armed = null, armTimer = null, sending = null;
+  let draft = '', draftLevel = 'note'; // message to everyone: kept outside the DOM so refreshes never wipe it
 
   function gate(err) {
     app.innerHTML = `
@@ -60,7 +61,7 @@
       if (fresh.some((a) => a.level === 'urgent')) buzz([300, 120, 300, 120, 300]);
     }
     seenAlerts = new Set(d.alerts.map((a) => a.id));
-    const sig = JSON.stringify([d.state, d.alerts, d.vendors, d.ready, open.length]);
+    const sig = JSON.stringify([d.state, d.alerts, d.vendors, d.ready, open.length, d.broadcasts]);
     const same = data && sig === lastSig && !wasStale;
     data = d; lastSig = sig;
     if (!laneSel || !d.event.lanes.includes(laneSel)) laneSel = d.event.lanes[0];
@@ -105,6 +106,17 @@
     render(); toast(msg);
   }
   function disarm() { armed = null; clearTimeout(armTimer); }
+  async function broadcast() {
+    const text = draft.trim();
+    if (!text || busy) return;
+    const n = data.vendors.length;
+    try {
+      if (await act({ action: 'broadcast', text, level: draftLevel })) {
+        draft = ''; draftLevel = 'note'; render();
+        toast(`Sent to all ${n} vendors. Watch for Got it.`);
+      }
+    } catch (_) { toast("Didn't send. Your message is still here. Try again, or call."); }
+  }
 
   function printable(ev, roles) {
     return `<section class="printable" aria-hidden="true">
@@ -142,6 +154,13 @@
     const alertRow = (a) => `<li class="${a.level === 'urgent' && !a.ack ? 'hot' : ''}"><i class="dot ${a.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(a.text)}</div>
       <small>${esc(a.by)} · ${fmt(a.show)} · <span class="st ${a.resolved ? 'ok' : a.ack ? '' : 'new'}">${a.resolved ? 'Resolved' : a.ack ? 'Seen' : 'Not seen yet'}</span></small></div>
       ${a.resolved ? '' : `<div class="acts">${a.ack ? '' : `<button class="icon" type="button" data-ack="${esc(a.id)}">Seen</button>`}<button class="icon" type="button" data-resolve="${esc(a.id)}">Resolved</button></div>`}</li>`;
+
+    const sent = data.broadcasts || [], total = data.vendors.length;
+    const sentRow = (b) => { const got = b.gotIt.length, all = got >= total, waiting = data.vendors.filter((v) => !b.gotIt.includes(v.id)).map((v) => v.name);
+      return `<li><i class="dot ${b.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(b.text)}</div>
+      <small>${fmt(b.show)} · <span class="st ${all ? 'ok' : got ? '' : 'new'}">${got} of ${total} got it</span>${!all && got && waiting.length <= 3 ? ` · Waiting on ${esc(waiting.join(', '))}` : ''}</small></div></li>`; };
+    // Refreshes redraw the screen. Keep the cursor where it was if someone is typing a message.
+    const typing = document.activeElement && document.activeElement.id === 'bcText' ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
 
     app.innerHTML = `<div class="screen">
       <header class="top">
@@ -196,6 +215,19 @@
         <div>
           <h2 class="h2">Alerts${open.length ? ' · ' + open.length + ' open' : ''}</h2>
           ${data.alerts.length ? `<ul class="alerts">${open.concat(data.alerts.filter((a) => a.resolved)).slice(0, 10).map(alertRow).join('')}</ul>` : '<p class="meta" style="margin-bottom:1rem">Quiet so far. Vendor alerts show up here and in ClickUp.</p>'}
+          <section class="card bc" style="margin-top:1.5rem">
+            <h2 class="h2">Message everyone</h2>
+            <textarea id="bcText" maxlength="500" aria-label="Message to every vendor" placeholder="e.g. Toasts moved up 10 min. Photo and video to the patio.">${esc(draft)}</textarea>
+            <div class="bc-row">
+              <div class="seg" role="group" aria-label="How urgent">
+                <button type="button" data-bclevel="note" aria-pressed="${draftLevel === 'note'}">Heads up</button>
+                <button type="button" data-bclevel="urgent" class="urgent" aria-pressed="${draftLevel === 'urgent'}">Urgent</button>
+              </div>
+              <button class="btn" id="bcSend" type="button" ${!draft.trim() || busy || stale ? 'disabled' : ''}>Send to all ${total}</button>
+            </div>
+            <p class="meta" style="margin-top:0.5rem">Shows on every vendor's page within about 15 seconds. Each vendor taps Got it.</p>
+            ${sent.length ? `<ul class="alerts" style="margin-top:0.75rem">${sent.slice(0, 4).map(sentRow).join('')}</ul>` : ''}
+          </section>
           <h2 class="h2" style="margin-top:1.5rem">Vendors · ${data.vendors.filter((v) => v.checkedIn).length} of ${data.vendors.length} here</h2>
           <ul class="vend">
             ${data.vendors.map((v) => { const late = isLive && !v.checkedIn && now != null && now > v.arrival; const phone = /^[+\d][\d\s().-]{6,}$/.test(v.contact || '') ? v.contact.replace(/[^\d+]/g, '') : ''; const body = encodeURIComponent(`Hi ${v.name}! Here's your live timeline for ${ev.name} (${ev.dateLabel}). No login needed: ${v.link}  - ${ev.coordinator.name}, Ampersound`); return `<li><div class="x"><b>${esc(v.name)}</b><small class="${v.checkedIn ? 'in' : late ? 'late' : ''}">${esc(v.role)} · ${v.checkedIn ? 'Here since ' + fmt(v.checkedIn.show) : late ? 'Late, due ' + fmt(v.arrival) : 'Arrive by ' + fmt(v.arrival)}${phone ? '' : ' · no phone'}</small></div>${phone ? `<a class="icon" href="tel:${esc(phone)}" aria-label="Call ${esc(v.name)}">Call</a>` : ''}<a class="icon" href="sms:${esc(phone)}?&body=${body}" aria-label="Text ${esc(v.name)} their link">Text</a><button class="icon" type="button" data-copy="${esc(v.link)}" aria-label="Copy ${esc(v.name)}'s link">Copy</button></li>`; }).join('')}
@@ -207,6 +239,12 @@
     </div>${printable(ev, roles)}`;
 
     const $ = (id) => document.getElementById(id);
+    const bt = $('bcText');
+    if (typing) { bt.focus(); try { bt.setSelectionRange(typing[0], typing[1]); } catch (_) { /* ignore */ } }
+    bt.oninput = () => { draft = bt.value; $('bcSend').disabled = !draft.trim() || busy || failed >= 2; };
+    bt.onkeydown = (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); broadcast(); } };
+    $('bcSend').onclick = broadcast;
+    app.querySelectorAll('[data-bclevel]').forEach((b) => (b.onclick = () => { draftLevel = b.dataset.bclevel; app.querySelectorAll('[data-bclevel]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
     if ($('go')) $('go').onclick = () => L.next && go(L.next);
     if ($('finish')) $('finish').onclick = () => safe({ action: 'finish', momentId: L.live.id });
     $('undo').onclick = () => safe({ action: 'undo' }, 'Last GO undone');

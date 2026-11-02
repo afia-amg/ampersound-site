@@ -203,3 +203,38 @@ test('browser transport exposes conflict payloads so a stale console can refresh
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../cue/_assets/cue-core.js'), 'utf8'), context);
   await assert.rejects(context.window.CUE.call(null, { e: 'demo', action: 'go' }), (e) => e.status === 409 && e.data.state.rev === 4);
 });
+test('coordinator messages reach every vendor and track who got it', async () => {
+  const { db, h } = harness();
+  const { EVENTS } = require('../netlify/functions/_cue-events');
+  const ev = EVENTS.demo, k = process.env.CUE_SECRET_V2;
+  const photo = ev.vendors.find((v) => v.id === 'photo'), token = h._test.tokenFor('demo', photo);
+  const video = ev.vendors.find((v) => v.id === 'video'), vtoken = h._test.tokenFor('demo', video);
+  assert.equal((await post(h, { e: 'demo', t: token, action: 'broadcast', text: 'Fake' })).status, 403, 'vendors cannot message everyone');
+  assert.equal((await post(h, { e: 'demo', k, action: 'broadcast', text: '   ' })).status, 400);
+  const writes = db.writes, before = db.posts.length;
+  let c = await post(h, { e: 'demo', k, action: 'broadcast', text: 'Toasts moved up 10 min', level: 'urgent', rev: 999 });
+  assert.equal(c.status, 200, 'messages are not blocked by a stale rev'); assert.ok(c.body.sent);
+  assert.equal(c.body.broadcasts[0].text, 'Toasts moved up 10 min'); assert.equal(c.body.broadcasts[0].level, 'urgent');
+  assert.deepEqual(c.body.broadcasts[0].gotIt, []);
+  assert.equal(db.writes, writes, 'messages are append-only comments, not state writes');
+  assert.equal(db.posts.length, before + 1); assert.ok(db.posts.at(-1).startsWith('🚨 URGENT to everyone from Afia'));
+  const id = c.body.sent;
+  for (const t of [token, vtoken]) {
+    const v = await get(h, { e: 'demo', t });
+    assert.equal(v.body.broadcasts.length, 1, 'every vendor sees it'); assert.equal(v.body.broadcasts[0].gotIt, false);
+  }
+  assert.equal((await post(h, { e: 'demo', t: token, action: 'gotit', ref: 'nope' })).status, 404);
+  assert.equal((await post(h, { e: 'demo', t: token, action: 'gotit', ref: id })).status, 200);
+  const posts = db.posts.length;
+  assert.equal((await post(h, { e: 'demo', t: token, action: 'gotit', ref: id })).status, 200);
+  assert.equal(db.posts.length, posts, 'a second Got it posts nothing');
+  assert.equal(db.notify.at(-1), false, 'Got it does not spam notifications');
+  assert.equal((await get(h, { e: 'demo', t: token })).body.broadcasts[0].gotIt, true);
+  assert.equal((await get(h, { e: 'demo', t: vtoken })).body.broadcasts[0].gotIt, false, 'Got it is per vendor');
+  c = await get(h, { e: 'demo', k });
+  assert.deepEqual(c.body.broadcasts[0].gotIt, ['photo']);
+  await tick();
+  c = await post(h, { e: 'demo', k, action: 'reset', rev: c.body.state.rev });
+  assert.equal(c.body.broadcasts.length, 0, 'practice messages do not carry into a new session');
+  assert.equal((await get(h, { e: 'demo', t: token })).body.broadcasts.length, 0);
+});
