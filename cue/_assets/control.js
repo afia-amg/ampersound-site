@@ -35,7 +35,9 @@
   }
 
   async function load() {
-    if (!key) return gate();
+    // Signed out: draw the passcode screen once. Background refreshes must never redraw it,
+    // or they wipe whatever is being typed.
+    if (!key) { if (!document.getElementById('gate')) gate(); return; }
     try {
       apply(await call({ e: slug, k: key }));
     } catch (e) {
