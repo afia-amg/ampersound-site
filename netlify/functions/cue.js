@@ -11,11 +11,17 @@
 // - Each reset or switch to Show day starts a new `session`. Everything before `since` is
 //   rehearsal and is ignored: GOs, check-ins and alerts never leak into the real show.
 // - Show day cannot start until every pre-show check item is ticked.
+// - Coordinator broadcasts and each vendor's "Got it" are append-only comments too, so the
+//   console always knows who has (and hasn't) seen a message to everyone.
+// - The show-day point of contact (planner or day-of coordinator) comes from the event task's
+//   "Point of Contact" + "Point of Contact Phone" fields, so it can change per event without a deploy.
 const crypto = require('crypto');
 const { EVENTS } = require('./_cue-events');
 
 const BASE = 'https://api.clickup.com/api/v2';
 const STATE_FIELD = '745508ca-6e71-4541-8d49-a10a9acab836';
+const CONTACT_NAME = '18983b32-756c-49a7-8b37-855b528d8e45';
+const CONTACT_PHONE = '666ee8c5-587c-42cf-86f0-a9d2ba20534a';
 const MARK = 'AMG_CUE_V1:';
 const READY = ['timeline', 'caller', 'contacts', 'links', 'signal', 'printed'];
 const FLOW = ['go', 'finish', 'undo', 'reset', 'mode'];
@@ -70,6 +76,25 @@ async function writeState(taskId, state) {
   state.seen = [];
   await api('/task/' + encodeURIComponent(taskId) + '/field/' + STATE_FIELD, { method: 'POST', body: JSON.stringify({ value: JSON.stringify(state) }) });
 }
+// Normalise a ClickUp phone value ("+1 801 555 0100", "(801) 555-0100") to E.164 plus a readable label.
+function phoneOf(raw) {
+  let d = String(raw || '').replace(/[^\d+]/g, '');
+  if (/^\d{10}$/.test(d)) d = '+1' + d; else if (/^1\d{10}$/.test(d)) d = '+' + d;
+  if (!/^\+\d{10,15}$/.test(d)) return null;
+  const us = d.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
+  return { phone: d, phoneLabel: us ? `(${us[1]}) ${us[2]}-${us[3]}` : d };
+}
+// Point of contact for this event, from ClickUp. Blank fields fall back to the event's default.
+// A name without a phone never borrows the default phone, so vendors never call the wrong person.
+function withContact(ev, task) {
+  const val = (id) => { const f = (task.custom_fields || []).find((x) => x.id === id); return f && f.value != null ? String(f.value).trim() : ''; };
+  const name = val(CONTACT_NAME).slice(0, 60), tel = phoneOf(val(CONTACT_PHONE));
+  if (!name && !tel) return ev;
+  const coordinator = { name: name || ev.coordinator.name, phone: '', phoneLabel: '' };
+  if (tel) Object.assign(coordinator, tel);
+  else if (!name) Object.assign(coordinator, { phone: ev.coordinator.phone, phoneLabel: ev.coordinator.phoneLabel });
+  return { ...ev, coordinator };
+}
 const cache = new Map();
 async function loadTask(taskId, fresh) {
   const hit = cache.get(taskId);
@@ -105,8 +130,15 @@ function derive(state, evs) {
     if (e.type === 'resolve' && !st.resolved) st.resolved = { at: e.at, by: e.by };
   }
   const alerts = cur.filter((e) => e.type === 'alert').map((a) => ({ ...a, ack: (status[a.id] || {}).ack || null, resolved: (status[a.id] || {}).resolved || null }));
+  const got = {};
+  for (const e of cur) {
+    if (e.type !== 'gotit' || !e.ref || !e.vendor) continue;
+    const g = got[e.ref] || (got[e.ref] = {});
+    if (!g[e.vendor]) g[e.vendor] = e.at;
+  }
+  const broadcasts = cur.filter((e) => e.type === 'broadcast').map((b) => ({ id: b.id, at: b.at, show: b.show, level: b.level, text: b.text, by: b.by, to: b.to || null, gotIt: got[b.id] || {} }));
   state.checkins = checkins;
-  return { alerts };
+  return { alerts, broadcasts };
 }
 function publicMoment(m) {
   return { id: m.id, time: m.time, dur: m.dur, title: m.title, location: m.location || '', lane: m.lane || null, vendors: m.vendors || [], notes: m.notes || '' };
@@ -117,21 +149,25 @@ function basics(slug, ev) {
 function liveView(state) {
   return { mode: state.mode, anchor: state.anchor, calls: state.calls, done: state.done, rev: state.rev, session: state.session, since: state.since, updatedAt: state.updatedAt || null };
 }
-function vendorView(slug, ev, v, state, alerts, now) {
+function vendorView(slug, ev, v, state, alerts, broadcasts, now) {
+  // Messages to everyone, plus messages sent only to this vendor. Never another vendor's direct message.
+  const toAll = broadcasts.filter((b) => !b.to || b.to === v.id).slice(-5).reverse()
+    .map((b) => ({ id: b.id, at: b.at, show: b.show, level: b.level, text: b.text, by: b.by, direct: !!b.to, gotIt: !!b.gotIt[v.id] }));
   const mine = alerts.filter((a) => a.vendor === v.id).slice(-5).reverse()
     .map((a) => ({ id: a.id, at: a.at, show: a.show, level: a.level, text: a.text, ack: !!a.ack, ackAt: a.ack ? a.ack.at : null, resolved: !!a.resolved }));
   return {
     ok: true, now, event: basics(slug, ev),
     vendor: { id: v.id, name: v.name, role: v.role, arrival: v.arrival, checkedIn: state.checkins[v.id] || null },
     moments: ev.moments.map((m) => (m.vendors.includes(v.id) ? publicMoment(m) : { id: m.id, time: m.time, dur: m.dur, title: m.title, lane: m.lane || null, vendors: [] })),
-    roles: Object.fromEntries(ev.vendors.map((x) => [x.id, x.role])), state: liveView(state), myAlerts: mine,
+    roles: Object.fromEntries(ev.vendors.map((x) => [x.id, x.role])), state: liveView(state), myAlerts: mine, broadcasts: toAll,
   };
 }
-function coordinatorView(slug, ev, state, alerts, now, origin) {
+function coordinatorView(slug, ev, state, alerts, broadcasts, now, origin) {
   return {
     ok: true, now, event: basics(slug, ev), moments: ev.moments.map(publicMoment), ready: READY.filter((k) => state.ready[k]),
     vendors: ev.vendors.map((v) => ({ id: v.id, name: v.name, role: v.role, contact: v.contact || '', arrival: v.arrival, checkedIn: state.checkins[v.id] || null, link: `${origin}/cue/${slug}/${tokenFor(slug, v)}` })),
     alerts: alerts.slice(-30).reverse(), state: liveView(state),
+    broadcasts: broadcasts.slice(-10).reverse().map((b) => ({ ...b, gotIt: ev.vendors.filter((v) => b.gotIt[v.id]).map((v) => v.id) })),
   };
 }
 function go(state, ev, m, now) {
@@ -179,7 +215,7 @@ exports.handler = async (event) => {
     const auth = authEntry ? String(authEntry[1]) : '';
     const key = /^Bearer /i.test(auth) ? auth.slice(7) : '';
     const slug = String(p.e || '');
-    const ev = Object.prototype.hasOwnProperty.call(EVENTS, slug) ? EVENTS[slug] : null;
+    let ev = Object.prototype.hasOwnProperty.call(EVENTS, slug) ? EVENTS[slug] : null;
     if (!ev) return reply(404, { ok: false, error: 'Event not found' });
     const coord = isCoordinator(key);
     const vendor = coord ? null : vendorByToken(slug, ev, p.t);
@@ -188,10 +224,24 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'GET') {
       // Reads never write. Check-ins and alert status are derived from comments every time.
       const { task, comments } = await loadTask(ev.taskId, coord);
-      const state = readState(task), { alerts } = derive(state, events(comments));
-      return reply(200, coord ? coordinatorView(slug, ev, state, alerts, now, origin) : vendorView(slug, ev, vendor, state, alerts, now));
+      ev = withContact(ev, task);
+      const state = readState(task), { alerts, broadcasts } = derive(state, events(comments));
+      return reply(200, coord ? coordinatorView(slug, ev, state, alerts, broadcasts, now, origin) : vendorView(slug, ev, vendor, state, alerts, broadcasts, now));
     }
     const action = String(p.action || '');
+    if (vendor && action === 'gotit') {
+      // "Got it" on a message to everyone. Idempotent: a second tap posts nothing.
+      const { task, comments } = await loadTask(ev.taskId, true);
+      const st = readState(task), { broadcasts } = derive(st, events(comments));
+      const b = broadcasts.find((x) => x.id === p.ref && (!x.to || x.to === vendor.id));
+      if (!b) return reply(404, { ok: false, error: 'Message not found' });
+      if (!b.gotIt[vendor.id]) {
+        const rec = { id: crypto.randomUUID(), type: 'gotit', ref: b.id, vendor: vendor.id, by: vendor.name, at: now, session: st.session };
+        await comment(ev.taskId, `👍 ${vendor.name} got it: "${b.text}"`, rec, false);
+        cache.delete(ev.taskId);
+      }
+      return reply(200, { ok: true, ref: b.id });
+    }
     if (vendor) {
       if (action !== 'checkin' && action !== 'alert') return reply(403, { ok: false, error: 'Not allowed' });
       const text = String(p.text || '').trim().slice(0, 500);
@@ -207,9 +257,27 @@ exports.handler = async (event) => {
       return reply(200, { ok: true, id: rec.id, at: now, show, session: st.session });
     }
     const { task, comments } = await loadTask(ev.taskId, true);
+    ev = withContact(ev, task);
     const state = readState(task), evs = events(comments);
-    let { alerts } = derive(state, evs);
-    const view = () => coordinatorView(slug, ev, state, alerts, now, origin);
+    let { alerts, broadcasts } = derive(state, evs);
+    const view = () => coordinatorView(slug, ev, state, alerts, broadcasts, now, origin);
+
+    if (action === 'broadcast') {
+      // Message to every vendor, or to one vendor with `to`. Not a show-flow action, so it never fights a GO over `rev`.
+      const text = String(p.text || '').trim().slice(0, 500);
+      if (!text) return reply(400, { ok: false, error: 'Write a message first' });
+      const target = p.to ? ev.vendors.find((v) => v.id === p.to) : null;
+      if (p.to && !target) return reply(400, { ok: false, error: 'Pick a vendor from the list' });
+      const level = p.level === 'urgent' ? 'urgent' : 'note';
+      const show = showMinutes(state, ev, now) ?? wallMinutes(now, ev.tz);
+      const rec = { id: crypto.randomUUID(), type: 'broadcast', by: ev.coordinator.name, at: now, show, level, text, session: state.session };
+      if (target) rec.to = target.id;
+      const who = target ? target.name : 'everyone';
+      await comment(ev.taskId, `${level === 'urgent' ? '🚨 URGENT to ' + who : '📢 To ' + who} from ${ev.coordinator.name}: ${text}`, rec, false);
+      cache.delete(ev.taskId);
+      ({ alerts, broadcasts } = derive(state, evs.concat(rec)));
+      return reply(200, { ...view(), sent: rec.id });
+    }
 
     if (action === 'ack' || action === 'resolve') {
       const a = alerts.find((x) => x.id === p.alertId);
@@ -217,7 +285,7 @@ exports.handler = async (event) => {
       const rec = { id: crypto.randomUUID(), type: action, ref: a.id, by: ev.coordinator.name, at: now };
       await comment(ev.taskId, `${action === 'ack' ? '👀 Seen' : '✔ Resolved'} by ${ev.coordinator.name}: ${a.by}, "${a.text}"`, rec, false);
       cache.delete(ev.taskId);
-      ({ alerts } = derive(state, evs.concat(rec)));
+      ({ alerts, broadcasts } = derive(state, evs.concat(rec)));
       return reply(200, view());
     }
     if (action === 'ready') {
@@ -249,11 +317,11 @@ exports.handler = async (event) => {
     }
     state.rev += 1;
     await writeState(ev.taskId, state); cache.delete(ev.taskId);
-    ({ alerts } = derive(state, evs));
+    ({ alerts, broadcasts } = derive(state, evs));
     return reply(200, view());
   } catch (e) {
     console.error('Cue error:', e.message);
     return reply(503, { ok: false, error: 'Cue Sheet is unavailable, try again in a moment' });
   }
 };
-exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY };
+exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE };

@@ -193,3 +193,20 @@ textarea:focus,input:focus{border-color:var(--gold)}
   .printable th{background:#eee}
   .printable tr{break-inside:avoid}
 }
+
+/* ---------- messages to everyone ---------- */
+.card.msg{border-left:3px solid var(--gold)}
+.card.msg.urgent{background:var(--bad-soft);border-left-color:var(--bad)}
+.card.msg.urgent .kicker{color:var(--bad)}
+.msg-text{font-size:1.125rem;font-weight:600;line-height:1.4;margin:0.4rem 0 0.9rem;overflow-wrap:anywhere}
+.bc textarea{min-height:80px}
+.bc-row{display:flex;gap:0.6rem;align-items:stretch;margin-top:0.6rem;flex-wrap:wrap}
+.bc-row .seg{flex:none;grid-template-columns:auto auto}
+.bc-row .seg button{padding:0 0.9rem;min-height:52px}
+.bc-row .btn{flex:1 1 9rem;width:auto}
+.bc .alerts li .x>div{overflow-wrap:anywhere}
+.bc .to{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;font-size:0.875rem;color:var(--faint)}
+.bc select{flex:1;min-width:0;min-height:44px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:0 0.75rem;font:inherit;font-size:1rem;outline:none}
+.bc select:focus{border-color:var(--gold)}
+.meta.contact{margin:-0.25rem 0 0.75rem}
+.meta.contact b{color:var(--text)}
