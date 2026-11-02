@@ -15,6 +15,10 @@
 //   console always knows who has (and hasn't) seen a message to everyone.
 // - The show-day point of contact (planner or day-of coordinator) comes from the event task's
 //   "Point of Contact" + "Point of Contact Phone" fields, so it can change per event without a deploy.
+// - Close out ends the show: it needs Show day and every alert resolved, freezes show-flow
+//   actions, moves the ClickUp task to WRAPPED, and swaps each vendor page for a thank-you
+//   with the Google review link. That page hides the timeline and phone numbers, and the
+//   link turns itself off CLOSED_LINK_DAYS later. Reopen undoes a close out made by mistake.
 const crypto = require('crypto');
 const { EVENTS } = require('./_cue-events');
 
@@ -24,7 +28,10 @@ const CONTACT_NAME = '18983b32-756c-49a7-8b37-855b528d8e45';
 const CONTACT_PHONE = '666ee8c5-587c-42cf-86f0-a9d2ba20534a';
 const MARK = 'AMG_CUE_V1:';
 const READY = ['timeline', 'caller', 'contacts', 'links', 'signal', 'printed'];
-const FLOW = ['go', 'finish', 'undo', 'reset', 'mode'];
+const FLOW = ['go', 'finish', 'undo', 'reset', 'mode', 'closeout', 'reopen'];
+const REVIEW_URL = 'https://g.page/r/Cd1Ctsiv6egXEAE/review';
+const CLOSED_LINK_DAYS = 30;
+const WRAPPED = 'wrapped';
 const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, private, max-age=0', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Robots-Tag': 'noindex' };
 const reply = (status, body) => ({ statusCode: status, headers, body: JSON.stringify(body) });
 
@@ -61,7 +68,7 @@ function fmt(min) {
   const m = ((Math.round(min) % 1440) + 1440) % 1440, h = Math.floor(m / 60), mm = String(m % 60).padStart(2, '0');
   return `${h % 12 || 12}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
 }
-const blank = () => ({ v: 1, mode: 'practice', anchor: null, calls: {}, done: {}, checkins: {}, seen: [], rev: 0, session: 1, since: 0, ready: {} });
+const blank = () => ({ v: 1, mode: 'practice', anchor: null, calls: {}, done: {}, checkins: {}, seen: [], rev: 0, session: 1, since: 0, ready: {}, closed: null });
 function readState(task) {
   const f = (task.custom_fields || []).find((x) => x.id === STATE_FIELD);
   let d = null;
@@ -69,6 +76,7 @@ function readState(task) {
   const s = d && typeof d === 'object' && !Array.isArray(d) ? { ...blank(), ...d } : blank();
   for (const k of ['calls', 'done', 'checkins', 'ready']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
   s.rev = Number(s.rev) || 0; s.session = Number(s.session) || 1; s.since = Number(s.since) || 0;
+  if (!s.closed || typeof s.closed !== 'object' || !Number(s.closed.at)) s.closed = null;
   return s;
 }
 async function writeState(taskId, state) {
@@ -137,8 +145,11 @@ function derive(state, evs) {
     if (!g[e.vendor]) g[e.vendor] = e.at;
   }
   const broadcasts = cur.filter((e) => e.type === 'broadcast').map((b) => ({ id: b.id, at: b.at, show: b.show, level: b.level, text: b.text, by: b.by, to: b.to || null, gotIt: got[b.id] || {} }));
+  // Who tapped the Google review link since the latest close out. A tap is not proof a review was posted.
+  const reviewTaps = {};
+  if (state.closed) for (const e of evs) if (e.type === 'reviewtap' && e.vendor && Number(e.at) >= state.closed.at && !reviewTaps[e.vendor]) reviewTaps[e.vendor] = e.at;
   state.checkins = checkins;
-  return { alerts, broadcasts };
+  return { alerts, broadcasts, reviewTaps };
 }
 function publicMoment(m) {
   return { id: m.id, time: m.time, dur: m.dur, title: m.title, location: m.location || '', lane: m.lane || null, vendors: m.vendors || [], notes: m.notes || '' };
@@ -147,7 +158,17 @@ function basics(slug, ev) {
   return { slug, name: ev.name, kind: ev.kind, dateLabel: ev.dateLabel, venue: ev.venue, tz: ev.tz, lanes: ev.lanes, coordinator: ev.coordinator };
 }
 function liveView(state) {
-  return { mode: state.mode, anchor: state.anchor, calls: state.calls, done: state.done, rev: state.rev, session: state.session, since: state.since, updatedAt: state.updatedAt || null };
+  return { mode: state.mode, anchor: state.anchor, calls: state.calls, done: state.done, rev: state.rev, session: state.session, since: state.since, updatedAt: state.updatedAt || null, closed: state.closed };
+}
+const reviewUrl = (ev) => ev.reviewUrl || REVIEW_URL;
+const linkExpired = (state, now) => !!state.closed && now - state.closed.at > CLOSED_LINK_DAYS * 864e5;
+// After close out a vendor only gets a thank-you and the review link: no timeline, no phone numbers, no messages.
+function closedVendorView(slug, ev, v, state, reviewTaps, now) {
+  return {
+    ok: true, now, closed: { at: state.closed.at, until: state.closed.at + CLOSED_LINK_DAYS * 864e5 },
+    event: { slug, name: ev.name, kind: ev.kind, dateLabel: ev.dateLabel, venue: ev.venue, tz: ev.tz },
+    vendor: { id: v.id, name: v.name, role: v.role }, review: { url: reviewUrl(ev), tapped: !!reviewTaps[v.id] },
+  };
 }
 function vendorView(slug, ev, v, state, alerts, broadcasts, now) {
   // Messages to everyone, plus messages sent only to this vendor. Never another vendor's direct message.
@@ -162,8 +183,9 @@ function vendorView(slug, ev, v, state, alerts, broadcasts, now) {
     roles: Object.fromEntries(ev.vendors.map((x) => [x.id, x.role])), state: liveView(state), myAlerts: mine, broadcasts: toAll,
   };
 }
-function coordinatorView(slug, ev, state, alerts, broadcasts, now, origin) {
+function coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps) {
   return {
+    closed: state.closed, review: { url: reviewUrl(ev), tapped: Object.keys(reviewTaps || {}) }, linksOffAt: state.closed ? state.closed.at + CLOSED_LINK_DAYS * 864e5 : null,
     ok: true, now, event: basics(slug, ev), moments: ev.moments.map(publicMoment), ready: READY.filter((k) => state.ready[k]),
     vendors: ev.vendors.map((v) => ({ id: v.id, name: v.name, role: v.role, contact: v.contact || '', arrival: v.arrival, checkedIn: state.checkins[v.id] || null, link: `${origin}/cue/${slug}/${tokenFor(slug, v)}` })),
     alerts: alerts.slice(-30).reverse(), state: liveView(state),
@@ -225,10 +247,29 @@ exports.handler = async (event) => {
       // Reads never write. Check-ins and alert status are derived from comments every time.
       const { task, comments } = await loadTask(ev.taskId, coord);
       ev = withContact(ev, task);
-      const state = readState(task), { alerts, broadcasts } = derive(state, events(comments));
-      return reply(200, coord ? coordinatorView(slug, ev, state, alerts, broadcasts, now, origin) : vendorView(slug, ev, vendor, state, alerts, broadcasts, now));
+      const state = readState(task), { alerts, broadcasts, reviewTaps } = derive(state, events(comments));
+      if (coord) return reply(200, coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps));
+      if (state.closed) return linkExpired(state, now) ? reply(404, { ok: false, error: 'This link is turned off' }) : reply(200, closedVendorView(slug, ev, vendor, state, reviewTaps, now));
+      return reply(200, vendorView(slug, ev, vendor, state, alerts, broadcasts, now));
     }
     const action = String(p.action || '');
+    if (vendor) {
+      // A closed-out show only takes the review tap. Check-ins, alerts and Got it are over.
+      const { task, comments } = await loadTask(ev.taskId, action === 'review');
+      const st = readState(task);
+      if (st.closed && linkExpired(st, now)) return reply(404, { ok: false, error: 'This link is turned off' });
+      if (action === 'review') {
+        if (!st.closed) return reply(409, { ok: false, error: 'Reviews open after the event is closed out' });
+        const { reviewTaps } = derive(st, events(comments));
+        if (!reviewTaps[vendor.id]) {
+          const rec = { id: crypto.randomUUID(), type: 'reviewtap', vendor: vendor.id, by: vendor.name, at: now };
+          await comment(ev.taskId, `⭐ ${vendor.name} (${vendor.role}) opened the Google review link`, rec, false);
+          cache.delete(ev.taskId);
+        }
+        return reply(200, { ok: true, url: reviewUrl(ev) });
+      }
+      if (st.closed) return reply(409, { ok: false, error: 'This event is wrapped. Thank you!' });
+    }
     if (vendor && action === 'gotit') {
       // "Got it" on a message to everyone. Idempotent: a second tap posts nothing.
       const { task, comments } = await loadTask(ev.taskId, true);
@@ -259,8 +300,12 @@ exports.handler = async (event) => {
     const { task, comments } = await loadTask(ev.taskId, true);
     ev = withContact(ev, task);
     const state = readState(task), evs = events(comments);
-    let { alerts, broadcasts } = derive(state, evs);
-    const view = () => coordinatorView(slug, ev, state, alerts, broadcasts, now, origin);
+    let { alerts, broadcasts, reviewTaps } = derive(state, evs);
+    const view = () => coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps);
+    // Once closed out, the show is frozen. Only Reopen (and clearing old alerts) still works.
+    if (state.closed && (action === 'broadcast' || action === 'ready' || (FLOW.includes(action) && action !== 'reopen'))) {
+      return reply(409, { ...view(), ok: false, error: 'This show is closed out. Reopen it first.' });
+    }
 
     if (action === 'broadcast') {
       // Message to every vendor, or to one vendor with `to`. Not a show-flow action, so it never fights a GO over `rev`.
@@ -295,6 +340,7 @@ exports.handler = async (event) => {
       return reply(200, view());
     }
     if (!FLOW.includes(action)) return reply(400, { ok: false, error: 'Unknown action' });
+    let closing = null;
     if (p.rev !== undefined && Number(p.rev) !== state.rev) {
       return reply(409, { ...view(), ok: false, error: 'Another device changed the show. Check the screen, then tap again.' });
     }
@@ -304,6 +350,24 @@ exports.handler = async (event) => {
       if (action === 'go') go(state, ev, m, now); else if (state.calls[m.id]) state.done[m.id] = now;
     } else if (action === 'undo') {
       if (!undo(state)) return reply(409, { ...view(), ok: false, error: 'Nothing to undo' });
+    } else if (action === 'closeout') {
+      if (state.mode !== 'live') return reply(409, { ...view(), ok: false, error: 'Close out is for Show day. Switch to Show day first.' });
+      const open = alerts.filter((a) => !a.resolved);
+      if (open.length) return reply(409, { ...view(), ok: false, error: `Resolve ${open.length === 1 ? 'the open alert' : 'all ' + open.length + ' open alerts'} first.`, openAlerts: open.map((a) => a.id) });
+      const prev = (task.status && task.status.status) || '';
+      let wrapped = false;
+      try { await api('/task/' + encodeURIComponent(ev.taskId), { method: 'PUT', body: JSON.stringify({ status: WRAPPED }) }); wrapped = true; }
+      catch (e) { console.error('Cue close out: status update failed:', e.message); }
+      state.closed = { at: now, by: ev.coordinator.name, prevStatus: prev && prev !== WRAPPED ? prev : 'live', wrapped };
+      const here = ev.vendors.filter((v) => state.checkins[v.id]).length;
+      closing = { text: `🏁 Show closed out by ${ev.coordinator.name} · ${here} of ${ev.vendors.length} vendors checked in · ${alerts.length} alert${alerts.length === 1 ? '' : 's'}, all resolved. ${wrapped ? 'Task moved to WRAPPED.' : 'Move this task to WRAPPED by hand, the automatic move failed.'} Vendors now see a thank-you with the Google review link; their links turn off in ${CLOSED_LINK_DAYS} days.`, rec: { id: crypto.randomUUID(), type: 'closeout', by: ev.coordinator.name, at: now, wrapped } };
+    } else if (action === 'reopen') {
+      if (!state.closed) return reply(409, { ...view(), ok: false, error: 'This show is not closed out' });
+      const back = state.closed.prevStatus || 'live';
+      try { await api('/task/' + encodeURIComponent(ev.taskId), { method: 'PUT', body: JSON.stringify({ status: back }) }); }
+      catch (e) { console.error('Cue reopen: status update failed:', e.message); }
+      closing = { text: `↩ Show reopened by ${ev.coordinator.name}. Vendor pages show the timeline again.`, rec: { id: crypto.randomUUID(), type: 'reopen', by: ev.coordinator.name, at: now } };
+      state.closed = null;
     } else if (action === 'reset') {
       freshSession(state, now);
     } else if (action === 'mode') {
@@ -317,11 +381,12 @@ exports.handler = async (event) => {
     }
     state.rev += 1;
     await writeState(ev.taskId, state); cache.delete(ev.taskId);
-    ({ alerts, broadcasts } = derive(state, evs));
+    if (closing) { try { await comment(ev.taskId, closing.text, closing.rec, false); } catch (e) { console.error('Cue close out comment failed:', e.message); } }
+    ({ alerts, broadcasts, reviewTaps } = derive(state, evs));
     return reply(200, view());
   } catch (e) {
     console.error('Cue error:', e.message);
     return reply(503, { ok: false, error: 'Cue Sheet is unavailable, try again in a moment' });
   }
 };
-exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE };
+exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE, REVIEW_URL, CLOSED_LINK_DAYS };
