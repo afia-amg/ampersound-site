@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>American Cancer Society | Ampersound Media Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/partner-docs/_assets/portal.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+<main id="main"></main>
+<footer class="site">Ampersound Media Group &middot; Sound. Presence. Atmosphere.</footer>
+<script src="/partner-docs/_assets/defaults.js"></script>
+<script>
+/* Corporate / gala proposal, so it sets PORTAL directly instead of using the
+ * wedding defaults. The agreement uses the shared standard clauses via
+ * AMG.standardAgreement(); only the DJ-only coordination and travel wording
+ * are adjusted, and ACS specifics are added as special terms. */
+(function () {
+ var agreement = AMG.standardAgreement({
+  client: "American Cancer Society",
+  eventDateLong: "Saturday, February 20, 2027",
+  venue: "Hyatt Regency Salt Lake City, 170 South West Temple, Salt Lake City, UT 84101",
+  start: "6:00 PM",
+  end: "10:00 PM",
+  guests: "350 to 450",
+  crew: "Adam Roberts, DJ",
+  scope: "Background music for arrival and dinner, music cues and sound effects for the live auction and Mission Paddle Raise, and a dance set from 8:00 PM to 10:00 PM, plus 1 additional hour on site for setup and soundcheck.",
+  balanceDue: "February 6, 2027",
+  intro: "This is the full agreement between Ampersound and the American Cancer Society, with the numbers from our quote built in. If your legal team needs anything adjusted, we are open to that conversation.",
+  special: [
+   { title: "Venue AV & Lighting", body: "Ampersound coordinates directly with Encore, the Hyatt's in-house AV provider, on power, amplification, and house sound integration. Lighting and any Encore fees for patching, power, or equipment rental are not included in this agreement and are billed only with Client's written approval in advance." },
+   { title: "Venue Walkthrough", body: "A walkthrough of the Hyatt Regency Salt Lake City with Client and Encore before the event is included at no additional charge." },
+   { title: "ACS Vendor Onboarding", body: "Ampersound will complete the American Cancer Society's vendor onboarding through Coupa and iContract. If Client's legal team requires its own vendor agreement, the fee, deposit, balance, scope, and cancellation terms in this agreement carry over into it. The deposit and balance may be paid by direct deposit or check through Client's vendor system in place of the Stripe link." }
+  ]
+ });
+ agreement.clauses = agreement.clauses.map(function (c) {
+  if (c.title === "Travel") return { title: c.title, body: "No travel fee applies. The Hyatt Regency Salt Lake City is within 50 miles of Salt Lake City." };
+  if (c.title === "Timeline & Coordination") return { title: c.title, body: "This is a DJ-only engagement. Client's MC and auctioneer lead the program, and Ampersound does not provide MC or event planning services. Ampersound follows Client's run of show and takes cues from Client's day-of contact. The final run of show is locked 14 days before the event and shared with Encore and key vendors." };
+  return c;
+ });
+
+ window.PORTAL = {
+  "slug": "acs-hope-gala",
+  "mode": "proposal",
+  "client": {
+   "name": "American Cancer Society",
+   "contacts": "Averiel Bailey",
+   "signerDefault": "Averiel Bailey",
+   "primaryEmail": "averiel.bailey@cancer.org",
+   "allEmails": ["averiel.bailey@cancer.org"],
+   "eventDate": "2027-02-20",
+   "eventDateLong": "Saturday, February 20, 2027",
+   "badge": "Feb 20, 2027",
+   "eventName": "Hope Gala 2027 \u00b7 Every Cancer, Every Life",
+   "eventType": "Corporate Event",
+   "venue": "Hyatt Regency Salt Lake City",
+   "venueDetail": "Hyatt Regency Salt Lake City \u00b7 170 South West Temple, Salt Lake City, UT 84101",
+   "coverageWindow": "6:00 PM to 10:00 PM",
+   "guests": "350 to 450",
+   "packageName": "Gala DJ",
+   "hours": "6:00 to 10:00 PM",
+   "services": ["DJ / Sound Direction", "Auction & Paddle Raise Sound Cues"],
+   "inclusions": [
+    "Adam Roberts on the decks from 6:00 to 10:00 PM",
+    "Clean, upbeat background music for arrival and dinner",
+    "Bid and win stings for the live auction",
+    "Hopeful chime cues for major Mission Paddle Raise gifts and thresholds",
+    "Dance set from 8:00 to 10:00 PM",
+    "Speakers, mixer, and DJ gear, with Encore integration",
+    "Hyatt walkthrough and run-of-show planning",
+    "Setup, soundcheck, and breakdown"
+   ]
+  },
+  "pricing": {
+   "lines": [
+    { "label": "Gala DJ, 6:00 to 10:00 PM", "note": "350 to 450 guests \u00b7 all sound gear included", "value": 1500 },
+    { "label": "Additional hour", "note": "Setup and soundcheck buffer for the Hyatt load-in", "value": 150 }
+   ],
+   "serviceSubtotal": 1650,
+   "total": 1650,
+   "deposit": 825,
+   "balance": 825,
+   "balanceDue": "Feb 6, 2027",
+   "totalNote": "Local, so no travel fee. Hyatt walkthrough included at no charge."
+  },
+  "heard": {
+   "title": "What we heard",
+   "body": [
+    "Hope Gala moves to February 20 at the Hyatt, and the live band is out this year. You want the room to feel alive without spending band money.",
+    "While 350 to 450 donors check in, pick their ribbons, and find their tables, you want good-vibe music: formal, clean, upbeat, never loud.",
+    "During the live auction and the Mission Paddle Raise, you want sound to carry the energy so the auctioneer is not asking for applause. Hype stings for bids and wins, and a hopeful chime when a big gift or goal lands for Hope Lodge.",
+    "Then from 8 to 10, it turns into a dance party."
+   ]
+  },
+  "nextStep": {
+   "body": "If the scope and total look right, connect us with Cami and we will start ACS vendor onboarding. You can also read and sign the agreement below whenever you are ready.",
+   "callLabel": "Email Afia",
+   "callUrl": "mailto:afia@ampersoundmediagroup.com?subject=Hope%20Gala%202027%20quote"
+  },
+  "agreement": agreement,
+  "paymentLink": "https://buy.stripe.com/cNi8wO67fe07cvkgHFbwk0c",
+  "footnote": "Quote valid for 30 days. Lighting and any Encore fees are separate and only billed with your written approval.",
+  "playbookIntro": "{{free}} of these {{n}} ideas cost nothing. Use them whether or not you book us.",
+  "playbookLead": { "title": "The goal", "body": "Let the sound do the hyping, so the auctioneer can stay on the ask and guests cheer because something just happened, not because they were told to." },
+  "playbook": [
+   { "title": "Put the stings on the cue sheet", "cost": "Free", "body": "Give the auctioneer and the DJ the same list: which items, what bid triggers a sting, and who calls it. Sound lands on the moment instead of a beat late." },
+   { "title": "Pick the paddle-raise thresholds now", "cost": "Free", "body": "Decide which levels earn the hopeful chime, such as the opening $25,000 paddle and the goal line. Once guests learn the sound means a gift landed, they start cheering on their own." },
+   { "title": "Put the ribbon colors to work", "cost": "Free", "body": "Have the MC read a few ribbon colors and the cancers they stand for right before the paddle raise. It ties Every Cancer, Every Life to real people in the room just before the ask." },
+   { "title": "Open the dance floor on purpose", "cost": "Free", "body": "One handoff line from the MC to the DJ, with the dancers starting on the same beat. A clear kickoff fills a floor faster than letting dinner drift into music." },
+   { "title": "Confirm the house feed on the walkthrough", "cost": "Free", "body": "A clean feed from the DJ mixer into the ballroom system, confirmed with Encore early, avoids last-minute patch fees and dead spots in a 450-person room." }
+  ],
+  "playbookClose": { "title": "Want help keeping everyone on cue?", "body": "Our Cue Sheet app keeps your event team, Encore, the auctioneer, and the DJ on one live run of show. It comes with our services." },
+  "labels": {
+   "songs": "Music",
+   "timeline": "Run of Show",
+   "songsHeading": "Music direction",
+   "songsNoun": "music direction",
+   "songsIntro": "Fill in what you know and leave the rest blank. Nothing is final until we lock the plan two weeks out, and you can update this as often as you like.",
+   "momentsHeading": "Key moments",
+   "requestsHeading": "Guest requests",
+   "songNotesPlaceholder": "Artists or eras your donors love, songs tied to the mission, anything to avoid",
+   "timelineHeading": "Gala run of show",
+   "timelineNoun": "run of show",
+   "momentNoun": "Moment",
+   "timelineIntro": "Our draft from the discovery call. Move times, rename moments, and delete what does not apply. We lock the final version two weeks out.",
+   "timelineNotesLabel": "Run of show notes",
+   "timelineNotesPlaceholder": "Auction items, paddle-raise levels, speakers, anything Encore needs to know"
+  },
+  "momentFields": [
+   { "key": "arrival", "label": "Arrival & Check-In", "hint": "6:00 to 6:45 PM in the foyer" },
+   { "key": "dinner", "label": "Dinner & Program Bed", "hint": "Low background under the program, if you want it" },
+   { "key": "auction", "label": "Live Auction Stings", "hint": "Sounds for bids and wins" },
+   { "key": "paddle", "label": "Paddle Raise Chime", "hint": "Hopeful cue for big gifts and thresholds" },
+   { "key": "danceOpen", "label": "Dance Floor Opener", "hint": "First song at 8:00 PM" },
+   { "key": "lastSong", "label": "Last Song", "hint": "Closing out at 10:00 PM" }
+  ],
+  "vibes": [
+   ["chill", "Clean and chill through dinner, energized on the dance floor"],
+   ["low", "Keep it low and elegant all night"],
+   ["nopref", "No preference, read the room and call it"]
+  ],
+  "requests": [
+   ["dj-first", "Take requests during the dance party, but the plan comes first"],
+   ["none", "No guest requests"],
+   ["open", "Open requests during the dance party"]
+  ],
+  "vendors": null,
+  "songSeed": {
+   "moments": { "arrival": "", "dinner": "", "auction": "", "paddle": "", "danceOpen": "", "lastSong": "" },
+   "mustPlay": [""],
+   "dontPlay": [""],
+   "playlist": "",
+   "vibe": "chill",
+   "guestRequests": "dj-first",
+   "notes": "Formal gala, 21+, primary audience 45+ (family foundations, corporate partners, individual donors). Theme: Every Cancer, Every Life."
+  },
+  "timelineSeed": {
+   "moments": [
+    { "time": "3:30 PM", "event": "Ampersound load-in through the main lobby, setup and soundcheck with Encore" },
+    { "time": "6:00 PM", "event": "Doors open, check-in and ribbons in the foyer, background music" },
+    { "time": "6:45 PM", "event": "Guests move into the ballroom and find their tables" },
+    { "time": "7:00 PM", "event": "MC welcome, dinner service begins" },
+    { "time": "7:20 PM", "event": "Live auction with bid and win stings" },
+    { "time": "7:40 PM", "event": "Mission Paddle Raise for Hope Lodge, threshold chimes" },
+    { "time": "8:00 PM", "event": "Dance party begins" },
+    { "time": "10:00 PM", "event": "Last song, event ends" },
+    { "time": "10:15 PM", "event": "Breakdown and load-out, off site well before 1:00 AM" }
+   ],
+   "notes": ""
+  },
+  "staffingOptions": null
+ };
+})();
+</script>
+<script src="/partner-docs/_assets/portal.js"></script>
+</body>
+</html>

@@ -5,6 +5,7 @@ const PREFIX='AMG_STRIPE_RECEIPT_V1:',SIGNED_MARK='Agreement signed digitally',P
 const PORTALS={
  'rose-josh':{email:'rose.josh.home@gmail.com',taskId:'86bct9jkz',linkId:'plink_1UVEajBKPpxdHQElGhLmUODv',amount:67500},
  'angela-joe':{email:'angelahussain99@gmail.com',taskId:'86bctjffd',linkId:'plink_1UVa9PBKPpxdHQEl78mAIESl',amount:63750},
+ 'acs-hope-gala':{email:'averiel.bailey@cancer.org',taskId:'86bcxhw1t',linkId:'plink_1UXmyCBKPpxdHQElLBL0g6ot',amount:82500},
  'jaylin-goines':{email:'jaylingoines131594@gmail.com',legacyBooked:true},'portal-test':{email:'signature-test@ampersoundmediagroup.com',taskId:'86bct9u1m',legacyBooked:true},
  'angelica-nathan':{email:'liffcakeparties@gmail.com',legacyBooked:true},'katie-ryan':{email:'ryan.nelson.jrn@gmail.com',legacyBooked:true},
  'jesse-zariah':{email:'jesseradike1@gmail.com',legacyBooked:true,installments:[{num:1,taskId:'86bb9b41r',amount:47813,legacyPaid:true},{num:2,taskId:'86bb9b41v',amount:47813,legacyPaid:true},{num:3,taskId:'86bb9b420',amount:47813},{num:4,taskId:'86bb9b426',amount:47811}]}
