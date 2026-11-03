@@ -118,7 +118,8 @@ function renderCard(a, badgeClass, badgeLabel) {
 
 function resetLookup(){document.getElementById('lookupCard').style.display='block';document.getElementById('resultsSection').classList.remove('visible');document.getElementById('resultsContainer').innerHTML='';document.getElementById('lookupEmail').value=''}
 document.getElementById('lookupEmail').addEventListener('keydown',e=>{if(e.key==='Enter')lookupAgreements()});
-if(new URLSearchParams(window.location.search).get('paid')==='true'){setTimeout(()=>alert('Payment received! Thank you. Your booking is confirmed.'),500);}
+// Query parameters are not verified payment evidence. Read status from the portal.
 </script>
+<script src="/form-accessibility.js"></script>
 </body>
 </html>
