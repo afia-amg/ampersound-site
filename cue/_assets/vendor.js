@@ -184,11 +184,42 @@
   // Alert sheet
   const scrim = document.querySelector('.scrim'), sheet = document.querySelector('.sheet');
   const text = sheet.querySelector('textarea'), send = sheet.querySelector('#send');
-  function openSheet() { scrim.classList.add('open'); sheet.classList.add('open'); sheet.removeAttribute('inert'); setTimeout(() => text.focus(), 250); }
-  function closeSheet() {
-    if (!scrim || !sheet) return;
-    scrim.classList.remove('open'); sheet.classList.remove('open'); sheet.setAttribute('inert', '');
+  let sheetOpener = null, backgroundState = [], sheetFocusTimer = null;
+  function openSheet() {
+    if (sheet.classList.contains('open')) return;
+    sheetOpener = document.activeElement;
+    // Make every sibling branch outside the dialog inert, preserving prior state.
+    backgroundState = [];
+    let branch = sheet;
+    while (branch.parentElement && branch.parentElement !== document.documentElement) {
+      Array.from(branch.parentElement.children).forEach((node) => {
+        if (node === branch || node === scrim || ['SCRIPT','STYLE','LINK'].includes(node.tagName)) return;
+        backgroundState.push([node, node.hasAttribute('inert')]); node.setAttribute('inert', '');
+      });
+      branch = branch.parentElement;
+      if (branch === document.body) break;
+    }
+    scrim.classList.add('open'); sheet.classList.add('open'); sheet.removeAttribute('inert');
+    sheetFocusTimer = setTimeout(() => { if (sheet.classList.contains('open')) text.focus(); }, 250);
   }
+  function closeSheet() {
+    if (!scrim || !sheet || !sheet.classList.contains('open')) return;
+    clearTimeout(sheetFocusTimer);
+    scrim.classList.remove('open'); sheet.classList.remove('open'); sheet.setAttribute('inert', '');
+    backgroundState.forEach(([node, wasInert]) => { if (!wasInert) node.removeAttribute('inert'); });
+    backgroundState = [];
+    if (sheetOpener && sheetOpener.isConnected) sheetOpener.focus();
+    else { const fallback = document.getElementById('alert'); if (fallback) fallback.focus(); }
+    sheetOpener = null;
+  }
+  sheet.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || !sheet.classList.contains('open')) return;
+    const targets = Array.from(sheet.querySelectorAll('button:not(:disabled),textarea:not(:disabled),input:not(:disabled),a[href],[tabindex="0"]')).filter((node) => node.getClientRects().length);
+    const first = targets[0], last = targets[targets.length - 1];
+    if (!first) { e.preventDefault(); return; }
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
   scrim.onclick = closeSheet;
   sheet.querySelector('.x').onclick = closeSheet;
   sheet.querySelectorAll('.seg button').forEach((b) => (b.onclick = () => {
