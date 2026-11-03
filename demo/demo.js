@@ -177,7 +177,7 @@
   function renderPlan() {
     $('daysLabel').textContent = s.daysOut === 0 ? "It's the wedding day" : `${s.daysOut} day${s.daysOut === 1 ? '' : 's'} to go`;
     $('milestones').innerHTML = milestones(s.daysOut).map((m) => `<li class="${m.state}">
-      <span class="when">${m.days >= 9999 ? 'Booked' : m.days === 0 ? 'Day of' : m.days + ' days out'}</span>
+      <span class="when">${m.days >= 9999 ? 'Booked' : m.days === 0 ? 'Day of' : m.days === 1 ? '1 day out' : m.days + ' days out'}</span>
       <span class="x"><b>${esc(m.title)}</b><small>${esc(m.detail)}</small></span>
       <span class="st">${m.state === 'done' ? '✓ Done' : m.state === 'next' ? 'Up next' : ''}</span></li>`).join('');
     const chips = (list, key) => list.map((x, i) => `<li><span>${esc(x)}</span><button type="button" data-key="rm-${key}-${i}" data-rm="${key}" data-i="${i}" aria-label="Remove ${esc(x)}">×</button></li>`).join('');
@@ -227,7 +227,7 @@
   }
   function phoneHTML(id, where) {
     const v = vendorView(s, id), me = v.vendor;
-    const head = `<header class="ph-top"><img src="https://lh3.googleusercontent.com/d/1EVb28hX3L68EwR2jVu7703wRA_3dN3co" alt=""><div><b>${esc(EVENT.couple)}</b><span>${esc(EVENT.dateLabel)}</span></div><span class="sync"><i class="dot live"></i>Live</span></header>`;
+    const head = `<header class="ph-top"><img src="https://lh3.googleusercontent.com/d/1EVb28hX3L68EwR2jVu7703wRA_3dN3co" alt=""><div><b>${esc(EVENT.couple)}</b><span>${esc(EVENT.dateLabel)}</span></div>${s.closed ? '<span class="sync"><i class="dot"></i>Wrapped</span>' : '<span class="sync"><i class="dot live"></i>Live</span>'}</header>`;
     if (s.closed) return head + `<section class="thanks"><p class="kicker live">${esc(EVENT.couple)}</p><p class="big">That's a wrap.</p>
       <p>Thank you, ${esc(me.name)}. Working beside you is what made the day run.</p>
       <p class="meta">If we earned it, a Google review helps a small team more than almost anything.</p>

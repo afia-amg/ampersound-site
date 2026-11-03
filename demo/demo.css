@@ -199,8 +199,8 @@ input[type=range]{width:100%;margin:0.75rem 0 1rem;accent-color:var(--gold);min-
 .cta .row .btn{width:auto;padding:0.75rem 1.5rem}
 
 .foot{text-align:center;color:var(--faint);font-size:0.875rem;padding:2rem 1.25rem 3rem}
-.toast{position:fixed;left:50%;bottom:1.25rem;transform:translate(-50%,150%);max-width:min(92vw,520px);padding:0.8rem 1.1rem;border-radius:12px;background:var(--raised);border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:0.9375rem;z-index:60;transition:transform 260ms cubic-bezier(.32,.72,0,1);pointer-events:none}
-.toast.show{transform:translate(-50%,0)}
+.toast{position:fixed;left:1rem;right:1rem;bottom:1.25rem;margin:0 auto;width:fit-content;max-width:520px;transform:translateY(160%);padding:0.8rem 1.1rem;border-radius:12px;background:var(--raised);border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:0.9375rem;z-index:60;transition:transform 260ms cubic-bezier(.32,.72,0,1);pointer-events:none}
+.toast.show{transform:none}
 
 @media (min-width:860px){
   .grid.two{grid-template-columns:1fr 1fr}
