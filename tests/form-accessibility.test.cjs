@@ -29,11 +29,12 @@ test('all signing entry points use the adapter and preserve their term consent c
   assert.match(read('partner-docs/_assets/portal.js'),/AMGForms.signature\(el\('sig'\),sigDirty\)/);
   assert.match(read('partner-docs/_assets/portal.js'),/!signature.ok\|\|name.length<2\|\|!agreed/);
 });
-test('shared portals load accessibility support before rendering interactive controls', () => {
-  for(const slug of ['angela-joe','angelica-nathan','jesse-zariah','jaylin-goines','katie-ryan','rose-josh','portal-test']) {
-    const src=read(`partner-docs/${slug}/index.html`);
-    assert.ok(src.indexOf('/form-accessibility.js')<src.indexOf('/partner-docs/_assets/portal.js'));
-  }
+test('shared portal startup waits for accessibility support before rendering controls', () => {
+  const src=read('partner-docs/_assets/portal.js');
+  assert.match(src,/function startPortal/);
+  assert.match(src,/support.src='\/form-accessibility.js'/);
+  assert.match(src,/support.onload=startPortal/);
+  assert.match(src,/document.head.appendChild\(support\);return;/);
 });
 test('labels, focus, live feedback and staffing navigation are provided without network effects', () => {
   const src=read('form-accessibility.js');new vm.Script(src);
