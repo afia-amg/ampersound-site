@@ -44,6 +44,7 @@
 var glow=document.getElementById('mouseGlow');document.addEventListener('mousemove',function(e){glow.classList.add('active');glow.style.left=e.clientX+'px';glow.style.top=e.clientY+'px';});document.addEventListener('mouseleave',function(){glow.classList.remove('active');});
 document.getElementById('testimonialForm').addEventListener('submit',async function(e){e.preventDefault();var formData=new FormData(this);var data=Object.fromEntries(formData.entries());try{var res=await fetch('/.netlify/functions/testimonial-submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(res.ok){document.getElementById('testimonial-form-wrap').style.display='none';document.getElementById('testimonialSuccess').classList.add('visible');}else{alert('Something went wrong. Please try again.');}}catch(err){alert('Connection error. Please try again.');}});
 </script>
+<script src="/form-accessibility.js"></script>
 </body>
 </html>
 

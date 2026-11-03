@@ -191,11 +191,12 @@ function toggleTerms(el){el.classList.toggle('open');el.nextElementSibling.class
 
 async function submitAgreement(){
   if(!document.getElementById('agreeTerms').checked){showStatus('Please agree to the terms before signing.');return;}
-  if(!hasSignature){sigWrap.style.borderColor='var(--error)';showStatus('Please sign the agreement above.');return;}
+  const signature=window.AMGForms ? AMGForms.signature(canvas,hasSignature) : {ok:hasSignature,image:canvas.toDataURL('image/png'),method:'drawn',name:''};
+  if(!signature.ok){showStatus('Please complete your chosen signature method above.');return;}
   sigWrap.style.borderColor='';
   const btn=document.getElementById('submitBtn');btn.classList.add('loading');btn.disabled=true;hideStatus();
   const d=agreementData;
-  const payload={...d,signedName:d.clientName,signedDate:new Date().toISOString().split('T')[0],signatureImage:canvas.toDataURL('image/png'),agreedToTerms:true,sendCopyToClient:true,token:d.token};
+  const payload={...d,signedName:signature.name||d.clientName,signatureMethod:signature.method,signedDate:new Date().toISOString().split('T')[0],signatureImage:signature.image,agreedToTerms:true,sendCopyToClient:true,token:d.token};
   try{
     const res=await fetch(SUBMIT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!res.ok)throw new Error('Submission failed');
@@ -215,5 +216,6 @@ async function submitAgreement(){
 function showStatus(msg){const el=document.getElementById('statusMsg');el.textContent=msg;el.className='status-msg error';}
 function hideStatus(){document.getElementById('statusMsg').className='status-msg';}
 </script>
+<script src="/form-accessibility.js"></script>
 </body>
 </html>

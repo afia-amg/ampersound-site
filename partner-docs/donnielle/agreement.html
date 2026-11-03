@@ -284,21 +284,29 @@ function clearSig(){ctx.clearRect(0,0,canvas.width,canvas.height);hasSig=false;s
 
 // Submit
 document.getElementById('signBtn').addEventListener('click',async function(){
-  if(!hasSig){sigWrap.style.borderColor='oklch(60% 0.2 25)';return}
+  var signature=window.AMGForms ? AMGForms.signature(canvas,hasSig) : {ok:hasSig,image:canvas.toDataURL('image/png'),method:'drawn',name:''};
+  if(!signature.ok)return;
   var btn=this;btn.disabled=true;btn.textContent='Processing...';
   try{
-    await fetch('/.netlify/functions/submit-agreement',{
+    var response=await fetch('/.netlify/functions/submit-agreement',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         type:'partner-agreement-signed',
         partnerName:'Donnielle Schroeder',
-        signatureImage:canvas.toDataURL('image/png'),
+        signatureImage:signature.image,
+        signatureMethod:signature.method,
+        signedName:signature.name||'Donnielle Schroeder',
+        agreedToTerms:true,
         dateSigned:new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),
         agreementTitle:'Service Exchange - Ampersound x Indigo Reimagined'
       })
     });
-  }catch(e){}
+    if(!response.ok)throw new Error('Signature was not accepted by the server.');
+  }catch(e){
+    if(window.AMGForms)AMGForms.mountSignature(canvas).error.textContent='Not filed. We could not save your signature. Please contact our team before retrying.';
+    btn.disabled=false;btn.textContent='Try signing again';return;
+  }
   document.getElementById('partnerSigDate').textContent='Signed: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   btn.style.display='none';
   document.querySelector('.sig-clear').style.display='none';
@@ -306,5 +314,6 @@ document.getElementById('signBtn').addEventListener('click',async function(){
   document.getElementById('signedMsg').classList.add('visible');
 });
 </script>
+<script src="/form-accessibility.js"></script>
 </body>
 </html>
