@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Synthetic accessibility test, no submissions</title>
+<style>body{background:#0f1114;color:#f0ebe4;font:16px sans-serif;max-width:650px;margin:30px auto;padding:20px}button,input{padding:12px;margin:8px}canvas{width:100%;height:140px;border:1px solid #888}.opt{padding:16px;border:1px solid #888}.opt[aria-checked=true]{border:3px solid gold}.svc-check input{opacity:0;position:absolute}.svc-check label{display:block;padding:12px}</style></head><body>
+<h1>Synthetic test only</h1><p>No client data. No requests or real submissions.</p>
+<div class="form-group"><label>Test name</label><input name="name"></div>
+<div class="svc-check"><input id="check" type="checkbox"><label for="check">Test service</label></div>
+<div role="radiogroup" aria-label="Test staffing"><div class="opt" data-opt="one" role="radio" tabindex="0" aria-checked="true">Option one</div><div class="opt" data-opt="two" role="radio" tabindex="-1" aria-checked="false">Option two</div></div>
+<div><canvas id="sig"></canvas><button id="clear" type="button">Clear drawing</button></div>
+<button id="validate" type="button">Validate synthetic signature locally</button><div id="signMsg"></div>
+<button id="testError" type="button">Show synthetic planning error</button><div id="songsMsg"></div>
+<script src="/form-accessibility.js"></script>
+<script>
+document.querySelectorAll('[data-opt]').forEach(function(r){r.onclick=function(){document.querySelectorAll('[data-opt]').forEach(function(x){x.setAttribute('aria-checked',String(x===r));});};});
+document.getElementById('validate').onclick=function(){var result=AMGForms.signature(document.getElementById('sig'),false);document.getElementById('signMsg').textContent=result.ok?'Synthetic signature validation passed locally. Nothing sent.':'Incomplete synthetic input. Nothing sent.';};
+document.getElementById('testError').onclick=function(){document.getElementById('songsMsg').innerHTML='<div class="banner bad">Synthetic error: nothing was submitted.</div>';};
+document.getElementById('clear').onclick=function(){var cv=document.getElementById('sig');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);};
+</script>
+</body></html>
