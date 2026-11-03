@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1114">
+<title>See How We Work · Ampersound Media Group</title>
+<meta name="description" content="Click through a sample wedding with Ampersound Media Group: booking, planning, a live show-day timeline for every vendor, and a proper close out.">
+<meta property="og:title" content="See How We Work · Ampersound Media Group">
+<meta property="og:description" content="A hands-on demo of how we keep every event organized, from first call to last song.">
+<link rel="icon" href="https://lh3.googleusercontent.com/d/1Uz1btQc6SB1x1d1vcKD-9xF0aTwBB4XC" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/demo/demo.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the demo</a>
+<header class="site">
+  <a href="/" class="home"><img src="https://lh3.googleusercontent.com/d/1EVb28hX3L68EwR2jVu7703wRA_3dN3co" alt="Ampersound Media Group home"></a>
+  <span class="pill">Interactive demo</span>
+  <a class="btn sm" href="https://scheduler.zoom.us/afia-chin-roberts/discovery-meeting-with-ampersound-media-group">Book a discovery call</a>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <p class="kicker live">See how we work</p>
+    <h1>From first call to last song, it all lives in one place.</h1>
+    <p class="lede">Click through a sample wedding the way our couples and vendors see it. Everything here is pretend, so tap anything.</p>
+    <p class="event"><b>Ava &amp; Marcus</b><span>Sat, Jun 12, 2027 · Red Butte Garden, SLC</span></p>
+  </section>
+
+  <div class="chapters" role="tablist" aria-label="Demo steps">
+    <button role="tab" id="tab-book" aria-controls="ch-book" aria-selected="true" tabindex="0"><span>1</span>Book</button>
+    <button role="tab" id="tab-plan" aria-controls="ch-plan" aria-selected="false" tabindex="-1"><span>2</span>Plan</button>
+    <button role="tab" id="tab-show" aria-controls="ch-show" aria-selected="false" tabindex="-1"><span>3</span>Show day</button>
+    <button role="tab" id="tab-wrap" aria-controls="ch-wrap" aria-selected="false" tabindex="-1"><span>4</span>Wrap</button>
+  </div>
+
+  <!-- 1. Book -->
+  <section class="chapter" id="ch-book" role="tabpanel" aria-labelledby="tab-book" tabindex="-1">
+    <div class="ch-head">
+      <h2>Your portal opens the day you say yes.</h2>
+      <p>Your proposal, agreement, and deposit live on one private page. Sign on your phone, pay securely, and always see where things stand.</p>
+    </div>
+    <div class="grid two">
+      <article class="card">
+        <p class="kicker">Sample proposal</p>
+        <h3>Ava &amp; Marcus</h3>
+        <dl class="rows">
+          <div><dt>Event</dt><dd>Wedding · Sat, Jun 12, 2027</dd></div>
+          <div><dt>Venue</dt><dd>Red Butte Garden, SLC</dd></div>
+          <div><dt>Package</dt><dd>Signature</dd></div>
+          <div><dt>Travel</dt><dd>Under 50 miles. No travel fee.</dd></div>
+          <div class="total"><dt>Total</dt><dd>$2,250</dd></div>
+          <div><dt>Deposit</dt><dd>$1,125 (50%, nonrefundable)</dd></div>
+          <div><dt>Balance</dt><dd>Due 14 days before the wedding</dd></div>
+        </dl>
+      </article>
+      <article class="card">
+        <div class="progress-head"><h3>Booking checklist</h3><span id="bookCount" class="meta">1 of 4 done</span></div>
+        <div class="bar" aria-hidden="true"><i id="bookBar"></i></div>
+        <ol class="steps">
+          <li class="done"><b>Review your proposal</b><span class="meta">Opened on any device, no account needed.</span></li>
+          <li id="stepSign">
+            <b>Sign the agreement</b>
+            <div id="signForm" class="stack">
+              <label for="signName">Type your full name to sign</label>
+              <input id="signName" type="text" autocomplete="off" placeholder="Ava Bennett">
+              <label class="check"><input id="signConsent" type="checkbox"> I intend this typed name as my signature. <em>(Demo only, nothing is signed.)</em></label>
+              <div id="signErr" class="err" role="alert"></div>
+              <button class="btn" type="button" id="signBtn">Sign (demo)</button>
+            </div>
+            <p id="signDone" class="ok" hidden></p>
+          </li>
+          <li id="stepPay">
+            <b>Pay your deposit</b>
+            <button class="btn" type="button" id="payBtn" disabled>Pay $1,125 deposit (demo)</button>
+            <p id="payHint" class="meta">Sign first. Real payments run through our secure Stripe checkout.</p>
+            <p id="payDone" class="ok" hidden>Deposit received. Demo only, no charge.</p>
+          </li>
+          <li id="stepPlan"><b>Start planning</b><button class="btn ghost" type="button" data-goto="plan">Go to planning →</button></li>
+        </ol>
+        <p class="note">Every answer and signature saves to your file, so you can pick up on any device.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- 2. Plan -->
+  <section class="chapter" id="ch-plan" role="tabpanel" aria-labelledby="tab-plan" tabindex="-1" hidden>
+    <div class="ch-head">
+      <h2>Planning, minus the spreadsheet chaos.</h2>
+      <p>Music, timeline, and vendor details go in one place. We keep the deadlines, so you don't have to.</p>
+    </div>
+    <article class="card">
+      <div class="progress-head"><h3>The countdown</h3><output id="daysLabel" for="days" class="days">120 days to go</output></div>
+      <label for="days" class="meta">Slide toward the wedding to watch what gets handled, and when.</label>
+      <input id="days" type="range" min="0" max="120" step="1" value="120">
+      <ol class="milestones" id="milestones"></ol>
+    </article>
+    <div class="grid two">
+      <article class="card">
+        <h3>Music</h3>
+        <p class="meta">Add a song to either list. Try it.</p>
+        <div class="add">
+          <label for="song" class="sr">Song and artist</label>
+          <input id="song" type="text" autocomplete="off" placeholder="Song · Artist">
+          <label for="songList" class="sr">Which list</label>
+          <select id="songList"><option value="must">Must play</option><option value="dont">Please don't play</option></select>
+          <button class="btn sm" type="button" id="songAdd">Add</button>
+        </div>
+        <div id="songErr" class="err" role="alert"></div>
+        <p class="label">Must play</p><ul class="chips" id="mustList"></ul>
+        <p class="label">Please don't play</p><ul class="chips no" id="dontList"></ul>
+      </article>
+      <article class="card">
+        <h3>Your timeline</h3>
+        <ol class="list compact" id="planTimeline"></ol>
+        <button class="btn" type="button" id="approveBtn">Approve timeline (demo)</button>
+        <p id="approveDone" class="ok" hidden>Approved and locked. Next, we load it into every vendor's live link.</p>
+        <button class="btn ghost" type="button" data-goto="show">Next: show day →</button>
+      </article>
+    </div>
+  </section>
+
+  <!-- 3. Show day -->
+  <section class="chapter" id="ch-show" role="tabpanel" aria-labelledby="tab-show" tabindex="-1" hidden>
+    <div class="ch-head">
+      <h2>One timeline. Every vendor. Live.</h2>
+      <p>We call each moment from our console. Every vendor's phone updates in seconds and shows only what involves them. No app, no login.</p>
+    </div>
+    <div class="show">
+      <article class="card console" aria-labelledby="consoleTitle">
+        <div class="progress-head"><h3 id="consoleTitle"><i class="dot live"></i> Coordinator console</h3><span class="meta">What we see</span></div>
+        <div id="consoleNow"></div>
+        <button class="btn go" type="button" id="goBtn"></button>
+        <button class="btn ghost sm" type="button" id="undoBtn">Undo last GO</button>
+
+        <div class="progress-head sub"><h4>Vendors</h4><span id="hereCount" class="meta"></span></div>
+        <ul class="vendors" id="vendorGrid"></ul>
+        <button class="btn ghost sm" type="button" id="arrivals">Simulate vendor arrivals</button>
+
+        <h4 class="sub">Alerts from vendors</h4>
+        <ul class="alerts" id="consoleAlerts"></ul>
+
+        <h4 class="sub"><label for="bcText">Message everyone</label></h4>
+        <textarea id="bcText" rows="2">Grand entrance in 10. Please head to the ballroom.</textarea>
+        <button class="btn sm" type="button" id="bcSend">Send to every vendor</button>
+        <ul class="alerts" id="consoleBroadcasts"></ul>
+      </article>
+
+      <div class="phone-col">
+        <label for="viewAs" class="meta">See a vendor's phone</label>
+        <select id="viewAs">
+          <option value="photo">Lumen &amp; Lace Photo · Photography</option>
+          <option value="catering">Copper Table Catering · Catering</option>
+          <option value="officiant">Rev. Dana Ellis · Officiant</option>
+        </select>
+        <div class="phone" aria-label="Vendor phone preview" role="region">
+          <div class="screen" id="phoneShow"></div>
+          <div class="phone-alert" id="phoneAlertWrap">
+            <button class="btn ghost" type="button" id="alertToggle" aria-expanded="false" aria-controls="alertForm">📣 Send alert</button>
+            <div id="alertForm" class="stack" hidden>
+              <label for="alertText">What's going on?</label>
+              <textarea id="alertText" rows="2">Running 5 min behind on family photos.</textarea>
+              <button class="btn" type="button" id="alertSend">Send to coordinator</button>
+            </div>
+          </div>
+        </div>
+        <p class="meta center">If signal drops, the phone keeps a saved copy.</p>
+      </div>
+    </div>
+    <button class="btn ghost next" type="button" data-goto="wrap">Next: wrap →</button>
+  </section>
+
+  <!-- 4. Wrap -->
+  <section class="chapter" id="ch-wrap" role="tabpanel" aria-labelledby="tab-wrap" tabindex="-1" hidden>
+    <div class="ch-head">
+      <h2>We close it out properly.</h2>
+      <p>When the last song ends, we close the show. Vendors get a thank-you, and your whole event stays on file.</p>
+    </div>
+    <div class="show">
+      <article class="card">
+        <h3>Close out the show</h3>
+        <ul class="gates" id="gates"></ul>
+        <div id="closeErr" class="err" role="alert"></div>
+        <button class="btn" type="button" id="closeBtn">Close out (demo)</button>
+        <p id="closeDone" class="ok" hidden>Closed out. Every vendor now sees a thank-you, and their links turn off in 30 days.</p>
+        <ul class="facts">
+          <li>Your agreement, payments, music, and timeline stay together in one file.</li>
+          <li>Nothing gets lost in a text thread, because nothing lived there to begin with.</li>
+        </ul>
+      </article>
+      <div class="phone-col">
+        <p class="meta" id="wrapPhoneLabel"></p>
+        <div class="phone" aria-label="Vendor phone after close out" role="region"><div class="screen" id="phoneWrap"></div></div>
+      </div>
+    </div>
+    <section class="cta">
+      <h2>Ready to plan yours?</h2>
+      <p>Every event we book runs this way.</p>
+      <div class="row">
+        <a class="btn" href="https://scheduler.zoom.us/afia-chin-roberts/discovery-meeting-with-ampersound-media-group">Book a discovery call</a>
+        <a class="btn ghost" href="/intake">Tell us about your event</a>
+      </div>
+      <button class="link" type="button" id="restart">Restart the demo</button>
+    </section>
+  </section>
+</main>
+
+<footer class="foot">Demo with a sample couple and made-up vendors. Nothing you do here is saved or sent.<br>Ampersound Media Group · Sound. Presence. Atmosphere.</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/demo/demo.js" defer></script>
+</body>
+</html>
