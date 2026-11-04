@@ -229,3 +229,27 @@ textarea:focus,input:focus{border-color:var(--gold)}
 .tally b{font-family:var(--head);font-weight:800;font-size:2.4rem;line-height:1;color:var(--gold-text);font-variant-numeric:tabular-nums}
 .tally span{color:var(--dim)}
 .wraplist li{padding:0.45rem 0.6rem}
+
+/* Vendor messaging, the event team list, and DJ song cues */
+.sheet .to{display:flex;align-items:center;gap:0.6rem;font-size:0.875rem;color:var(--faint)}
+.sheet select{flex:1;min-width:0;min-height:48px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:0 0.75rem;font:inherit;font-size:1rem;outline:none}
+.sheet select:focus{border-color:var(--gold)}
+.sheet .seg[hidden]{display:none}
+.team{list-style:none;display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.5rem}
+.team li{background:var(--surface);border-radius:12px;padding:0.8rem 0.9rem;display:flex;flex-direction:column;gap:0.55rem}
+.team .who b{display:block;font-family:var(--head);font-weight:600}
+.team .who small{color:var(--faint);font-size:0.875rem}
+.team .acts{display:flex;flex-wrap:wrap;gap:0.4rem}
+.chip{display:inline-flex;align-items:center;gap:0.3rem;min-height:40px;padding:0 0.8rem;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--text);font:inherit;font-size:0.875rem;text-decoration:none;cursor:pointer}
+.chip:hover{background:var(--raised)}
+.music{margin-top:0.35rem;display:flex;flex-direction:column;gap:0.15rem;font-size:0.875rem;color:var(--gold-text)}
+.music span{color:var(--faint)}
+.music b{font-weight:600;color:var(--text)}
+.playlist details{margin-top:0.6rem;border-top:1px solid var(--line);padding-top:0.6rem}
+.playlist summary{cursor:pointer;font-weight:600;min-height:32px}
+.playlist ul{margin:0.4rem 0 0 1.1rem;color:var(--dim);font-size:0.9375rem}
+.thanks .team{align-self:stretch}
+.card.msg .row2{margin-top:0.2rem}
+.card.msg .row2 .btn{min-height:48px}
+.sched .song{color:var(--gold-text)!important}
+.sched .song b{color:var(--text);font-weight:600}

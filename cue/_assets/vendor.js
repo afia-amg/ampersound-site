@@ -10,10 +10,37 @@
   let seenMsgs = null; const marking = new Set();
   const doneKey = `cue:${slug}:${code}:checkin`, lastKey = `cue:${slug}:${code}:last`;
 
+  const nameOf = (id) => ((data && data.team) || []).find((x) => x.id === id)?.name || 'a vendor';
   function localCheckin(session) {
     try { const c = JSON.parse(store.get(doneKey) || 'null'); return c && c.session === session ? c : null; } catch (_) { return null; }
   }
-  // After close out: a thank-you and the Google review link. Nothing else to do.
+  // The event team: whatever each vendor agreed to share. Tap to call, text, email, or message them here.
+  function teamHTML(list, canMessage) {
+    if (!list || !list.length) return '';
+    return `<ul class="team">${list.map((x) => {
+      const c = x.card || {};
+      const acts = [
+        c.phone ? `<a class="chip" href="tel:${esc(c.phone)}" aria-label="Call ${esc(x.name)}">📞 Call</a>` : '',
+        c.phone ? `<a class="chip" href="sms:${esc(c.phone)}" aria-label="Text ${esc(x.name)}">💬 Text</a>` : '',
+        c.email ? `<a class="chip" href="mailto:${esc(c.email)}" aria-label="Email ${esc(x.name)}">✉️ Email</a>` : '',
+        c.instagram ? `<a class="chip" href="https://instagram.com/${esc(c.instagram)}" target="_blank" rel="noopener" aria-label="${esc(x.name)} on Instagram">@${esc(c.instagram)}</a>` : '',
+        c.website ? `<a class="chip" href="${esc(c.website)}" target="_blank" rel="noopener" aria-label="${esc(x.name)} website">🌐 Site</a>` : '',
+        canMessage ? `<button class="chip" type="button" data-msg="${esc(x.id)}" aria-label="Message ${esc(x.name)} here">✍️ Message</button>` : '',
+      ].join('');
+      return `<li><div class="who"><b>${esc(x.name)}</b><small>${esc(x.role)}${c.person ? ' · ' + esc(c.person) : ''}${c.phoneLabel ? ' · ' + esc(c.phoneLabel) : ''}</small></div>${acts ? `<div class="acts">${acts}</div>` : ''}${!x.card ? '<small class="meta">Contact details not shared</small>' : ''}</li>`;
+    }).join('')}</ul>`;
+  }
+  const musicHTML = (m) => (m && m.music && m.music.length ? `<div class="music">${m.music.map((x) => `<div>🎵 <span>${esc(x.label)}:</span> <b>${esc(x.song)}</b></div>`).join('')}</div>` : '');
+  function playlistHTML(pl) {
+    if (!pl) return '';
+    const lists = [['Must play', pl.mustPlay], ['Do not play', pl.dontPlay]].filter(([, a]) => a && a.length);
+    return `<section class="card playlist"><div class="kicker live">🎧 The couple's music</div>
+      ${pl.url ? `<a class="btn ghost" href="${esc(pl.url)}" target="_blank" rel="noopener" style="margin-top:0.6rem">Open their playlist</a>` : ''}
+      ${pl.vibe ? `<p class="note">Vibe: ${esc(pl.vibe)}</p>` : ''}
+      ${lists.map(([t, a]) => `<details><summary>${t} · ${a.length}</summary><ul>${a.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>`).join('')}
+      ${pl.notes ? `<p class="note">${esc(pl.notes)}</p>` : ''}</section>`;
+  }
+  // After close out: a thank-you, the Google review link, and the team so everyone can keep in touch.
   function renderClosed() {
     const ev = data.event, v = data.vendor, r = data.review || {};
     app.innerHTML = `<section class="thanks">
@@ -24,6 +51,7 @@
         <p class="ask">If we earned it, a Google review helps a small team more than almost anything. It takes a minute.</p>
         <a class="btn" id="review" href="${esc(r.url)}" target="_blank" rel="noopener">⭐ Leave us a Google review</a>
         ${r.tapped ? '<p class="meta done">Thank you! If the review page didn\'t open, tap the button again.</p>' : ''}
+        ${data.team && data.team.length ? `<div class="label" style="margin-top:1rem">Keep in touch with the team</div>${teamHTML(data.team, false)}` : ''}
         <p class="foot">From Afia &amp; Adam · Ampersound Media Group<br>Sound. Presence. Atmosphere.</p>
       </section>`;
     // Count the tap, but never block the link on it: the review page opens either way.
@@ -41,7 +69,7 @@
     const now = showNow(s, ev.tz, skew);
     const ordered = moments.slice().sort((a, b) => a.time - b.time);
     const live = ordered.filter((m) => stateOf(m, s) === 'live').sort((a, b) => (s.calls[b.id].seq || s.calls[b.id].at) - (s.calls[a.id].seq || s.calls[a.id].at))[0] || null;
-    const mine = ordered.filter((m) => (m.vendors || []).includes(v.id));
+    const mine = ordered.filter((m) => (m.vendors || []).includes(v.id) || (m.music && m.music.length));
     const myLive = mine.find((m) => stateOf(m, s) === 'live');
     const myNext = mine.find((m) => stateOf(m, s) === 'pending');
     const hero = myLive || myNext;
@@ -65,9 +93,9 @@
       ${stale ? `<div class="banner" role="alert">${savedCopy ? 'No signal. This is your saved copy' : 'No signal since ' + esc(at(lastOk, ev.tz))}. Times may be out of date. If anything feels off, call ${esc(ev.coordinator.name)}.</div>` : ''}
       ${waiting.length ? `<div class="banner" role="alert">🚨 ${esc(ev.coordinator.name)} hasn't seen your urgent alert yet. ${ev.coordinator.phone ? `<a href="tel:${esc(ev.coordinator.phone)}"><b>Call now</b></a>` : '<b>Find them in person now.</b>'}</div>` : ''}
       ${fresh.map((b) => `<section class="card msg ${b.level === 'urgent' ? 'urgent' : ''}" role="alert">
-        <div class="kicker">${b.level === 'urgent' ? '🚨 Urgent' : b.direct ? '💬 Just for you' : '📢 To everyone'}${b.level === 'urgent' && b.direct ? ' · Just for you' : ''} · Coordinator · ${fmt(b.show)}</div>
+        <div class="kicker">${b.level === 'urgent' ? '🚨 Urgent' : b.direct ? '💬 Just for you' : '📢 To everyone'}${b.level === 'urgent' && b.direct ? ' · Just for you' : ''} · ${b.from ? 'From ' + esc(b.by) : 'Coordinator'} · ${fmt(b.show)}</div>
         <div class="msg-text">${esc(b.text)}</div>
-        <button class="btn" type="button" data-gotit="${esc(b.id)}" ${stale || marking.has(b.id) ? 'disabled' : ''}>${marking.has(b.id) ? 'Sending…' : 'Got it'}</button>
+        <div class="${b.from ? 'row2' : ''}"><button class="btn" type="button" data-gotit="${esc(b.id)}" ${stale || marking.has(b.id) ? 'disabled' : ''}>${marking.has(b.id) ? 'Sending…' : 'Got it'}</button>${b.from ? `<button class="btn ghost" type="button" data-msg="${esc(b.from)}">Reply</button>` : ''}</div>
       </section>`).join('')}
       <h1 class="hi">Hi, ${esc(v.name)}</h1>
       ${checked
@@ -83,23 +111,28 @@
         ${hero ? `<div class="meta">${when(hero)}${hero.location ? ' · ' + esc(hero.location) : ''}${myLive && now != null ? ' · ' + timeLeft(myLive, s, now) : ''}</div>` : ''}
         ${hero && !myLive && lateBy ? `<div class="note">${lateBy > 0 ? `Running about ${lateBy} min behind.` : `Running about ${-lateBy} min ahead.`} Times below are adjusted.</div>` : ''}
         ${hero && hero.notes ? `<div class="note">${esc(hero.notes)}</div>` : ''}
+        ${musicHTML(hero)}
       </section>
       <div class="nowline"><i class="dot ${live ? 'live' : ''}"></i><span>At the event now:</span><b>${esc(live ? live.title : 'Starting soon')}</b></div>
       <div class="label">Your day</div>
       <ol class="list">
-        ${mine.map((m) => { const st = stateOf(m, s); return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : ''}"><span class="t">${when(m)}</span><span class="x">${esc(m.title)}<small>${esc(m.location || '')}</small></span>${st === 'done' ? '✓' : ''}</li>`; }).join('')}
+        ${mine.map((m) => { const st = stateOf(m, s); return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : ''}"><span class="t">${when(m)}</span><span class="x">${esc(m.title)}<small>${esc(m.location || '')}</small>${musicHTML(m)}</span>${st === 'done' ? '✓' : ''}</li>`; }).join('')}
       </ol>
       ${alerts.length ? `<div class="label">Your alerts</div><ul class="alerts">${alerts.map((a) => `<li><i class="dot ${a.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(a.text)}</div><small>${fmt(a.show)} · <span class="st ${a.resolved ? 'ok' : a.ack ? '' : 'new'}">${a.resolved ? 'Resolved' : a.ack ? 'Seen by ' + esc(ev.coordinator.name) : 'Not seen yet'}</span></small></div></li>`).join('')}</ul>` : ''}
-      ${read.length ? `<div class="label">Messages from the coordinator</div><ul class="alerts">${read.map((b) => `<li><i class="dot ${b.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(b.text)}</div><small>${b.direct ? 'Just for you · ' : ''}${fmt(b.show)} · <span class="st ok">✓ Got it</span></small></div></li>`).join('')}</ul>` : ''}
+      ${read.length ? `<div class="label">Messages from the coordinator</div><ul class="alerts">${read.map((b) => `<li><i class="dot ${b.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(b.text)}</div><small>${b.from ? 'From ' + esc(b.by) + ' · ' : ''}${b.direct ? 'Just for you · ' : ''}${fmt(b.show)} · <span class="st ok">✓ Got it</span></small></div></li>`).join('')}</ul>` : ''}
+      ${(data.sent || []).length ? `<div class="label">Messages you sent</div><ul class="alerts">${data.sent.map((b) => `<li><i class="dot"></i><div class="x"><div>${esc(b.text)}</div><small>To ${esc(b.to ? nameOf(b.to) : 'everyone')} · ${fmt(b.show)} · <span class="st ${b.gotIt ? 'ok' : ''}">${b.to ? (b.gotIt ? '✓ Got it' : 'Not seen yet') : b.gotIt + ' got it'}</span></small></div></li>`).join('')}</ul>` : ''}
+      ${data.music ? playlistHTML(data.playlist) : ''}
       <div class="${ev.coordinator.phone ? 'row2' : ''}" style="margin-top:1rem">
-        <button class="btn ghost" id="alert" type="button" ${stale ? 'disabled' : ''}>📣 Send alert</button>
+        <button class="btn ghost" id="alert" type="button" ${stale ? 'disabled' : ''}>💬 Send a message</button>
         ${ev.coordinator.phone ? `<a class="btn ghost" href="tel:${esc(ev.coordinator.phone)}">📞 Call ${esc(ev.coordinator.name)}</a>` : ''}
       </div>
-      <p class="foot">No account needed. Urgent? Send the alert${ev.coordinator.phone ? ' and call' : ''}.<br>Point of contact: ${esc(ev.coordinator.name)}${ev.coordinator.phoneLabel ? ' · ' + esc(ev.coordinator.phoneLabel) : ''}</p>`;
+      ${data.team && data.team.length ? `<div class="label" style="margin-top:1.25rem">Event team</div>${teamHTML(data.team, !stale)}` : ''}
+      <p class="foot">No account needed. Urgent? Message ${esc(ev.coordinator.name)}${ev.coordinator.phone ? ' and call' : ''}.<br>Point of contact: ${esc(ev.coordinator.name)}${ev.coordinator.phoneLabel ? ' · ' + esc(ev.coordinator.phoneLabel) : ''}<br>Messages between vendors are visible to ${esc(ev.coordinator.name)}.</p>`;
 
     const ci = document.getElementById('checkin');
     if (ci) ci.onclick = checkIn;
-    document.getElementById('alert').onclick = openSheet;
+    document.getElementById('alert').onclick = () => openSheet('coordinator');
+    app.querySelectorAll('[data-msg]').forEach((b) => (b.onclick = () => openSheet(b.dataset.msg)));
     app.querySelectorAll('[data-gotit]').forEach((b) => (b.onclick = () => gotIt(b.dataset.gotit)));
   }
   async function gotIt(id) {
@@ -184,9 +217,26 @@
   // Alert sheet
   const scrim = document.querySelector('.scrim'), sheet = document.querySelector('.sheet');
   const text = sheet.querySelector('textarea'), send = sheet.querySelector('#send');
+  const toSel = sheet.querySelector('#msgTo'), seg = sheet.querySelector('.seg'), note = sheet.querySelector('#msgNote');
+  let target = 'coordinator';
+  function targetName() { return target === 'coordinator' ? (data ? data.event.coordinator.name : 'the coordinator') : target === 'all' ? 'everyone' : nameOf(target); }
+  function syncSheet() {
+    const coordinator = target === 'coordinator';
+    seg.hidden = !coordinator;
+    if (!coordinator) { level = 'note'; sheet.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.level === 'note'))); }
+    note.textContent = coordinator ? 'Urgent pings them right away. If it is an emergency, also call.' : `${target === 'all' ? 'Every vendor' : nameOf(target)} sees it on their page. ${data ? data.event.coordinator.name : 'The coordinator'} can see it too.`;
+    if (!sending) send.textContent = 'Send to ' + targetName();
+  }
+  toSel.onchange = () => { target = toSel.value; syncSheet(); };
   let sheetOpener = null, backgroundState = [], sheetFocusTimer = null;
-  function openSheet() {
+  function openSheet(to) {
     if (sheet.classList.contains('open')) return;
+    if (!data || data.closed) return;
+    const team = data.team || [];
+    toSel.innerHTML = `<option value="coordinator">${esc(data.event.coordinator.name)} (point of contact)</option><option value="all">Everyone on the team</option>`
+      + team.map((x) => `<option value="${esc(x.id)}">${esc(x.name)} · ${esc(x.role)}</option>`).join('');
+    target = to && (to === 'all' || to === 'coordinator' || team.some((x) => x.id === to)) ? to : 'coordinator';
+    toSel.value = target; syncSheet();
     sheetOpener = document.activeElement;
     // Make every sibling branch outside the dialog inert, preserving prior state.
     backgroundState = [];
@@ -200,7 +250,7 @@
       if (branch === document.body) break;
     }
     scrim.classList.add('open'); sheet.classList.add('open'); sheet.removeAttribute('inert');
-    sheetFocusTimer = setTimeout(() => { if (sheet.classList.contains('open')) text.focus(); }, 250);
+    sheetFocusTimer = setTimeout(() => { if (sheet.classList.contains('open')) (to ? text : toSel).focus(); }, 250);
   }
   function closeSheet() {
     if (!scrim || !sheet || !sheet.classList.contains('open')) return;
@@ -214,7 +264,7 @@
   }
   sheet.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab' || !sheet.classList.contains('open')) return;
-    const targets = Array.from(sheet.querySelectorAll('button:not(:disabled),textarea:not(:disabled),input:not(:disabled),a[href],[tabindex="0"]')).filter((node) => node.getClientRects().length);
+    const targets = Array.from(sheet.querySelectorAll('button:not(:disabled),select:not(:disabled),textarea:not(:disabled),input:not(:disabled),a[href],[tabindex="0"]')).filter((node) => node.getClientRects().length);
     const first = targets[0], last = targets[targets.length - 1];
     if (!first) { e.preventDefault(); return; }
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -231,15 +281,16 @@
     const msg = text.value.trim();
     if (!msg) return;
     sending = true; send.disabled = true; send.textContent = 'Sending…';
+    const who = targetName(), toCoordinator = target === 'coordinator';
     try {
-      await call(null, { e: slug, t: code, action: 'alert', text: msg, level });
+      await call(null, toCoordinator ? { e: slug, t: code, action: 'alert', text: msg, level } : { e: slug, t: code, action: 'message', to: target, text: msg });
       text.value = ''; closeSheet();
-      toast(level === 'urgent' ? 'Sent. Not seen yet. If it is an emergency, call now.' : "Sent. You'll see when it's been read.");
+      toast(toCoordinator ? (level === 'urgent' ? 'Sent. Not seen yet. If it is an emergency, call now.' : "Sent. You'll see when it's been read.") : `Sent to ${who}.`);
       if (refresh) refresh();
     } catch (e) {
-      toast("Didn't send. Your message is still there. Try again or call.");
+      toast(e.status === 429 ? e.message : "Didn't send. Your message is still there. Try again or call.");
     } finally {
-      sending = false; send.textContent = 'Send to coordinator'; send.disabled = !text.value.trim();
+      sending = false; send.disabled = !text.value.trim(); syncSheet();
     }
   };
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
