@@ -35,10 +35,11 @@
   special: [
    { title: "Venue AV & Lighting", body: "Ampersound coordinates directly with Encore, the Hyatt's in-house AV provider, on power, amplification, and house sound integration. Lighting and any Encore fees for patching, power, or equipment rental are not included in this agreement and are billed only with Client's written approval in advance." },
    { title: "Venue Walkthrough", body: "A walkthrough of the Hyatt Regency Salt Lake City with Client and Encore before the event is included at no additional charge." },
-   { title: "ACS Vendor Onboarding", body: "Ampersound will complete the American Cancer Society's vendor onboarding through Coupa and iContract. If Client's legal team requires its own vendor agreement, the fee, deposit, balance, scope, and cancellation terms in this agreement carry over into it. The deposit and balance may be paid by direct deposit or check through Client's vendor system in place of the Stripe link." }
+   { title: "ACS Vendor Onboarding", body: "Ampersound will complete the American Cancer Society's vendor onboarding through Coupa and iContract. If Client's legal team requires its own vendor agreement, the fee, deposit, balance, scope, and cancellation terms in this agreement carry over into it. Ampersound invoices the deposit and the balance, and Client pays them by ACH (direct deposit) through its vendor system." }
   ]
  });
  agreement.clauses = agreement.clauses.map(function (c) {
+  if (c.title === "Payment Method") return { title: c.title, body: "Ampersound invoices the deposit and the balance. Payment is made by ACH (direct deposit) through Client's vendor system, and check is also accepted. Ampersound's full remittance details appear on each invoice and in its Coupa supplier profile, and Ampersound will never change its banking details by email alone." };
   if (c.title === "Travel") return { title: c.title, body: "No travel fee applies. The Hyatt Regency Salt Lake City is within 50 miles of Salt Lake City." };
   if (c.title === "Timeline & Coordination") return { title: c.title, body: "This is a DJ-only engagement. Client's MC and auctioneer lead the program, and Ampersound does not provide MC or event planning services. Ampersound follows Client's run of show and takes cues from Client's day-of contact. The final run of show is locked 14 days before the event and shared with Encore and key vendors." };
   return c;
@@ -103,7 +104,7 @@
    "callUrl": "mailto:afia@ampersoundmediagroup.com?subject=Hope%20Gala%202027%20quote"
   },
   "agreement": agreement,
-  "paymentLink": "https://buy.stripe.com/cNi8wO67fe07cvkgHFbwk0c",
+  "paymentLink": "#",
   "footnote": "Quote valid for 30 days. Lighting and any Encore fees are separate and only billed with your written approval.",
   "playbookIntro": "{{free}} of these {{n}} ideas cost nothing. Use them whether or not you book us.",
   "playbookLead": { "title": "The goal", "body": "Let the sound do the hyping, so the auctioneer can stay on the ask and guests cheer because something just happened, not because they were told to." },
@@ -178,5 +179,43 @@
 })();
 </script>
 <script src="/partner-docs/_assets/portal.js"></script>
+<script>
+/* ACS pays by ACH against an invoice through its vendor system (Coupa), so the
+ * deposit step shows invoice instructions instead of a Stripe button. Full bank
+ * details are deliberately not published on this public page. */
+(function () {
+ var main = document.getElementById("main");
+ if (!main || !window.MutationObserver) return;
+ var STRIPE_WAIT = /^Waiting for Stripe/;
+ var CARD = '<span class="label">Deposit invoice</span>'
+  + '<p class="big" style="font-family:var(--head);font-weight:800;font-size:2.7rem;color:var(--gold)">$825.00</p>'
+  + '<p style="margin:0 0 1.35rem;font-size:0.87rem;color:var(--faint)">50% of $1,650.00 &middot; balance of $825.00 due Feb 6, 2027</p>'
+  + '<div class="row"><div class="rl"><p>Payment method</p><small>Paid through your vendor system (Coupa)</small></div><p class="rv">ACH / direct deposit</p></div>'
+  + '<div class="row"><div class="rl"><p>Payee</p></div><p class="rv">Ampersound Media Group LLC</p></div>'
+  + '<div class="row"><div class="rl"><p>Bank</p></div><p class="rv">Mercury</p></div>'
+  + '<div class="row"><div class="rl"><p>Remittance details</p><small>Routing and account numbers</small></div><p class="rv">On your invoice and in Coupa</p></div>'
+  + '<div class="actions" style="margin-top:1.2rem"><a class="btn" href="mailto:afia@ampersoundmediagroup.com?subject=Hope%20Gala%202027%20deposit%20invoice">Request the deposit invoice</a></div>'
+  + '<p style="margin:1.1rem 0 0;font-size:0.8rem;color:var(--faint);line-height:1.65">For your security, we never publish bank details online and never change them by email alone. If anyone asks you to update our banking information, confirm with Afia directly before sending payment. Check is also accepted.</p>';
+ function patchBanners() {
+  Array.prototype.forEach.call(main.querySelectorAll(".banner[role=status]"), function (b) {
+   var t = b.firstChild;
+   if (t && t.nodeType === 3 && STRIPE_WAIT.test(t.nodeValue)) t.nodeValue = "Your deposit is paid by ACH against our invoice. Once it arrives, we confirm your booking and open the planning tabs. ";
+  });
+ }
+ function patchDeposit() {
+  var h = main.querySelector("h2.sec");
+  if (!h || h.textContent !== "The deposit" || main.querySelector("[data-ach]")) return;
+  var intro = h.nextElementSibling;
+  if (intro && intro.classList.contains("intro")) intro.textContent = "Your agreement is signed and safe with us. We invoice the deposit for payment by ACH, and your date is confirmed once it arrives.";
+  var card = main.querySelector(".card");
+  if (!card) return;
+  card.setAttribute("data-ach", "1");
+  card.innerHTML = CARD;
+ }
+ function patch() { patchBanners(); patchDeposit(); }
+ new MutationObserver(patch).observe(main, { childList: true });
+ patch();
+})();
+</script>
 </body>
 </html>
