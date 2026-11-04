@@ -19,6 +19,12 @@
 //   actions, moves the ClickUp task to WRAPPED, and swaps each vendor page for a thank-you
 //   with the Google review link. That page hides the timeline and phone numbers, and the
 //   link turns itself off CLOSED_LINK_DAYS later. Reopen undoes a close out made by mistake.
+// - Vendors can message the point of contact (an alert), every vendor, or one vendor. Vendor-to-vendor
+//   messages are append-only comments like everything else, so the coordinator sees all of them.
+// - Each vendor page lists the event team. Contact details show only for vendors who agreed
+//   (share: true); everyone else shows name and role only. The list stays on the thank-you page so the team can keep in touch.
+// - Music vendors (role mentions DJ, or music: true) see the song for each moment and the couple's
+//   playlist. Songs are read live from the client's agreement (portal answers), never copied here.
 const crypto = require('crypto');
 const { EVENTS } = require('./_cue-events');
 
@@ -32,6 +38,8 @@ const FLOW = ['go', 'finish', 'undo', 'reset', 'mode', 'closeout', 'reopen'];
 const REVIEW_URL = 'https://g.page/r/Cd1Ctsiv6egXEAE/review';
 const CLOSED_LINK_DAYS = 30;
 const WRAPPED = 'wrapped';
+const AGREEMENT_DATA = 'eb1c1d22-4c8c-46aa-bf7b-d63a07b283b3';
+const MSG_LIMIT = 20, MSG_WINDOW = 10 * 60 * 1000; // per vendor, so one stuck button can't flood the team
 const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, private, max-age=0', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Robots-Tag': 'noindex' };
 const reply = (status, body) => ({ statusCode: status, headers, body: JSON.stringify(body) });
 
@@ -103,6 +111,51 @@ function withContact(ev, task) {
   else if (!name) Object.assign(coordinator, { phone: ev.coordinator.phone, phoneLabel: ev.coordinator.phoneLabel });
   return { ...ev, coordinator };
 }
+// A vendor's shareable card, only after they agreed (share: true). Older configs keep a phone or email in `contact`.
+function cardOf(v) {
+  if (v.share !== true) return null;
+  const raw = String(v.contact || '').trim();
+  const tel = phoneOf(v.phone || (/@/.test(raw) ? '' : raw));
+  const email = String(v.email || (/@/.test(raw) ? raw : '')).trim();
+  const ig = String(v.instagram || '').trim().replace(/^@/, '');
+  const web = /^https:\/\//i.test(String(v.website || '')) ? String(v.website) : '';
+  const card = { person: String(v.person || '').slice(0, 60), ...(tel || {}), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '', instagram: /^[A-Za-z0-9._]{1,30}$/.test(ig) ? ig : '', website: web };
+  return card.phone || card.email || card.instagram || card.website ? card : null;
+}
+function team(ev, exceptId) {
+  return ev.vendors.filter((x) => x.id !== exceptId).map((x) => ({ id: x.id, name: x.name, role: x.role, card: cardOf(x) }));
+}
+const isMusic = (v) => v.music === true || (v.music !== false && /\bDJ\b/i.test(v.role || ''));
+// Songs from the couple's portal answers on the agreement, read live. Demo events may carry sample songs.
+const songCache = new Map();
+async function songsFor(ev) {
+  if (ev.sampleSongs) return ev.sampleSongs;
+  if (!ev.agreementTaskId) return null;
+  const hit = songCache.get(ev.agreementTaskId);
+  if (hit && Date.now() - hit.at < 60000) return hit.songs;
+  let songs = null;
+  try {
+    const t = await api('/task/' + encodeURIComponent(ev.agreementTaskId));
+    const f = (t.custom_fields || []).find((x) => x.id === AGREEMENT_DATA);
+    const d = f && f.value ? JSON.parse(f.value) : {};
+    if (d && d.songs) songs = { ...d.songs, labels: (d.labels && d.labels.songs && d.labels.songs.moments) || {} };
+  } catch (e) { console.error('Cue songs unavailable:', e.message); }
+  songCache.set(ev.agreementTaskId, { at: Date.now(), songs });
+  return songs;
+}
+const clip = (x, n) => String(x == null ? '' : x).trim().slice(0, n);
+const list = (a) => (Array.isArray(a) ? a : []).map((x) => clip(x, 120)).filter(Boolean).slice(0, 60);
+function musicOf(m, songs) {
+  if (!songs || !Array.isArray(m.songs)) return [];
+  const mm = songs.moments || {}, labels = songs.labels || {};
+  return m.songs.map((k) => ({ key: k, label: clip(labels[k] || k, 60), song: clip(mm[k], 120) })).filter((x) => x.song);
+}
+function playlistOf(songs) {
+  if (!songs) return null;
+  const url = /^https:\/\//i.test(String(songs.playlist || '').trim()) ? String(songs.playlist).trim().slice(0, 300) : '';
+  const out = { url, mustPlay: list(songs.mustPlay), dontPlay: list(songs.dontPlay), vibe: clip(songs.vibe, 80), notes: clip(songs.notes, 500) };
+  return out.url || out.mustPlay.length || out.dontPlay.length || out.vibe || out.notes ? out : null;
+}
 const cache = new Map();
 async function loadTask(taskId, fresh) {
   const hit = cache.get(taskId);
@@ -144,15 +197,18 @@ function derive(state, evs) {
     const g = got[e.ref] || (got[e.ref] = {});
     if (!g[e.vendor]) g[e.vendor] = e.at;
   }
-  const broadcasts = cur.filter((e) => e.type === 'broadcast').map((b) => ({ id: b.id, at: b.at, show: b.show, level: b.level, text: b.text, by: b.by, to: b.to || null, gotIt: got[b.id] || {} }));
+  const broadcasts = cur.filter((e) => e.type === 'broadcast').map((b) => ({ id: b.id, at: b.at, show: b.show, level: b.level, text: b.text, by: b.by, to: b.to || null, from: b.from || null, gotIt: got[b.id] || {} }));
   // Who tapped the Google review link since the latest close out. A tap is not proof a review was posted.
   const reviewTaps = {};
   if (state.closed) for (const e of evs) if (e.type === 'reviewtap' && e.vendor && Number(e.at) >= state.closed.at && !reviewTaps[e.vendor]) reviewTaps[e.vendor] = e.at;
   state.checkins = checkins;
   return { alerts, broadcasts, reviewTaps };
 }
-function publicMoment(m) {
-  return { id: m.id, time: m.time, dur: m.dur, title: m.title, location: m.location || '', lane: m.lane || null, vendors: m.vendors || [], notes: m.notes || '' };
+function publicMoment(m, songs) {
+  const out = { id: m.id, time: m.time, dur: m.dur, title: m.title, location: m.location || '', lane: m.lane || null, vendors: m.vendors || [], notes: m.notes || '' };
+  const music = musicOf(m, songs);
+  if (music.length) out.music = music;
+  return out;
 }
 function basics(slug, ev) {
   return { slug, name: ev.name, kind: ev.kind, dateLabel: ev.dateLabel, venue: ev.venue, tz: ev.tz, lanes: ev.lanes, coordinator: ev.coordinator };
@@ -168,28 +224,36 @@ function closedVendorView(slug, ev, v, state, reviewTaps, now) {
     ok: true, now, closed: { at: state.closed.at, until: state.closed.at + CLOSED_LINK_DAYS * 864e5 },
     event: { slug, name: ev.name, kind: ev.kind, dateLabel: ev.dateLabel, venue: ev.venue, tz: ev.tz },
     vendor: { id: v.id, name: v.name, role: v.role }, review: { url: reviewUrl(ev), tapped: !!reviewTaps[v.id] },
+    team: team(ev, v.id),
   };
 }
-function vendorView(slug, ev, v, state, alerts, broadcasts, now) {
+function vendorView(slug, ev, v, state, alerts, broadcasts, now, songs) {
   // Messages to everyone, plus messages sent only to this vendor. Never another vendor's direct message.
-  const toAll = broadcasts.filter((b) => !b.to || b.to === v.id).slice(-5).reverse()
-    .map((b) => ({ id: b.id, at: b.at, show: b.show, level: b.level, text: b.text, by: b.by, direct: !!b.to, gotIt: !!b.gotIt[v.id] }));
+  const toAll = broadcasts.filter((b) => (!b.to || b.to === v.id) && b.from !== v.id).slice(-8).reverse()
+    .map((b) => ({ id: b.id, at: b.at, show: b.show, level: b.level, text: b.text, by: b.by, from: b.from, direct: !!b.to, gotIt: !!b.gotIt[v.id] }));
+  const sent = broadcasts.filter((b) => b.from === v.id).slice(-5).reverse()
+    .map((b) => ({ id: b.id, at: b.at, show: b.show, text: b.text, to: b.to, gotIt: Object.keys(b.gotIt).length }));
+  const music = isMusic(v);
   const mine = alerts.filter((a) => a.vendor === v.id).slice(-5).reverse()
     .map((a) => ({ id: a.id, at: a.at, show: a.show, level: a.level, text: a.text, ack: !!a.ack, ackAt: a.ack ? a.ack.at : null, resolved: !!a.resolved }));
   return {
     ok: true, now, event: basics(slug, ev),
     vendor: { id: v.id, name: v.name, role: v.role, arrival: v.arrival, checkedIn: state.checkins[v.id] || null },
-    moments: ev.moments.map((m) => (m.vendors.includes(v.id) ? publicMoment(m) : { id: m.id, time: m.time, dur: m.dur, title: m.title, lane: m.lane || null, vendors: [] })),
-    roles: Object.fromEntries(ev.vendors.map((x) => [x.id, x.role])), state: liveView(state), myAlerts: mine, broadcasts: toAll,
+    moments: ev.moments.map((m) => {
+      const mineOrSong = m.vendors.includes(v.id) || (music && musicOf(m, songs).length);
+      return mineOrSong ? publicMoment(m, music ? songs : null) : { id: m.id, time: m.time, dur: m.dur, title: m.title, lane: m.lane || null, vendors: [] };
+    }),
+    roles: Object.fromEntries(ev.vendors.map((x) => [x.id, x.role])), state: liveView(state), myAlerts: mine, broadcasts: toAll, sent,
+    team: team(ev, v.id), music, playlist: music ? playlistOf(songs) : null,
   };
 }
-function coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps) {
+function coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps, songs) {
   return {
     closed: state.closed, review: { url: reviewUrl(ev), tapped: Object.keys(reviewTaps || {}) }, linksOffAt: state.closed ? state.closed.at + CLOSED_LINK_DAYS * 864e5 : null,
-    ok: true, now, event: basics(slug, ev), moments: ev.moments.map(publicMoment), ready: READY.filter((k) => state.ready[k]),
-    vendors: ev.vendors.map((v) => ({ id: v.id, name: v.name, role: v.role, contact: v.contact || '', arrival: v.arrival, checkedIn: state.checkins[v.id] || null, link: `${origin}/cue/${slug}/${tokenFor(slug, v)}` })),
+    ok: true, now, event: basics(slug, ev), moments: ev.moments.map((m) => publicMoment(m, songs)), playlist: playlistOf(songs), ready: READY.filter((k) => state.ready[k]),
+    vendors: ev.vendors.map((v) => ({ id: v.id, name: v.name, role: v.role, contact: (phoneOf(v.phone) || {}).phone || v.contact || v.email || '', arrival: v.arrival, checkedIn: state.checkins[v.id] || null, link: `${origin}/cue/${slug}/${tokenFor(slug, v)}` })),
     alerts: alerts.slice(-30).reverse(), state: liveView(state),
-    broadcasts: broadcasts.slice(-10).reverse().map((b) => ({ ...b, gotIt: ev.vendors.filter((v) => b.gotIt[v.id]).map((v) => v.id) })),
+    broadcasts: broadcasts.slice(-20).reverse().map((b) => ({ ...b, gotIt: ev.vendors.filter((v) => b.gotIt[v.id]).map((v) => v.id) })),
   };
 }
 function go(state, ev, m, now) {
@@ -248,9 +312,10 @@ exports.handler = async (event) => {
       const { task, comments } = await loadTask(ev.taskId, coord);
       ev = withContact(ev, task);
       const state = readState(task), { alerts, broadcasts, reviewTaps } = derive(state, events(comments));
-      if (coord) return reply(200, coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps));
-      if (state.closed) return linkExpired(state, now) ? reply(404, { ok: false, error: 'This link is turned off' }) : reply(200, closedVendorView(slug, ev, vendor, state, reviewTaps, now));
-      return reply(200, vendorView(slug, ev, vendor, state, alerts, broadcasts, now));
+      if (state.closed && !coord) return linkExpired(state, now) ? reply(404, { ok: false, error: 'This link is turned off' }) : reply(200, closedVendorView(slug, ev, vendor, state, reviewTaps, now));
+      const songs = coord || isMusic(vendor) ? await songsFor(ev) : null;
+      if (coord) return reply(200, coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps, songs));
+      return reply(200, vendorView(slug, ev, vendor, state, alerts, broadcasts, now, songs));
     }
     const action = String(p.action || '');
     if (vendor) {
@@ -270,11 +335,32 @@ exports.handler = async (event) => {
       }
       if (st.closed) return reply(409, { ok: false, error: 'This event is wrapped. Thank you!' });
     }
+    if (vendor && action === 'message') {
+      // A vendor picks who gets it: the point of contact (same as an alert), every vendor, or one vendor.
+      const to = String(p.to || 'coordinator');
+      if (to === 'coordinator') p.action = 'alert';
+      else {
+        const text = String(p.text || '').trim().slice(0, 500);
+        if (!text) return reply(400, { ok: false, error: 'Write a message first' });
+        const target = to === 'all' ? null : ev.vendors.find((x) => x.id === to);
+        if (to !== 'all' && !target) return reply(400, { ok: false, error: 'Pick someone from the list' });
+        if (target && target.id === vendor.id) return reply(400, { ok: false, error: 'Pick someone else' });
+        const { task, comments } = await loadTask(ev.taskId, true);
+        const st = readState(task), { broadcasts } = derive(st, events(comments));
+        if (broadcasts.filter((b) => b.from === vendor.id && now - b.at < MSG_WINDOW).length >= MSG_LIMIT) return reply(429, { ok: false, error: 'Lots of messages just now. Give it a minute, or call.' });
+        const show = showMinutes(st, ev, now) ?? wallMinutes(now, ev.tz);
+        const rec = { id: crypto.randomUUID(), type: 'broadcast', from: vendor.id, by: vendor.name, at: now, show, level: 'note', text, session: st.session };
+        if (target) rec.to = target.id;
+        await comment(ev.taskId, `💬 ${vendor.name} to ${target ? target.name : 'everyone'}: ${text}`, rec, false);
+        cache.delete(ev.taskId);
+        return reply(200, { ok: true, id: rec.id, at: now, show, to: target ? target.id : 'all' });
+      }
+    }
     if (vendor && action === 'gotit') {
       // "Got it" on a message to everyone. Idempotent: a second tap posts nothing.
       const { task, comments } = await loadTask(ev.taskId, true);
       const st = readState(task), { broadcasts } = derive(st, events(comments));
-      const b = broadcasts.find((x) => x.id === p.ref && (!x.to || x.to === vendor.id));
+      const b = broadcasts.find((x) => x.id === p.ref && (!x.to || x.to === vendor.id) && x.from !== vendor.id);
       if (!b) return reply(404, { ok: false, error: 'Message not found' });
       if (!b.gotIt[vendor.id]) {
         const rec = { id: crypto.randomUUID(), type: 'gotit', ref: b.id, vendor: vendor.id, by: vendor.name, at: now, session: st.session };
@@ -284,6 +370,7 @@ exports.handler = async (event) => {
       return reply(200, { ok: true, ref: b.id });
     }
     if (vendor) {
+      const action = String(p.action || '');
       if (action !== 'checkin' && action !== 'alert') return reply(403, { ok: false, error: 'Not allowed' });
       const text = String(p.text || '').trim().slice(0, 500);
       if (action === 'alert' && !text) return reply(400, { ok: false, error: 'Write what is going on' });
@@ -301,7 +388,8 @@ exports.handler = async (event) => {
     ev = withContact(ev, task);
     const state = readState(task), evs = events(comments);
     let { alerts, broadcasts, reviewTaps } = derive(state, evs);
-    const view = () => coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps);
+    const songs = await songsFor(ev);
+    const view = () => coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps, songs);
     // Once closed out, the show is frozen. Only Reopen (and clearing old alerts) still works.
     if (state.closed && (action === 'broadcast' || action === 'ready' || (FLOW.includes(action) && action !== 'reopen'))) {
       return reply(409, { ...view(), ok: false, error: 'This show is closed out. Reopen it first.' });
@@ -389,4 +477,4 @@ exports.handler = async (event) => {
     return reply(503, { ok: false, error: 'Cue Sheet is unavailable, try again in a moment' });
   }
 };
-exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE, REVIEW_URL, CLOSED_LINK_DAYS };
+exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE, REVIEW_URL, CLOSED_LINK_DAYS, cardOf, team, isMusic, musicOf, playlistOf, songCache, AGREEMENT_DATA, MSG_LIMIT };

@@ -215,6 +215,11 @@
     const sent = data.broadcasts || [], total = data.vendors.length;
     const vname = (id) => (data.vendors.find((v) => v.id === id) || {}).name || 'a vendor';
     const sentRow = (b) => {
+      if (b.from) {
+        const others = total - 1, got = b.gotIt.length;
+        return `<li><i class="dot"></i><div class="x"><div>${esc(b.text)}</div>
+      <small>💬 ${esc(vname(b.from))} to ${b.to ? esc(vname(b.to)) : 'everyone'} · ${fmt(b.show)} · <span class="st ${b.to ? (got ? 'ok' : 'new') : got >= others ? 'ok' : ''}">${b.to ? (got ? 'Got it' : 'Not seen yet') : got + ' of ' + others + ' got it'}</span></small></div></li>`;
+      }
       const status = b.to
         ? `<span class="st ${b.gotIt.length ? 'ok' : 'new'}">${b.gotIt.length ? 'Got it' : 'Not seen yet'}</span>`
         : (() => { const got = b.gotIt.length, all = got >= total, waiting = data.vendors.filter((v) => !b.gotIt.includes(v.id)).map((v) => v.name);
@@ -266,9 +271,9 @@
             </div>
             <p class="meta" style="margin-top:0.6rem">A GO only counts once it says Confirmed. Vendors catch up within about 15 seconds. For split-second cues, also call it out loud. Space bar works too.</p>
           </section>
-          <h2 class="h2" style="margin-top:1.5rem">Schedule</h2>
+          <h2 class="h2" style="margin-top:1.5rem">Schedule${data.playlist && data.playlist.url ? ` <a class="icon" href="${esc(data.playlist.url)}" target="_blank" rel="noopener" style="margin-left:0.5rem;font-size:0.875rem">🎧 Couple's playlist</a>` : ''}</h2>
           <ol class="list sched">
-            ${L.rows.map((m) => { const st = stateOf(m, s), nx = L.next && L.next.id === m.id; return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : nx ? 'next' : ''}"><span class="t">${fmt(m.time)}${st === 'pending' && lateBy ? `<small style="display:block;color:${lateBy > 0 ? 'var(--bad)' : 'var(--gold-text)'};font-family:var(--body);font-weight:400;font-size:.875rem">~${fmt(m.time + L.drift)}</small>` : ''}</span><span class="x">${esc(m.title)}<small>${esc([m.location, (m.vendors || []).map((id) => roles[id]).filter(Boolean).join(', ')].filter(Boolean).join(' · '))}</small></span>${st === 'pending' ? `<button class="go" type="button" data-go="${esc(m.id)}" ${busy ? 'disabled' : ''} aria-label="GO: start ${esc(m.title)}">GO</button>` : st === 'live' ? '<span class="meta">Now</span>' : '✓'}</li>`; }).join('')}
+            ${L.rows.map((m) => { const st = stateOf(m, s), nx = L.next && L.next.id === m.id; return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : nx ? 'next' : ''}"><span class="t">${fmt(m.time)}${st === 'pending' && lateBy ? `<small style="display:block;color:${lateBy > 0 ? 'var(--bad)' : 'var(--gold-text)'};font-family:var(--body);font-weight:400;font-size:.875rem">~${fmt(m.time + L.drift)}</small>` : ''}</span><span class="x">${esc(m.title)}<small>${esc([m.location, (m.vendors || []).map((id) => roles[id]).filter(Boolean).join(', ')].filter(Boolean).join(' · '))}</small>${(m.music || []).map((x) => `<small class="song">🎵 ${esc(x.label)}: <b>${esc(x.song)}</b></small>`).join('')}</span>${st === 'pending' ? `<button class="go" type="button" data-go="${esc(m.id)}" ${busy ? 'disabled' : ''} aria-label="GO: start ${esc(m.title)}">GO</button>` : st === 'live' ? '<span class="meta">Now</span>' : '✓'}</li>`; }).join('')}
           </ol>
           <div class="row2" style="margin-top:1rem">
             <button class="btn ghost" id="undo" type="button" ${Object.keys(s.calls).length && !busy ? '' : 'disabled'}>Undo last GO</button>
@@ -299,8 +304,9 @@
               <button class="btn" id="bcSend" type="button" ${!draft.trim() || busy || stale ? 'disabled' : ''}>${toVendor ? 'Send to ' + esc(toVendor.name) : 'Send to all ' + total}</button>
             </div>
             <p class="meta" style="margin-top:0.5rem">${toVendor ? `Only ${esc(toVendor.name)} sees this.` : "Shows on every vendor's page."} Arrives within about 15 seconds. They tap Got it.</p>
-            ${sent.length ? `<ul class="alerts" style="margin-top:0.75rem">${sent.slice(0, 4).map(sentRow).join('')}</ul>` : ''}
+            ${sent.some((b) => !b.from) ? `<ul class="alerts" style="margin-top:0.75rem">${sent.filter((b) => !b.from).slice(0, 4).map(sentRow).join('')}</ul>` : ''}
           </section>
+          ${sent.some((b) => b.from) ? `<h2 class="h2" style="margin-top:1.5rem">Between vendors</h2><ul class="alerts">${sent.filter((b) => b.from).slice(0, 6).map(sentRow).join('')}</ul>` : ''}
           <h2 class="h2" style="margin-top:1.5rem">Vendors · ${data.vendors.filter((v) => v.checkedIn).length} of ${data.vendors.length} here</h2>
           <p class="meta contact">Vendors' point of contact: <b>${esc(ev.coordinator.name)}</b>${ev.coordinator.phoneLabel ? ' · ' + esc(ev.coordinator.phoneLabel) : ' · <span class="warn" style="display:inline">no phone, vendors can\'t call</span>'}. Change it in ClickUp under Point of Contact.</p>
           <ul class="vend">

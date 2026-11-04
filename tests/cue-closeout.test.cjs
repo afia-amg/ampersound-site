@@ -67,7 +67,7 @@ test('close out wraps the show and asks vendors for a Google review', async () =
   assert.ok(db.posts.at(-1).startsWith('🏁 Show closed out by Afia · 1 of 8 vendors checked in · 1 alert, all resolved. Task moved to WRAPPED.'));
   assert.equal(c.body.review.url, REVIEW_URL); assert.deepEqual(c.body.review.tapped, []);
   assert.equal(c.body.linksOffAt, c.body.closed.at + CLOSED_LINK_DAYS * 864e5);
-  // Vendor page: thank-you and the review link only. No timeline, phones, or messages.
+  // Vendor page: thank-you, the review link, and the event team list. No timeline, coordinator phone, or messages.
   const v = await get(h, { e: 'demo', t: token });
   assert.equal(v.status, 200); assert.ok(v.body.closed); assert.equal(v.body.review.url, REVIEW_URL); assert.equal(v.body.review.tapped, false);
   assert.equal(v.body.moments, undefined); assert.equal(v.body.broadcasts, undefined); assert.equal(v.body.event.coordinator, undefined);

@@ -62,7 +62,10 @@ test('cue sheet: V2-only auth, privacy, GO/undo, check-ins and alerts', async ()
   const v = await get(h, { e: 'demo', t: token });
   assert.equal(v.status, 200); assert.equal(v.body.vendor.name, 'Lumen & Lace Photo');
   const raw = JSON.stringify(v.body);
-  assert.ok(!raw.includes('/cue/demo/')); assert.ok(!raw.includes('afia@ampersoundmediagroup.com')); assert.ok(!raw.includes(saved));
+  const { team: sharedTeam, ...rest } = v.body;
+  assert.ok(!raw.includes('/cue/demo/'), 'vendor links never leak'); assert.ok(!raw.includes(saved));
+  assert.ok(!JSON.stringify(rest).includes('afia@ampersoundmediagroup.com'), 'contact details only appear in the event team list');
+  assert.ok(Array.isArray(sharedTeam) && !sharedTeam.some((x) => x.id === 'photo'), 'the team list never includes yourself');
   assert.equal(v.body.moments.find((m) => m.id === 'm03').location, undefined);
   assert.equal(v.body.moments.find((m) => m.id === 'm02').location, 'Garden terrace');
   assert.equal((await post(h, { e: 'demo', t: token, action: 'go', momentId: 'm01' })).status, 403);
