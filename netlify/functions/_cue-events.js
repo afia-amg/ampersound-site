@@ -1,7 +1,7 @@
 'use strict';
 // Server-side event configuration. Increment a vendor revision to revoke its old link.
 // Vendor contact (phone, email, instagram, website, person) shows on every vendor page in the event
-// team list. Load only what the vendor agreed to share; share: false hides a vendor's details.
+// team list only with share: true, set after the vendor says yes on the Day-Of Info Request.
 // Real events set agreementTaskId so the DJ sees the couple's songs live from their portal answers;
 // each moment lists the portal song keys it plays (aisle, firstDance, exit, ...). sampleSongs is demo-only.
 const t = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
@@ -12,14 +12,14 @@ const EVENTS = {
     coordinator: { name: 'Afia', phone: '+15127994646', phoneLabel: '(512) 799-4646' },
     lanes: ['Run of show'],
     vendors: [
-      { id: 'amg', name: 'Ampersound Media Group', role: 'DJ + MC', contact: 'afia@ampersoundmediagroup.com', arrival: t('15:30'), rev: 1 },
-      { id: 'photo', name: 'Lumen & Lace Photo', role: 'Photography', person: 'Maya', phone: '(801) 555-0142', email: 'hello@lumenlace.example', instagram: 'lumenandlace', arrival: t('13:30'), rev: 2 },
-      { id: 'video', name: 'Fieldnote Films', role: 'Videography', person: 'Theo', phone: '(801) 555-0157', instagram: 'fieldnotefilms', arrival: t('14:00'), rev: 1 },
-      { id: 'florals', name: 'Wild Sage Florals', role: 'Florals', person: 'Rosa', phone: '(801) 555-0163', arrival: t('13:00'), rev: 1 },
-      { id: 'catering', name: 'Copper Table Catering', role: 'Catering', person: 'Andre', phone: '(801) 555-0178', email: 'events@coppertable.example', arrival: t('15:00'), rev: 1 },
-      { id: 'hmua', name: 'Glow Studio', role: 'Hair + makeup', instagram: 'glowstudio.slc', arrival: t('10:30'), rev: 1 },
-      { id: 'venue', name: 'Red Butte Events', role: 'Venue lead', person: 'Kim', phone: '(801) 555-0181', arrival: t('12:00'), rev: 1 },
-      { id: 'officiant', name: 'Rev. Dana Ellis', role: 'Officiant', share: false, phone: '(801) 555-0199', arrival: t('16:15'), rev: 1 },
+      { id: 'amg', name: 'Ampersound Media Group', role: 'DJ + MC', contact: 'afia@ampersoundmediagroup.com', share: true, arrival: t('15:30'), rev: 1 },
+      { id: 'photo', name: 'Lumen & Lace Photo', role: 'Photography', person: 'Maya', phone: '(801) 555-0142', email: 'hello@lumenlace.example', instagram: 'lumenandlace', share: true, arrival: t('13:30'), rev: 2 },
+      { id: 'video', name: 'Fieldnote Films', role: 'Videography', person: 'Theo', phone: '(801) 555-0157', instagram: 'fieldnotefilms', share: true, arrival: t('14:00'), rev: 1 },
+      { id: 'florals', name: 'Wild Sage Florals', role: 'Florals', person: 'Rosa', phone: '(801) 555-0163', share: true, arrival: t('13:00'), rev: 1 },
+      { id: 'catering', name: 'Copper Table Catering', role: 'Catering', person: 'Andre', phone: '(801) 555-0178', email: 'events@coppertable.example', share: true, arrival: t('15:00'), rev: 1 },
+      { id: 'hmua', name: 'Glow Studio', role: 'Hair + makeup', instagram: 'glowstudio.slc', share: true, arrival: t('10:30'), rev: 1 },
+      { id: 'venue', name: 'Red Butte Events', role: 'Venue lead', person: 'Kim', phone: '(801) 555-0181', share: true, arrival: t('12:00'), rev: 1 },
+      { id: 'officiant', name: 'Rev. Dana Ellis', role: 'Officiant', phone: '(801) 555-0199', arrival: t('16:15'), rev: 1 },
     ],
     moments: [
       { id: 'm01', time: t('14:00'), dur: 90, title: 'Hair + makeup final touches', location: 'Bridal suite', vendors: ['hmua', 'photo'] },

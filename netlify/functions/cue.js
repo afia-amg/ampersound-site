@@ -21,8 +21,8 @@
 //   link turns itself off CLOSED_LINK_DAYS later. Reopen undoes a close out made by mistake.
 // - Vendors can message the point of contact (an alert), every vendor, or one vendor. Vendor-to-vendor
 //   messages are append-only comments like everything else, so the coordinator sees all of them.
-// - Each vendor page lists the event team with the contact details a vendor agreed to share
-//   (share: false hides them). The list stays on the thank-you page so the team can keep in touch.
+// - Each vendor page lists the event team. Contact details show only for vendors who agreed
+//   (share: true); everyone else shows name and role only. The list stays on the thank-you page so the team can keep in touch.
 // - Music vendors (role mentions DJ, or music: true) see the song for each moment and the couple's
 //   playlist. Songs are read live from the client's agreement (portal answers), never copied here.
 const crypto = require('crypto');
@@ -111,9 +111,9 @@ function withContact(ev, task) {
   else if (!name) Object.assign(coordinator, { phone: ev.coordinator.phone, phoneLabel: ev.coordinator.phoneLabel });
   return { ...ev, coordinator };
 }
-// A vendor's shareable card. Older configs keep a phone or email in `contact`.
+// A vendor's shareable card, only after they agreed (share: true). Older configs keep a phone or email in `contact`.
 function cardOf(v) {
-  if (v.share === false) return null;
+  if (v.share !== true) return null;
   const raw = String(v.contact || '').trim();
   const tel = phoneOf(v.phone || (/@/.test(raw) ? '' : raw));
   const email = String(v.email || (/@/.test(raw) ? raw : '')).trim();
