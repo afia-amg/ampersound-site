@@ -33,7 +33,7 @@ const call = async (h, method, q) => {
 };
 const get = (h, q) => call(h, 'GET', q), post = (h, q) => call(h, 'POST', q);
 
-test('every vendor sees the event team, with only the details each vendor shares', async () => {
+test('every vendor sees the event team, with details only from vendors who opted in', async () => {
   const { h, tok } = harness();
   const v = (await get(h, { e: 'demo', t: tok('video') })).body;
   const byId = Object.fromEntries(v.team.map((x) => [x.id, x]));
@@ -41,12 +41,15 @@ test('every vendor sees the event team, with only the details each vendor shares
   assert.equal(v.team.length, 7);
   assert.deepEqual(byId.photo.card, { person: 'Maya', phone: '+18015550142', phoneLabel: '(801) 555-0142', email: 'hello@lumenlace.example', instagram: 'lumenandlace', website: '' });
   assert.equal(byId.amg.card.email, 'afia@ampersoundmediagroup.com', 'older configs keep using the contact field');
-  assert.equal(byId.officiant.card, null, 'share: false hides every detail');
+  assert.equal(byId.officiant.card, null, 'no opt-in, no details');
   assert.equal(byId.officiant.name, 'Rev. Dana Ellis', 'but the name and role still show');
   assert.ok(!JSON.stringify(v).includes('555-0199'), 'a hidden phone never reaches the page');
   assert.ok(!JSON.stringify(v).includes('/cue/demo/'), 'other vendors\u2019 private links never leak');
   const { cardOf } = h._test;
-  assert.equal(cardOf({ instagram: '@bad handle!', website: 'javascript:alert(1)', email: 'nope' }), null, 'junk details are dropped, not shown');
+  assert.equal(cardOf({ share: true, instagram: '@bad handle!', website: 'javascript:alert(1)', email: 'nope' }), null, 'junk details are dropped, not shown');
+  assert.equal(cardOf({ phone: '(801) 555-0100' }), null, 'sharing is opt-in: unset means hidden');
+  assert.equal(cardOf({ share: false, phone: '(801) 555-0100' }), null);
+  assert.equal(cardOf({ share: 'yes', phone: '(801) 555-0100' }), null, 'only an explicit true counts');
 });
 
 test('vendors choose who gets a message', async () => {
