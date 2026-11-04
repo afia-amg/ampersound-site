@@ -180,7 +180,7 @@
       }
       seenMsgs = new Set(msgs.map((b) => b.id));
       store.set(lastKey, JSON.stringify({ d, at: lastOk }));
-      const sig = JSON.stringify([d.state, d.vendor, d.myAlerts, msgs]);
+      const sig = JSON.stringify([d.state, d.vendor, d.myAlerts, msgs, d.sent, d.team, d.playlist]);
       const same = data && sig === lastSig && failed === 0;
       data = d; lastSig = sig; failed = 0;
       if (!same) render();
