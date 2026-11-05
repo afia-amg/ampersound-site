@@ -1,6 +1,7 @@
 /* Coordinator console: /cue/<event>/control. Runs the show; sees vendors and alerts. */
 (function () {
   'use strict';
+  if (location.pathname.split('/').filter(Boolean)[2] === 'room') return; // room links run room.js
   const { store, esc, fmt, countdown, at, ago, showNow, stateOf, lane, driftLabel, call, toast, flash, buzz, poll } = window.CUE;
   const slug = location.pathname.split('/').filter(Boolean)[1] || '';
   const app = document.getElementById('app');
@@ -17,6 +18,13 @@
   let lastSig = '', key = store.get(KEY) || '', data = null, skew = 0, laneSel = null, busy = false, failed = 0, lastOk = 0;
   let seenAlerts = null, armed = null, armTimer = null, sending = null;
   let draft = '', draftLevel = 'note', draftTo = ''; // message draft: kept outside the DOM so refreshes never wipe it
+  // Plan import: inputs and the last preview live outside the DOM too.
+  const imp = { sessions: '', crew: '', sessionsUrl: '', crewUrl: '', preview: null, busy: false, open: false };
+  const TEMPLATES = {
+    sessions: 'Room,Start,End,Title,Location,Crew,Call,Notes\nMain Stage,9:00 AM,9:45 AM,Opening keynote,Ballroom A,"Jordan Reyes; Sam Okafor",8:40 AM,Lav mic #3\nBreakout 1,10:00 AM,10:50 AM,Workshop: pricing your services,Room 250,Priya Shah,,\n',
+    crew: 'Name,Role,Phone,Email,Arrive,Share\nJordan Reyes,Stage manager · Main Stage,(801) 555-0111,,7:30 AM,yes\nSam Okafor,AV lead,(801) 555-0121,,7:00 AM,yes\nPriya Shah,Room captain · Room 250,(801) 555-0131,,8:00 AM,no\n',
+  };
+  const KEEP_FOCUS = ['bcText', 'impSessions', 'impCrew', 'impSessionsUrl', 'impCrewUrl'];
 
   function gate(err) {
     app.innerHTML = `
@@ -61,7 +69,7 @@
       if (fresh.some((a) => a.level === 'urgent')) buzz([300, 120, 300, 120, 300]);
     }
     seenAlerts = new Set(d.alerts.map((a) => a.id));
-    const sig = JSON.stringify([d.state, d.alerts, d.vendors, d.ready, open.length, d.broadcasts, d.closed, d.review]);
+    const sig = JSON.stringify([d.state, d.alerts, d.vendors, d.ready, open.length, d.broadcasts, d.closed, d.review, d.moments, d.rooms, d.plan, d.event.lanes]);
     const same = data && sig === lastSig && !wasStale;
     data = d; lastSig = sig;
     if (!laneSel || !d.event.lanes.includes(laneSel)) laneSel = d.event.lanes[0];
@@ -74,6 +82,13 @@
     busy = true; render();
     const payload = { e: slug, k: key, ...body };
     if (FLOW.includes(body.action)) payload.rev = data.state.rev;
+    // Multi-room shows: GO, finish and undo carry this room's own revision, so other rooms never block them.
+    if (data.event.lanes.length > 1 && ['go', 'finish', 'undo'].includes(body.action)) {
+      const m = body.momentId ? data.moments.find((x) => x.id === body.momentId) : null;
+      const ln = m ? m.lane || null : laneKey();
+      payload.laneRev = (data.state.laneRev || {})[ln || ''] || 0;
+      if (body.action === 'undo') payload.lane = ln;
+    }
     let ok = false;
     try { apply(await call(null, payload)); ok = true; if (after) after(); }
     catch (e) {
@@ -119,13 +134,93 @@
     } catch (_) { toast("Didn't send. Your message is still here. Try again, or call."); }
   }
 
+  async function readFile(input, field) {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    if (f.size > 300000) { toast('That file is too big. Keep it to one event.'); return; }
+    imp[field] = await f.text(); imp.preview = null; render();
+    toast(`${f.name} loaded. Tap Preview.`);
+  }
+  async function previewPlan() {
+    if (imp.busy) return;
+    imp.busy = true; render();
+    try {
+      const r = await call(null, { e: slug, k: key, action: 'plan-preview', sessions: imp.sessionsUrl ? '' : imp.sessions, crew: imp.crewUrl ? '' : imp.crew, sessionsUrl: imp.sessionsUrl || undefined, crewUrl: imp.crewUrl || undefined });
+      imp.preview = r.preview;
+    } catch (e) { imp.preview = null; toast(e.message); }
+    finally { imp.busy = false; render(); }
+  }
+  async function publishPlan() {
+    if (!imp.preview || imp.busy) return;
+    if (data.state.mode === 'live' && armed !== 'publish') return arm('publish', 'The show is live. Tap Publish again to change the schedule on every phone now.');
+    disarm();
+    imp.busy = true; render();
+    try {
+      const d = await call(null, { e: slug, k: key, action: 'plan-publish', version: imp.preview.version, sessions: imp.sessionsUrl ? '' : imp.sessions, crew: imp.crewUrl ? '' : imp.crew, sessionsUrl: imp.sessionsUrl || undefined, crewUrl: imp.crewUrl || undefined });
+      Object.assign(imp, { sessions: '', crew: '', sessionsUrl: '', crewUrl: '', preview: null, open: false });
+      apply(d); toast(`Plan v${d.published} is live. Crew phones update within 15 seconds.`); buzz(120);
+    } catch (e) {
+      if (e.status === 409 && e.data && e.data.event) { apply(e.data); imp.preview = null; }
+      toast(e.message);
+    } finally { imp.busy = false; render(); }
+  }
+  function importHTML(isLive) {
+    const pv = imp.preview, ch = pv && pv.changes, iss = pv && pv.issues;
+    const plan = data.plan;
+    const list = (arr, fmtRow, n = 8) => (arr.length ? `<ul class="plist">${arr.slice(0, n).map(fmtRow).join('')}${arr.length > n ? `<li class="meta">and ${arr.length - n} more</li>` : ''}</ul>` : '');
+    const tpl = (kind) => `data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATES[kind])}`;
+    return `<details class="card import" id="importCard" ${imp.open || pv ? 'open' : ''}>
+      <summary class="h2">${plan ? `Plan v${plan.version}` : 'Import the agenda'}${plan && plan.at ? ` <small class="meta">· published ${esc(at(plan.at, data.event.tz))}</small>` : ''}</summary>
+      <p class="meta">Rooms, sessions and crew from a spreadsheet. Preview shows every change before anything reaches a phone.</p>
+      <div class="imp">
+        <div class="imp-part">
+          <div class="imp-head"><b>Agenda</b><a class="meta" href="${tpl('sessions')}" download="cue-agenda-template.csv">Download template</a></div>
+          <textarea id="impSessions" rows="4" aria-label="Agenda CSV" placeholder="Paste from Excel or Sheets: Room, Start, End, Title, Location, Crew, Call, Notes">${esc(imp.sessions)}</textarea>
+          <div class="imp-row"><label class="icon file">Choose CSV<input type="file" accept=".csv,.tsv,.txt,text/csv" id="impSessionsFile" hidden></label>
+          <input id="impSessionsUrl" type="url" inputmode="url" placeholder="or a Google Sheets link" value="${esc(imp.sessionsUrl)}" aria-label="Agenda Google Sheets link"></div>
+        </div>
+        <div class="imp-part">
+          <div class="imp-head"><b>Crew</b> <span class="meta">optional</span><a class="meta" href="${tpl('crew')}" download="cue-crew-template.csv">Download template</a></div>
+          <textarea id="impCrew" rows="3" aria-label="Crew CSV" placeholder="Name, Role, Phone, Email, Arrive, Share (yes = others can see their contact)">${esc(imp.crew)}</textarea>
+          <div class="imp-row"><label class="icon file">Choose CSV<input type="file" accept=".csv,.tsv,.txt,text/csv" id="impCrewFile" hidden></label>
+          <input id="impCrewUrl" type="url" inputmode="url" placeholder="or a Google Sheets link" value="${esc(imp.crewUrl)}" aria-label="Crew Google Sheets link"></div>
+        </div>
+      </div>
+      <p class="meta">Google Sheets: share it as "Anyone with the link can view". Leave Crew empty to keep the current crew list.</p>
+      <button class="btn ghost" id="impPreview" type="button" ${imp.busy || !(imp.sessions.trim() || imp.sessionsUrl.trim()) ? 'disabled' : ''}>${imp.busy && !pv ? 'Reading…' : 'Preview'}</button>
+      ${pv ? `<div class="preview">
+        <div class="tally"><b>${pv.summary.sessions}</b><span>sessions in ${pv.summary.rooms} room${pv.summary.rooms === 1 ? '' : 's'} · ${pv.summary.crew} crew</span></div>
+        ${iss.errors.length ? `<div class="warn"><b>Fix before publishing:</b>${list(iss.errors, (x) => `<li>${esc(x)}</li>`, 10)}</div>` : ''}
+        <p class="meta">${ch.added.length} new · ${ch.changed.length} changed · ${ch.removed.length} removed${ch.crewAdded.length ? ` · ${ch.crewAdded.length} crew added` : ''}${ch.crewRemoved.length ? ` · ${ch.crewRemoved.length} crew removed` : ''}</p>
+        ${ch.changed.length ? `<b class="meta">Moved</b>${list(ch.changed, (m) => `<li>${esc(m.lane)} · ${esc(m.title)}: ${fmt(m.was)} → <b>${fmt(m.time)}</b></li>`)}` : ''}
+        ${ch.added.length ? `<b class="meta">New</b>${list(ch.added, (m) => `<li>${fmt(m.time)} · ${esc(m.lane)} · ${esc(m.title)}</li>`)}` : ''}
+        ${ch.removed.length ? `<b class="meta">Removed</b>${list(ch.removed, (m) => `<li><s>${fmt(m.time)} · ${esc(m.title)}</s></li>`, 5)}` : ''}
+        ${ch.crewRemoved.length ? `<p class="warn">Removed crew lose their link: ${esc(ch.crewRemoved.slice(0, 6).join(', '))}${ch.crewRemoved.length > 6 ? '…' : ''}</p>` : ''}
+        ${iss.warnings.length ? `<details><summary class="meta">${iss.warnings.length} thing${iss.warnings.length === 1 ? '' : 's'} to double-check</summary>${list(iss.warnings, (x) => `<li>${esc(x)}</li>`, 20)}</details>` : ''}
+        <div class="row2" style="margin-top:0.75rem">
+          <button class="btn" id="impPublish" type="button" ${iss.errors.length || imp.busy ? 'disabled' : ''} style="${armed === 'publish' ? 'background:var(--bad)' : ''}">${armed === 'publish' ? 'Tap again to publish now' : imp.busy ? 'Publishing…' : `Publish as v${pv.version + 1}`}</button>
+          <button class="btn ghost" id="impCancel" type="button">Cancel</button>
+        </div>
+      </div>` : ''}
+      ${plan && plan.history && plan.history.length ? `<details style="margin-top:0.75rem"><summary class="meta">Version history</summary><ul class="plist">${plan.history.map((h) => `<li>v${h.version} · ${esc(new Date(h.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: data.event.tz }))} · ${esc(h.by)} · ${h.sessions} sessions, ${h.rooms} rooms, ${h.crew} crew${h.added || h.changed || h.removed ? ` (+${h.added} ~${h.changed} −${h.removed})` : ''}</li>`).join('')}</ul><p class="meta">Every publish is also a comment on the ClickUp task.</p></details>` : ''}
+    </details>`;
+  }
+  function roomsHTML() {
+    if (!data.rooms || !data.rooms.length) return '';
+    const s = data.state;
+    return `<h2 class="h2" style="margin-top:1.5rem">Room stage managers</h2>
+      <p class="meta">Each link runs one room: its own GO, finish and undo, its crew, and messages to you. Keys 1–${Math.min(9, data.rooms.length)} switch rooms here.</p>
+      <ul class="vend">${data.rooms.map((r, i) => { const R = lane(data.moments, s, r.lane); const body = encodeURIComponent(`You're running ${r.lane} at ${data.event.name}. Your room console (no login): ${r.link}`);
+        return `<li><div class="x"><b>${i < 9 ? `<kbd>${i + 1}</kbd> ` : ''}${esc(r.lane)}</b><small>${R.live ? 'Now: ' + esc(R.live.title) : R.next ? 'Next: ' + esc(R.next.title) + ' · ' + fmt(R.next.time) : 'Done'}${R.started ? ' · ' + driftLabel(R.drift) : ''}</small></div><a class="icon" href="sms:?&body=${body}" aria-label="Text the ${esc(r.lane)} link">Text</a><button class="icon" type="button" data-copy="${esc(r.link)}" aria-label="Copy the ${esc(r.lane)} link">Copy</button></li>`; }).join('')}</ul>`;
+  }
+
   function printable(ev, roles) {
     return `<section class="printable" aria-hidden="true">
       <h1>${esc(ev.name)} · Run sheet</h1>
       <p>${esc(ev.dateLabel)} · ${esc(ev.venue)} · Coordinator ${esc(ev.coordinator.name)} ${esc(ev.coordinator.phoneLabel)}</p>
       <p><b>If the app goes down:</b> run from this sheet. Call cues by phone or radio. Check vendors in by name.</p>
       <table><thead><tr><th>Time</th><th>Moment</th><th>Where</th><th>Who</th><th>Done</th></tr></thead><tbody>
-      ${data.moments.slice().sort((a, b) => a.time - b.time).map((m) => `<tr><td>${fmt(m.time)}</td><td>${esc(m.title)}${m.notes ? `<br><small>${esc(m.notes)}</small>` : ''}</td><td>${esc(m.location || '')}</td><td>${esc((m.vendors || []).map((id) => roles[id]).filter(Boolean).join(', '))}</td><td>☐</td></tr>`).join('')}
+      ${data.moments.slice().sort((a, b) => a.time - b.time).map((m) => `<tr><td>${fmt(m.time)}${m.call != null ? `<br><small>Call ${fmt(m.call)}</small>` : ''}</td><td>${esc(m.title)}${m.notes ? `<br><small>${esc(m.notes)}</small>` : ''}</td><td>${esc([ev.lanes.length > 1 ? m.lane : '', m.location || ''].filter(Boolean).join(' · '))}</td><td>${esc((m.vendors || []).map((id) => roles[id]).filter(Boolean).join(', '))}</td><td>☐</td></tr>`).join('')}
       </tbody></table>
       <h2>Vendors</h2>
       <table><thead><tr><th>Vendor</th><th>Role</th><th>Arrive by</th><th>Contact</th><th>Here</th></tr></thead><tbody>
@@ -228,7 +323,8 @@
       <small>${b.to ? 'To ' + esc(vname(b.to)) + ' · ' : ''}${fmt(b.show)} · ${status}</small></div></li>`; };
     const toVendor = data.vendors.find((v) => v.id === draftTo) || null;
     // Refreshes redraw the screen. Keep the cursor where it was if someone is typing a message.
-    const typing = document.activeElement && document.activeElement.id === 'bcText' ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
+    const ae = document.activeElement, typingId = ae && KEEP_FOCUS.includes(ae.id) ? ae.id : null;
+    const typing = typingId ? [ae.selectionStart, ae.selectionEnd] : null;
 
     app.innerHTML = `<div class="screen">
       <header class="top">
@@ -251,10 +347,11 @@
         <h2 class="h2">Pre-show check · ${ready.size} of ${CHECKS.length}</h2>
         <ul>${CHECKS.map(([id, label]) => `<li><label><input type="checkbox" data-ready="${id}" ${ready.has(id) ? 'checked' : ''}> <span>${esc(label)}${id === 'contacts' && noPhone ? ` <small class="warn">${noPhone} of ${data.vendors.length} vendors have no phone number on file</small>` : ''}</span></label></li>`).join('')}</ul>
       </section>` : ''}
+      ${!isLive ? `<div style="margin-bottom:1rem">${importHTML(isLive)}</div>` : ''}
       <div class="grid">
         <div>
           <section class="desk">
-            ${multi ? `<div class="lanes" role="group" aria-label="Stage or room">${ev.lanes.map((l) => `<button type="button" data-lane="${esc(l)}" aria-pressed="${l === laneSel}">${esc(l)}</button>`).join('')}</div>` : ''}
+            ${multi ? `<div class="lanes" role="group" aria-label="Stage or room">${ev.lanes.map((l, i) => { const R = lane(data.moments, s, l); return `<button type="button" data-lane="${esc(l)}" aria-pressed="${l === laneSel}"><span>${i < 9 ? `<kbd>${i + 1}</kbd> ` : ''}${esc(l)}</span><small class="${R.live ? 'on' : ''} ${Math.round(R.drift) > 0 ? 'late' : ''}">${R.live ? (R.started ? driftLabel(R.drift) : 'Live') : R.next ? 'Next ' + fmt(R.next.time) : 'Done'}</small></button>`; }).join('')}</div>` : ''}
             <div class="kicker ${L.live ? 'live' : ''}">${L.live ? 'Happening now' : wrapped ? 'Done for the day' : 'Up next'}${hero && !wrapped ? ' · ' + fmt(hero.time) + (hero.location ? ' · ' + esc(hero.location) : '') : ''}</div>
             <div class="big">${esc(wrapped ? "That's a wrap." : hero ? hero.title : 'Nothing scheduled')}</div>
             ${hero && !wrapped ? `<div class="meta">${esc((hero.vendors || []).map((id) => roles[id]).filter(Boolean).join(' · '))}</div>` : ''}
@@ -269,11 +366,11 @@
               <button class="btn go" id="go" type="button" ${!L.next || busy ? 'disabled' : ''}>${sending ? 'SENDING <small>' + esc(sending) + '…</small>' : 'GO <small>' + (L.next ? esc(L.next.title) : 'Nothing left') + '</small>'}</button>
               ${L.live ? `<button class="btn ghost" id="finish" type="button" ${busy ? 'disabled' : ''}>Finish</button>` : ''}
             </div>
-            <p class="meta" style="margin-top:0.6rem">A GO only counts once it says Confirmed. Vendors catch up within about 15 seconds. For split-second cues, also call it out loud. Space bar works too.</p>
+            <p class="meta" style="margin-top:0.6rem">A GO only counts once it says Confirmed. Vendors catch up within about 15 seconds. For split-second cues, also call it out loud. Keys: Space = GO, F = finish${multi ? ', 1–' + Math.min(9, ev.lanes.length) + ' = room' : ''}. A Stream Deck can send the same keys.</p>
           </section>
           <h2 class="h2" style="margin-top:1.5rem">Schedule${data.playlist && data.playlist.url ? ` <a class="icon" href="${esc(data.playlist.url)}" target="_blank" rel="noopener" style="margin-left:0.5rem;font-size:0.875rem">🎧 Couple's playlist</a>` : ''}</h2>
           <ol class="list sched">
-            ${L.rows.map((m) => { const st = stateOf(m, s), nx = L.next && L.next.id === m.id; return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : nx ? 'next' : ''}"><span class="t">${fmt(m.time)}${st === 'pending' && lateBy ? `<small style="display:block;color:${lateBy > 0 ? 'var(--bad)' : 'var(--gold-text)'};font-family:var(--body);font-weight:400;font-size:.875rem">~${fmt(m.time + L.drift)}</small>` : ''}</span><span class="x">${esc(m.title)}<small>${esc([m.location, (m.vendors || []).map((id) => roles[id]).filter(Boolean).join(', ')].filter(Boolean).join(' · '))}</small>${(m.music || []).map((x) => `<small class="song">🎵 ${esc(x.label)}: <b>${esc(x.song)}</b></small>`).join('')}</span>${st === 'pending' ? `<button class="go" type="button" data-go="${esc(m.id)}" ${busy ? 'disabled' : ''} aria-label="GO: start ${esc(m.title)}">GO</button>` : st === 'live' ? '<span class="meta">Now</span>' : '✓'}</li>`; }).join('')}
+            ${L.rows.map((m) => { const st = stateOf(m, s), nx = L.next && L.next.id === m.id; return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : nx ? 'next' : ''}"><span class="t">${fmt(m.time)}${st === 'pending' && lateBy ? `<small style="display:block;color:${lateBy > 0 ? 'var(--bad)' : 'var(--gold-text)'};font-family:var(--body);font-weight:400;font-size:.875rem">~${fmt(m.time + L.drift)}</small>` : ''}</span><span class="x">${esc(m.title)}<small>${esc([m.location, m.call != null ? 'Call ' + fmt(m.call) : '', (m.vendors || []).map((id) => roles[id]).filter(Boolean).join(', ')].filter(Boolean).join(' · '))}</small>${(m.music || []).map((x) => `<small class="song">🎵 ${esc(x.label)}: <b>${esc(x.song)}</b></small>`).join('')}</span>${st === 'pending' ? `<button class="go" type="button" data-go="${esc(m.id)}" ${busy ? 'disabled' : ''} aria-label="GO: start ${esc(m.title)}">GO</button>` : st === 'live' ? '<span class="meta">Now</span>' : '✓'}</li>`; }).join('')}
           </ol>
           <div class="row2" style="margin-top:1rem">
             <button class="btn ghost" id="undo" type="button" ${Object.keys(s.calls).length && !busy ? '' : 'disabled'}>Undo last GO</button>
@@ -313,6 +410,8 @@
             ${data.vendors.map((v) => { const late = isLive && !v.checkedIn && now != null && now > v.arrival; const phone = /^[+\d][\d\s().-]{6,}$/.test(v.contact || '') ? v.contact.replace(/[^\d+]/g, '') : ''; const body = encodeURIComponent(`Hi ${v.name}! Here's your live timeline for ${ev.name} (${ev.dateLabel}). No login needed: ${v.link}  - ${ev.coordinator.name}`); return `<li><div class="x"><b>${esc(v.name)}</b><small class="${v.checkedIn ? 'in' : late ? 'late' : ''}">${esc(v.role)} · ${v.checkedIn ? 'Here since ' + fmt(v.checkedIn.show) : late ? 'Late, due ' + fmt(v.arrival) : 'Arrive by ' + fmt(v.arrival)}${phone ? '' : ' · no phone'}</small></div>${phone ? `<a class="icon" href="tel:${esc(phone)}" aria-label="Call ${esc(v.name)}">Call</a>` : ''}<a class="icon" href="sms:${esc(phone)}?&body=${body}" aria-label="Text ${esc(v.name)} their link">Text</a><button class="icon" type="button" data-copy="${esc(v.link)}" aria-label="Copy ${esc(v.name)}'s link">Copy</button></li>`; }).join('')}
           </ul>
           <p class="meta" style="margin-top:0.75rem">Each link is private to that vendor. To turn one off, ask Brain to reset that vendor's link.</p>
+          ${roomsHTML()}
+          ${isLive ? `<div style="margin-top:1.5rem">${importHTML(isLive)}</div>` : ''}
         </div>
       </div>
       <p class="foot">Ampersound Media Group · Sound. Presence. Atmosphere. · <button type="button" id="signout" style="background:none;border:none;color:var(--gold-text);cursor:pointer;font-size:inherit">Sign out on this device</button></p>
@@ -320,7 +419,17 @@
 
     const $ = (id) => document.getElementById(id);
     const bt = $('bcText');
-    if (typing) { bt.focus(); try { bt.setSelectionRange(typing[0], typing[1]); } catch (_) { /* ignore */ } }
+    if (typingId && $(typingId)) { const el = $(typingId); el.focus(); try { el.setSelectionRange(typing[0], typing[1]); } catch (_) { /* ignore */ } }
+    [['impSessions', 'sessions'], ['impCrew', 'crew'], ['impSessionsUrl', 'sessionsUrl'], ['impCrewUrl', 'crewUrl']].forEach(([id, f]) => {
+      const el = $(id); if (!el) return;
+      el.oninput = () => { imp[f] = el.value; if (imp.preview) { imp.preview = null; render(); return; } const pb = $('impPreview'); if (pb) pb.disabled = imp.busy || !(imp.sessions.trim() || imp.sessionsUrl.trim()); };
+    });
+    if ($('impSessionsFile')) $('impSessionsFile').onchange = (e) => readFile(e.target, 'sessions');
+    if ($('impCrewFile')) $('impCrewFile').onchange = (e) => readFile(e.target, 'crew');
+    if ($('impPreview')) $('impPreview').onclick = previewPlan;
+    if ($('impPublish')) $('impPublish').onclick = publishPlan;
+    if ($('impCancel')) $('impCancel').onclick = () => { imp.preview = null; disarm(); render(); };
+    if ($('importCard')) $('importCard').ontoggle = (e) => { imp.open = e.target.open; };
     bt.oninput = () => { draft = bt.value; $('bcSend').disabled = !draft.trim() || busy || failed >= 2; };
     bt.onkeydown = (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); broadcast(); } };
     $('bcSend').onclick = broadcast;
@@ -355,11 +464,14 @@
     app.querySelectorAll('[data-copy]').forEach((b) => (b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast('Link copied'); } catch (_) { prompt('Copy this link', b.dataset.copy); } }));
   }
 
+  // Keyboard and Stream Deck (send these as hotkeys): 1-9 pick a room, Space = GO, F = finish.
   document.addEventListener('keydown', (e) => {
-    if (e.code !== 'Space' || !data || !key || data.closed || /^(INPUT|TEXTAREA|BUTTON|A|SELECT)$/.test((document.activeElement || {}).tagName || '')) return;
+    if (!data || !key || data.closed || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|BUTTON|A|SELECT|SUMMARY)$/.test((document.activeElement || {}).tagName || '')) return;
     const multi = data.event.lanes.length > 1;
+    if (multi && /^[1-9]$/.test(e.key) && data.event.lanes[Number(e.key) - 1]) { e.preventDefault(); laneSel = data.event.lanes[Number(e.key) - 1]; render(); return; }
     const L = lane(data.moments.map((m) => ({ ...m, lane: multi ? m.lane : null })), data.state, laneKey());
-    if (L.next) { e.preventDefault(); go(L.next); }
+    if (e.code === 'Space' && L.next) { e.preventDefault(); go(L.next); }
+    else if ((e.key === 'f' || e.key === 'F') && L.live) { e.preventDefault(); safe({ action: 'finish', momentId: L.live.id }); }
   });
 
   // Every second, update only the clock, countdown and sync label so buttons never move under a finger.

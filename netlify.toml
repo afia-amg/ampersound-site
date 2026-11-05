@@ -46,10 +46,22 @@
   to = "/cue/control.html"
   status = 200
 
+# A room's stage-manager console for multi-room shows.
+[[redirects]]
+  from = "/cue/:event/room/:code"
+  to = "/cue/control.html"
+  status = 200
+
 [[redirects]]
   from = "/cue/:event/:code"
   to = "/cue/vendor.html"
   status = 200
+
+[[headers]]
+  for = "/cue/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Service-Worker-Allowed = "/cue/"
 
 [[headers]]
   for = "/cue/*"

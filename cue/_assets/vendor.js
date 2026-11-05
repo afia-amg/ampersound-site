@@ -8,7 +8,45 @@
   const URGENT_WAIT = 2 * 60 * 1000; // unanswered urgent alert: tell the vendor to call
   let lastSig = '', data = null, skew = 0, lastLive = null, failed = 0, level = 'note', sending = false, lastOk = 0, savedCopy = false, refresh = null;
   let seenMsgs = null; const marking = new Set();
-  const doneKey = `cue:${slug}:${code}:checkin`, lastKey = `cue:${slug}:${code}:last`;
+  const doneKey = `cue:${slug}:${code}:checkin`, lastKey = `cue:${slug}:${code}:last`, outKey = `cue:${slug}:${code}:outbox`;
+
+  // Outbox: with no signal, check-ins, Got it and messages wait on the phone and send themselves
+  // when signal comes back. Each carries a client id, so a resend never posts twice.
+  const cid = () => 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const outbox = () => { try { const a = JSON.parse(store.get(outKey) || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; } };
+  const saveOut = (a) => (a.length ? store.set(outKey, JSON.stringify(a.slice(-30))) : store.del(outKey));
+  const offline = () => failed >= 2 || savedCopy || navigator.onLine === false;
+  let flushing = false;
+  async function sendOrQueue(body, label) {
+    const item = { ...body, cid: cid(), queuedAt: Date.now(), label };
+    if (!offline()) {
+      try { return { sent: true, r: await call(null, { e: slug, t: code, ...item }) }; }
+      catch (e) { if (e.status && e.status !== 503) throw e; } // a real refusal, not a lost connection
+    }
+    saveOut(outbox().concat(item));
+    return { sent: false };
+  }
+  async function flush() {
+    if (flushing || !navigator.onLine) return;
+    const q = outbox();
+    if (!q.length) return;
+    flushing = true;
+    let sent = 0;
+    try {
+      for (const item of q) {
+        try { await call(null, { e: slug, t: code, ...item }); sent++; }
+        catch (e) {
+          if (!e.status || e.status === 503) break; // still no signal: keep the rest for later
+          sent++; // refused for good (show closed, message gone): drop it
+        }
+      }
+    } finally {
+      saveOut(outbox().slice(sent)); flushing = false;
+      if (sent) { toast(`Back online. ${sent} waiting update${sent === 1 ? '' : 's'} sent.`); buzz(80); if (refresh) refresh(); }
+      render();
+    }
+  }
+  window.addEventListener('online', flush);
 
   const nameOf = (id) => ((data && data.team) || []).find((x) => x.id === id)?.name || 'a vendor';
   function localCheckin(session) {
@@ -77,9 +115,11 @@
     const drift = (m) => Math.round(lane(moments, s, m.lane || null).drift);
     const when = (m) => { const d = stateOf(m, s) === 'pending' ? drift(m) : 0; return d ? `~${fmt(m.time + d)} <s>${fmt(m.time)}</s>` : fmt(m.time); };
     const lateBy = hero ? drift(hero) : 0;
+    const multiRoom = (ev.lanes || []).length > 1;
     const local = localCheckin(s.session);
     const checked = v.checkedIn || (local ? { show: Number(local.show) } : null);
     const stale = failed >= 2 || savedCopy;
+    const queued = outbox(), queuedCheckin = queued.find((x) => x.action === 'checkin');
     const alerts = data.myAlerts || [];
     const msgs = data.broadcasts || [], fresh = msgs.filter((b) => !b.gotIt), read = msgs.filter((b) => b.gotIt);
     const waiting = alerts.filter((a) => a.level === 'urgent' && !a.ack && !a.resolved && Date.now() + skew - a.at > URGENT_WAIT);
@@ -90,25 +130,28 @@
         <div class="ev"><b>${esc(ev.name)}</b><span>${esc(ev.dateLabel)}</span></div>
         <div class="sync"><i class="dot ${stale ? 'bad' : 'live'}"></i><span id="syncval">${stale ? 'Offline' : 'Updated ' + ago(lastOk)}</span></div>
       </header>
-      ${stale ? `<div class="banner" role="alert">${savedCopy ? 'No signal. This is your saved copy' : 'No signal since ' + esc(at(lastOk, ev.tz))}. Times may be out of date. If anything feels off, call ${esc(ev.coordinator.name)}.</div>` : ''}
+      ${stale ? `<div class="banner" role="alert">${savedCopy ? 'No signal. This is your saved copy' : 'No signal since ' + esc(at(lastOk, ev.tz))}. Your whole day is saved on this phone, and anything you tap waits here and sends when signal is back. Times may be out of date. If anything feels off, call ${esc(ev.coordinator.name)}.</div>` : ''}
+      ${queued.length ? `<div class="banner ok" role="status">⏳ ${queued.length} waiting to send: ${esc(queued.map((x) => x.label).join(', '))}. Keep this page open, it sends on its own.</div>` : ''}
       ${waiting.length ? `<div class="banner" role="alert">🚨 ${esc(ev.coordinator.name)} hasn't seen your urgent alert yet. ${ev.coordinator.phone ? `<a href="tel:${esc(ev.coordinator.phone)}"><b>Call now</b></a>` : '<b>Find them in person now.</b>'}</div>` : ''}
       ${fresh.map((b) => `<section class="card msg ${b.level === 'urgent' ? 'urgent' : ''}" role="alert">
         <div class="kicker">${b.level === 'urgent' ? '🚨 Urgent' : b.direct ? '💬 Just for you' : '📢 To everyone'}${b.level === 'urgent' && b.direct ? ' · Just for you' : ''} · ${b.from ? 'From ' + esc(b.by) : 'Coordinator'} · ${fmt(b.show)}</div>
         <div class="msg-text">${esc(b.text)}</div>
-        <div class="${b.from ? 'row2' : ''}"><button class="btn" type="button" data-gotit="${esc(b.id)}" ${stale || marking.has(b.id) ? 'disabled' : ''}>${marking.has(b.id) ? 'Sending…' : 'Got it'}</button>${b.from ? `<button class="btn ghost" type="button" data-msg="${esc(b.from)}">Reply</button>` : ''}</div>
+        <div class="${b.from ? 'row2' : ''}"><button class="btn" type="button" data-gotit="${esc(b.id)}" ${marking.has(b.id) ? 'disabled' : ''}>${marking.has(b.id) ? 'Sending…' : 'Got it'}</button>${b.from ? `<button class="btn ghost" type="button" data-msg="${esc(b.from)}">Reply</button>` : ''}</div>
       </section>`).join('')}
       <h1 class="hi">Hi, ${esc(v.name)}</h1>
       ${checked
         ? `<div class="here">✓ Checked in${checked.show != null && !Number.isNaN(checked.show) ? ' at ' + fmt(checked.show) : ''}</div>`
+        : queuedCheckin ? `<div class="here">⏳ Checked in at ${esc(queuedCheckin.shown || '')}, waiting for signal to send</div>`
         : `<section class="card">
-            <div class="arrive">📍 <span>Arrive by <b>${fmt(v.arrival)}</b> · ${esc(ev.venue)}</span></div>
-            <button class="btn" id="checkin" type="button" ${stale ? 'disabled' : ''}>I'm here, check me in</button>
-            ${stale ? '<p class="meta" style="margin-top:0.5rem">Check-in needs signal. Text or call instead.</p>' : ''}
+            <div class="arrive">📍 <span>Arrive by <b>${v.arrival != null ? fmt(v.arrival) : 'your first call'}</b> · ${esc(ev.venue)}</span></div>
+            <button class="btn" id="checkin" type="button">I'm here, check me in</button>
+            ${stale ? '<p class="meta" style="margin-top:0.5rem">No signal right now. Tap anyway: it saves on this phone and sends when signal is back.</p>' : ''}
           </section>`}
       <section class="card">
         <div class="kicker ${myLive ? 'live' : ''}">${myLive ? "You're on now" : hero ? 'Your next moment' : "You're all done"}</div>
         <div class="big">${esc(hero ? hero.title : 'Thank you!')}</div>
-        ${hero ? `<div class="meta">${when(hero)}${hero.location ? ' · ' + esc(hero.location) : ''}${myLive && now != null ? ' · ' + timeLeft(myLive, s, now) : ''}</div>` : ''}
+        ${hero ? `<div class="meta">${when(hero)}${multiRoom && hero.lane ? ' · ' + esc(hero.lane) : ''}${hero.location && hero.location !== hero.lane ? ' · ' + esc(hero.location) : ''}${myLive && now != null ? ' · ' + timeLeft(myLive, s, now) : ''}</div>` : ''}
+        ${hero && !myLive && hero.call != null ? `<div class="note">📣 Your call time: <b>${fmt(hero.call + (stateOf(hero, s) === 'pending' ? drift(hero) : 0))}</b>${drift(hero) ? ' (adjusted)' : ''}</div>` : ''}
         ${hero && !myLive && lateBy ? `<div class="note">${lateBy > 0 ? `Running about ${lateBy} min behind.` : `Running about ${-lateBy} min ahead.`} Times below are adjusted.</div>` : ''}
         ${hero && hero.notes ? `<div class="note">${esc(hero.notes)}</div>` : ''}
         ${musicHTML(hero)}
@@ -116,17 +159,17 @@
       <div class="nowline"><i class="dot ${live ? 'live' : ''}"></i><span>At the event now:</span><b>${esc(live ? live.title : 'Starting soon')}</b></div>
       <div class="label">Your day</div>
       <ol class="list">
-        ${mine.map((m) => { const st = stateOf(m, s); return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : ''}"><span class="t">${when(m)}</span><span class="x">${esc(m.title)}<small>${esc(m.location || '')}</small>${musicHTML(m)}</span>${st === 'done' ? '✓' : ''}</li>`; }).join('')}
+        ${mine.map((m) => { const st = stateOf(m, s); return `<li class="${st === 'live' ? 'now' : st === 'done' ? 'done' : ''}"><span class="t">${when(m)}</span><span class="x">${esc(m.title)}<small>${esc([multiRoom ? m.lane : '', m.location && m.location !== m.lane ? m.location : '', m.call != null && st === 'pending' ? 'Call ' + fmt(m.call + drift(m)) : ''].filter(Boolean).join(' · '))}</small>${musicHTML(m)}</span>${st === 'done' ? '✓' : ''}</li>`; }).join('')}
       </ol>
       ${alerts.length ? `<div class="label">Your alerts</div><ul class="alerts">${alerts.map((a) => `<li><i class="dot ${a.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(a.text)}</div><small>${fmt(a.show)} · <span class="st ${a.resolved ? 'ok' : a.ack ? '' : 'new'}">${a.resolved ? 'Resolved' : a.ack ? 'Seen by ' + esc(ev.coordinator.name) : 'Not seen yet'}</span></small></div></li>`).join('')}</ul>` : ''}
       ${read.length ? `<div class="label">Messages from the coordinator</div><ul class="alerts">${read.map((b) => `<li><i class="dot ${b.level === 'urgent' ? 'bad' : ''}"></i><div class="x"><div>${esc(b.text)}</div><small>${b.from ? 'From ' + esc(b.by) + ' · ' : ''}${b.direct ? 'Just for you · ' : ''}${fmt(b.show)} · <span class="st ok">✓ Got it</span></small></div></li>`).join('')}</ul>` : ''}
       ${(data.sent || []).length ? `<div class="label">Messages you sent</div><ul class="alerts">${data.sent.map((b) => `<li><i class="dot"></i><div class="x"><div>${esc(b.text)}</div><small>To ${esc(b.to ? nameOf(b.to) : 'everyone')} · ${fmt(b.show)} · <span class="st ${b.gotIt ? 'ok' : ''}">${b.to ? (b.gotIt ? '✓ Got it' : 'Not seen yet') : b.gotIt + ' got it'}</span></small></div></li>`).join('')}</ul>` : ''}
       ${data.music ? playlistHTML(data.playlist) : ''}
       <div class="${ev.coordinator.phone ? 'row2' : ''}" style="margin-top:1rem">
-        <button class="btn ghost" id="alert" type="button" ${stale ? 'disabled' : ''}>💬 Send a message</button>
+        <button class="btn ghost" id="alert" type="button">💬 Send a message</button>
         ${ev.coordinator.phone ? `<a class="btn ghost" href="tel:${esc(ev.coordinator.phone)}">📞 Call ${esc(ev.coordinator.name)}</a>` : ''}
       </div>
-      ${data.team && data.team.length ? `<div class="label" style="margin-top:1.25rem">Event team</div>${teamHTML(data.team, !stale)}` : ''}
+      ${data.team && data.team.length ? `<div class="label" style="margin-top:1.25rem">Event team</div>${teamHTML(data.team, true)}` : ''}
       <p class="foot">No account needed. Urgent? Message ${esc(ev.coordinator.name)}${ev.coordinator.phone ? ' and call' : ''}.<br>Point of contact: ${esc(ev.coordinator.name)}${ev.coordinator.phoneLabel ? ' · ' + esc(ev.coordinator.phoneLabel) : ''}<br>Messages between vendors are visible to ${esc(ev.coordinator.name)}.</p>`;
 
     const ci = document.getElementById('checkin');
@@ -139,10 +182,10 @@
     if (marking.has(id)) return;
     marking.add(id); render();
     try {
-      await call(null, { e: slug, t: code, action: 'gotit', ref: id });
       const b = (data.broadcasts || []).find((x) => x.id === id);
+      const { sent } = await sendOrQueue({ action: 'gotit', ref: id }, 'Got it');
       if (b) b.gotIt = true;
-      toast('Thanks. The coordinator can see you got it.');
+      toast(sent ? 'Thanks. The coordinator can see you got it.' : 'Saved. It sends when you have signal.');
     } catch (_) {
       toast("Didn't go through. Check your signal and tap Got it again.");
     } finally { marking.delete(id); render(); }
@@ -180,10 +223,11 @@
       }
       seenMsgs = new Set(msgs.map((b) => b.id));
       store.set(lastKey, JSON.stringify({ d, at: lastOk }));
-      const sig = JSON.stringify([d.state, d.vendor, d.myAlerts, msgs, d.sent, d.team, d.playlist]);
+      const sig = JSON.stringify([d.state, d.vendor, d.myAlerts, msgs, d.sent, d.team, d.playlist, d.moments]);
       const same = data && sig === lastSig && failed === 0;
       data = d; lastSig = sig; failed = 0;
       if (!same) render();
+      if (outbox().length) setTimeout(flush, 0);
     } catch (e) {
       if (e.status === 404 || e.status === 401) { store.del(lastKey); return gone(); }
       failed++;
@@ -204,9 +248,11 @@
     const b = document.getElementById('checkin');
     b.disabled = true; b.textContent = 'Checking you in…';
     try {
-      const r = await call(null, { e: slug, t: code, action: 'checkin' });
-      store.set(doneKey, JSON.stringify({ session: r.session, show: r.show }));
-      toast("You're checked in. The coordinator can see it.");
+      const tappedAt = Date.now();
+      const show = data ? showNow(data.state, data.event.tz, skew) : null;
+      const { sent, r } = await sendOrQueue({ action: 'checkin', tappedAt, shown: show != null ? fmt(show) : at(tappedAt, data && data.event.tz) }, 'Check-in');
+      if (sent) { store.set(doneKey, JSON.stringify({ session: r.session, show: r.show })); toast("You're checked in. The coordinator can see it."); }
+      else toast('No signal. Your check-in is saved with the time you tapped, and sends on its own.');
       render();
     } catch (e) {
       b.disabled = false; b.textContent = "I'm here, check me in";
@@ -283,9 +329,10 @@
     sending = true; send.disabled = true; send.textContent = 'Sending…';
     const who = targetName(), toCoordinator = target === 'coordinator';
     try {
-      await call(null, toCoordinator ? { e: slug, t: code, action: 'alert', text: msg, level } : { e: slug, t: code, action: 'message', to: target, text: msg });
+      const { sent } = await sendOrQueue(toCoordinator ? { action: 'alert', text: msg, level } : { action: 'message', to: target, text: msg }, 'Message to ' + who);
       text.value = ''; closeSheet();
-      toast(toCoordinator ? (level === 'urgent' ? 'Sent. Not seen yet. If it is an emergency, call now.' : "Sent. You'll see when it's been read.") : `Sent to ${who}.`);
+      if (!sent) toast(level === 'urgent' ? 'No signal: saved, sends on its own. If it is an emergency, call or find them now.' : 'No signal. Saved, it sends when you have signal.');
+      else toast(toCoordinator ? (level === 'urgent' ? 'Sent. Not seen yet. If it is an emergency, call now.' : "Sent. You'll see when it's been read.") : `Sent to ${who}.`);
       if (refresh) refresh();
     } catch (e) {
       toast(e.status === 429 ? e.message : "Didn't send. Your message is still there. Try again or call.");
@@ -296,6 +343,10 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
 
   if (!slug || !code) gone(); else refresh = poll(load, 12000);
+  // Keep this page itself on the phone, so the link opens with no signal at all.
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    try { navigator.serviceWorker.register('/cue/sw.js', { scope: '/cue/' }).catch(() => {}); } catch (_) { /* unsupported */ }
+  }
   setInterval(() => {
     const sv = document.getElementById('syncval');
     if (sv && failed < 2 && !savedCopy) sv.textContent = 'Updated ' + ago(lastOk);
