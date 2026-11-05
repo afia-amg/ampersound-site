@@ -25,8 +25,13 @@
 //   (share: true); everyone else shows name and role only. The list stays on the thank-you page so the team can keep in touch.
 // - Music vendors (role mentions DJ, or music: true) see the song for each moment and the couple's
 //   playlist. Songs are read live from the client's agreement (portal answers), never copied here.
+// - Reads page through every comment since the session started (ClickUp sends 25 at a time), and
+//   vendor page polls share one short-lived snapshot in Netlify Blobs (see _cue-store.js), so a
+//   conference crew of 60+ phones stays inside ClickUp's rate limit. Writes and coordinator reads
+//   always go straight to ClickUp.
 const crypto = require('crypto');
 const { EVENTS } = require('./_cue-events');
+const { makeLoader } = require('./_cue-store');
 
 const BASE = 'https://api.clickup.com/api/v2';
 const STATE_FIELD = '745508ca-6e71-4541-8d49-a10a9acab836';
@@ -156,15 +161,11 @@ function playlistOf(songs) {
   const out = { url, mustPlay: list(songs.mustPlay), dontPlay: list(songs.dontPlay), vibe: clip(songs.vibe, 80), notes: clip(songs.notes, 500) };
   return out.url || out.mustPlay.length || out.dontPlay.length || out.vibe || out.notes ? out : null;
 }
-const cache = new Map();
-async function loadTask(taskId, fresh) {
-  const hit = cache.get(taskId);
-  if (!fresh && hit && Date.now() - hit.at < 4000) return hit;
-  const [task, comments] = await Promise.all([api('/task/' + encodeURIComponent(taskId)), api('/task/' + encodeURIComponent(taskId) + '/comment')]);
-  const entry = { at: Date.now(), task, comments: comments.comments || [] };
-  cache.set(taskId, entry);
-  return entry;
-}
+// Reads: task first, then every comment since the current session started (paged).
+// Vendor polls share a short-lived snapshot; fresh reads (coordinator, writes) always hit ClickUp.
+const loader = makeLoader({ api, sinceOf: (task) => readState(task).since });
+const cache = { delete: (taskId) => loader.forget(taskId) };
+const loadTask = (taskId, fresh) => loader.load(taskId, fresh);
 function events(comments) {
   const out = [];
   for (const c of comments) {
@@ -286,6 +287,7 @@ async function comment(taskId, text, rec, notify) {
 }
 exports.handler = async (event) => {
   if (!process.env.CLICKUP_API_TOKEN || !process.env.CUE_SECRET_V2) return reply(503, { ok: false, error: 'Cue Sheet is not set up yet' });
+  loader.connect(event);
   const origin = 'https://' + ((event.headers && (event.headers['x-forwarded-host'] || event.headers.host)) || 'ampersoundmediagroup.com');
   try {
     const q = event.queryStringParameters || {};
@@ -477,4 +479,4 @@ exports.handler = async (event) => {
     return reply(503, { ok: false, error: 'Cue Sheet is unavailable, try again in a moment' });
   }
 };
-exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE, REVIEW_URL, CLOSED_LINK_DAYS, cardOf, team, isMusic, musicOf, playlistOf, songCache, AGREEMENT_DATA, MSG_LIMIT };
+exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE, REVIEW_URL, CLOSED_LINK_DAYS, cardOf, team, isMusic, musicOf, playlistOf, songCache, AGREEMENT_DATA, MSG_LIMIT, loader };

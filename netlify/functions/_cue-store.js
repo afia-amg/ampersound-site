@@ -60,8 +60,10 @@ function makeLoader({ api, sinceOf, ttl = 4000, sharedTtl = 3000, staleOk = 1500
     store = null;
     if (injected) { store = injected; return; }
     if (!blobs) return warn('package not installed');
+    // Only a real Netlify request carries a Blobs context. Tests and builds never touch the live store.
+    if (!event || !event.blobs) return warn('no Blobs context on this request');
     try {
-      if (event && event.blobs) blobs.connectLambda(event);
+      blobs.connectLambda(event);
       store = blobs.getStore({ name: STORE, consistency: 'strong' });
     } catch (e) { store = null; warn(e.message); }
   }
