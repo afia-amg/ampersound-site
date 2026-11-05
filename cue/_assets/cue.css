@@ -253,3 +253,34 @@ textarea:focus,input:focus{border-color:var(--gold)}
 .card.msg .row2 .btn{min-height:48px}
 .sched .song{color:var(--gold-text)!important}
 .sched .song b{color:var(--text);font-weight:600}
+/* Conferences: room switcher with live status, room links, plan import */
+.lanes button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0.1rem;padding:0.4rem 0.9rem;text-align:left}
+.lanes button small{font-size:0.875rem;color:var(--faint)}
+.lanes button small.on{color:var(--gold-text)}
+.lanes button small.late{color:var(--bad)}
+kbd{display:inline-block;min-width:1.35em;padding:0 0.3em;border:1px solid var(--line);border-radius:5px;font-family:var(--body);font-size:0.75em;line-height:1.5;text-align:center;color:var(--faint);vertical-align:0.1em}
+.import summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:0.4rem;flex-wrap:wrap}
+.import summary::-webkit-details-marker{display:none}
+.import summary::before{content:'▸';color:var(--gold);transition:transform .2s}
+.import[open] summary::before{transform:rotate(90deg)}
+.import>.meta{margin:0.25rem 0 0.75rem}
+.imp{display:flex;flex-direction:column;gap:0.9rem;margin-bottom:0.6rem}
+.imp-part{display:flex;flex-direction:column;gap:0.4rem}
+.imp-part>b{font-family:var(--head);font-weight:600}
+.imp-part a.meta{font-size:0.875rem}
+.imp textarea,.imp input[type=url]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:0.6rem 0.75rem;font-size:0.9375rem;color:var(--text)}
+.imp textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.875rem;resize:vertical;min-height:4.5rem}
+.imp textarea:focus,.imp input[type=url]:focus{outline:2px solid var(--gold);outline-offset:1px}
+.imp-row{display:flex;gap:0.5rem;align-items:center}
+.imp-row input{flex:1;min-height:44px}
+.icon.file{cursor:pointer;white-space:nowrap}
+.preview{margin-top:0.9rem;border-top:1px solid var(--line);padding-top:0.6rem}
+.preview .warn{color:var(--bad);margin:0.5rem 0}
+.plist{list-style:none;margin:0.3rem 0 0.6rem;display:flex;flex-direction:column;gap:0.2rem;font-size:0.9375rem;color:var(--dim)}
+.plist li{padding-left:0.9rem;position:relative}
+.plist li::before{content:'';position:absolute;left:0;top:0.65em;width:5px;height:5px;border-radius:50%;background:var(--faint)}
+.plist li.meta::before{display:none}
+.preview details summary{cursor:pointer}
+.imp-head{display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap}
+.imp-head a{margin-left:auto;font-size:0.875rem}
+@media (min-width:900px){.imp{flex-direction:row}.imp-part{flex:1;min-width:0}}
