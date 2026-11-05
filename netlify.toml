@@ -12,6 +12,33 @@
   [headers.values]
     Cache-Control = "no-store"
 
+# Retired legacy pages. Angelica & Nathan are booked and their event has passed,
+# so the old quote and signing pages send them to their portal instead of
+# offering a fresh signature. The files stay in the repo for the legacy tests.
+[[redirects]]
+  from = "/partner-docs/angelica-nathan/sign"
+  to = "/partner-docs/angelica-nathan/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/angelica-nathan/sign.html"
+  to = "/partner-docs/angelica-nathan/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/angelica-nathan/quote"
+  to = "/partner-docs/angelica-nathan/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/angelica-nathan/quote.html"
+  to = "/partner-docs/angelica-nathan/"
+  status = 301
+  force = true
+
 # Cue Sheet: private vendor links and the coordinator console.
 # Real files (like /cue/_assets/*) are served first; these only catch the pretty URLs.
 [[redirects]]
