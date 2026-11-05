@@ -1,0 +1,8 @@
+{
+  "name": "ampersound-site",
+  "private": true,
+  "description": "Ampersound Media Group site and Netlify functions",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.6"
+  }
+}
