@@ -29,14 +29,22 @@
 //   vendor page polls share one short-lived snapshot in Netlify Blobs (see _cue-store.js), so a
 //   conference crew of 60+ phones stays inside ClickUp's rate limit. Writes and coordinator reads
 //   always go straight to ClickUp.
+// - Conferences: an imported plan (rooms, sessions, crew) is published to the task's "Cue Plan" field
+//   and overrides the built-in schedule. Each room gets a stage-manager link that can only GO, finish
+//   and undo its own room. Rooms never block each other: a GO is checked against that room's own
+//   revision (laneRev), and show-flow writes take turns through a short lock so no GO is ever lost.
+// - Offline crew phones queue check-ins, Got it and messages, then send them with a client id (cid)
+//   so a retry never posts twice.
 const crypto = require('crypto');
 const { EVENTS } = require('./_cue-events');
 const { makeLoader } = require('./_cue-store');
+const PLAN = require('./_cue-plan');
 
 const BASE = 'https://api.clickup.com/api/v2';
 const STATE_FIELD = '745508ca-6e71-4541-8d49-a10a9acab836';
 const CONTACT_NAME = '18983b32-756c-49a7-8b37-855b528d8e45';
 const CONTACT_PHONE = '666ee8c5-587c-42cf-86f0-a9d2ba20534a';
+const PLAN_FIELD = '438f723f-5ff2-459d-a223-51727b0c2403';
 const MARK = 'AMG_CUE_V1:';
 const READY = ['timeline', 'caller', 'contacts', 'links', 'signal', 'printed'];
 const FLOW = ['go', 'finish', 'undo', 'reset', 'mode', 'closeout', 'reopen'];
@@ -63,6 +71,17 @@ function same(a, b) {
 function vendorByToken(slug, ev, token) {
   return ev.vendors.find((v) => same(tokenFor(slug, v), token)) || null;
 }
+// Stage-manager link for one room of a multi-room event. Bump ev.roomRevs[room] to revoke it.
+function roomToken(slug, ev, lane) {
+  const rev = (ev.roomRevs && ev.roomRevs[lane]) || 1;
+  return crypto.createHmac('sha256', process.env.CUE_SECRET_V2).update(`${slug}:room:${lane}:${rev}`).digest('base64url').slice(0, 16);
+}
+function roomByToken(slug, ev, token) {
+  if (!token || (ev.lanes || []).length < 2) return null;
+  return ev.lanes.find((l) => same(roomToken(slug, ev, l), token)) || null;
+}
+const looksLikeToken = (t) => /^[A-Za-z0-9_-]{16}$/.test(String(t || ''));
+const lk = (lane) => lane || '';
 function isCoordinator(key) {
   return !!key && same(key, process.env.CUE_SECRET_V2);
 }
@@ -81,13 +100,13 @@ function fmt(min) {
   const m = ((Math.round(min) % 1440) + 1440) % 1440, h = Math.floor(m / 60), mm = String(m % 60).padStart(2, '0');
   return `${h % 12 || 12}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
 }
-const blank = () => ({ v: 1, mode: 'practice', anchor: null, calls: {}, done: {}, checkins: {}, seen: [], rev: 0, session: 1, since: 0, ready: {}, closed: null });
+const blank = () => ({ v: 1, mode: 'practice', anchor: null, calls: {}, done: {}, checkins: {}, seen: [], rev: 0, session: 1, since: 0, ready: {}, closed: null, laneRev: {} });
 function readState(task) {
   const f = (task.custom_fields || []).find((x) => x.id === STATE_FIELD);
   let d = null;
   try { d = f && f.value ? JSON.parse(f.value) : null; } catch (_) { d = null; }
   const s = d && typeof d === 'object' && !Array.isArray(d) ? { ...blank(), ...d } : blank();
-  for (const k of ['calls', 'done', 'checkins', 'ready']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
+  for (const k of ['calls', 'done', 'checkins', 'ready', 'laneRev']) if (!s[k] || typeof s[k] !== 'object') s[k] = {};
   s.rev = Number(s.rev) || 0; s.session = Number(s.session) || 1; s.since = Number(s.since) || 0;
   if (!s.closed || typeof s.closed !== 'object' || !Number(s.closed.at)) s.closed = null;
   return s;
@@ -115,6 +134,10 @@ function withContact(ev, task) {
   if (tel) Object.assign(coordinator, tel);
   else if (!name) Object.assign(coordinator, { phone: ev.coordinator.phone, phoneLabel: ev.coordinator.phoneLabel });
   return { ...ev, coordinator };
+}
+// The event the app runs: server config + point of contact + the published plan, if any.
+function eventFor(slug, task) {
+  return PLAN.effective(withContact(EVENTS[slug], task), PLAN.readPlan(task, PLAN_FIELD));
 }
 // A vendor's shareable card, only after they agreed (share: true). Older configs keep a phone or email in `contact`.
 function cardOf(v) {
@@ -207,6 +230,7 @@ function derive(state, evs) {
 }
 function publicMoment(m, songs) {
   const out = { id: m.id, time: m.time, dur: m.dur, title: m.title, location: m.location || '', lane: m.lane || null, vendors: m.vendors || [], notes: m.notes || '' };
+  if (m.call != null) out.call = m.call;
   const music = musicOf(m, songs);
   if (music.length) out.music = music;
   return out;
@@ -215,7 +239,7 @@ function basics(slug, ev) {
   return { slug, name: ev.name, kind: ev.kind, dateLabel: ev.dateLabel, venue: ev.venue, tz: ev.tz, lanes: ev.lanes, coordinator: ev.coordinator };
 }
 function liveView(state) {
-  return { mode: state.mode, anchor: state.anchor, calls: state.calls, done: state.done, rev: state.rev, session: state.session, since: state.since, updatedAt: state.updatedAt || null, closed: state.closed };
+  return { mode: state.mode, anchor: state.anchor, calls: state.calls, done: state.done, rev: state.rev, session: state.session, since: state.since, updatedAt: state.updatedAt || null, closed: state.closed, laneRev: state.laneRev || {} };
 }
 const reviewUrl = (ev) => ev.reviewUrl || REVIEW_URL;
 const linkExpired = (state, now) => !!state.closed && now - state.closed.at > CLOSED_LINK_DAYS * 864e5;
@@ -255,6 +279,20 @@ function coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, revie
     vendors: ev.vendors.map((v) => ({ id: v.id, name: v.name, role: v.role, contact: (phoneOf(v.phone) || {}).phone || v.contact || v.email || '', arrival: v.arrival, checkedIn: state.checkins[v.id] || null, link: `${origin}/cue/${slug}/${tokenFor(slug, v)}` })),
     alerts: alerts.slice(-30).reverse(), state: liveView(state),
     broadcasts: broadcasts.slice(-20).reverse().map((b) => ({ ...b, gotIt: ev.vendors.filter((v) => b.gotIt[v.id]).map((v) => v.id) })),
+    rooms: ev.lanes.length > 1 ? ev.lanes.map((l) => ({ lane: l, link: `${origin}/cue/${slug}/room/${roomToken(slug, ev, l)}` })) : [],
+    plan: ev.planVersion ? { version: ev.planVersion, at: ev.planAt, history: ev.planHistory || [] } : null,
+  };
+}
+// A room's stage manager: that room's schedule and crew, its own GO, and a line to the show caller.
+function roomView(slug, ev, lane, state, alerts, broadcasts, now) {
+  const moments = ev.moments.filter((m) => (m.lane || null) === lane);
+  const ids = new Set(moments.flatMap((m) => m.vendors || []));
+  return {
+    ok: true, now, role: 'room', room: lane, closed: state.closed ? { at: state.closed.at } : null,
+    event: basics(slug, ev), moments: moments.map((m) => publicMoment(m, null)), state: liveView(state),
+    crew: ev.vendors.filter((v) => ids.has(v.id)).map((v) => ({ id: v.id, name: v.name, role: v.role, arrival: v.arrival, checkedIn: state.checkins[v.id] || null, phone: v.share === true ? ((phoneOf(v.phone) || {}).phone || '') : '' })),
+    broadcasts: broadcasts.filter((b) => !b.to && !b.from).slice(-5).reverse().map((b) => ({ id: b.id, at: b.at, show: b.show, level: b.level, text: b.text, by: b.by })),
+    myAlerts: alerts.filter((a) => a.vendor === 'room:' + lane).slice(-5).reverse().map((a) => ({ id: a.id, at: a.at, show: a.show, level: a.level, text: a.text, ack: !!a.ack, resolved: !!a.resolved })),
   };
 }
 function go(state, ev, m, now) {
@@ -268,11 +306,19 @@ function go(state, ev, m, now) {
   delete state.done[m.id];
   const seq = Math.max(0, ...Object.values(state.calls).map((c) => c.seq || 0)) + 1;
   state.calls[m.id] = { at: now, show, closed, seq };
+  bumpLane(state, m.lane);
 }
-function undo(state) {
-  const last = Object.entries(state.calls).sort((a, b) => (b[1].seq || 0) - (a[1].seq || 0) || b[1].at - a[1].at)[0];
+function bumpLane(state, lane) {
+  state.laneRev = state.laneRev || {};
+  state.laneRev[lk(lane)] = (state.laneRev[lk(lane)] || 0) + 1;
+}
+// Undo the newest GO, or with `lane` the newest GO in that room only, so one room never undoes another.
+function undo(state, ev, lane) {
+  const inLane = (id) => lane === undefined || !ev || ((ev.moments.find((m) => m.id === id) || {}).lane || null) === lane;
+  const last = Object.entries(state.calls).filter(([id]) => inLane(id)).sort((a, b) => (b[1].seq || 0) - (a[1].seq || 0) || b[1].at - a[1].at)[0];
   if (!last) return false;
   const [id, call] = last;
+  if (ev) bumpLane(state, (ev.moments.find((m) => m.id === id) || {}).lane);
   delete state.calls[id]; delete state.done[id];
   for (const c of call.closed || []) delete state.done[c];
   if (!Object.keys(state.calls).length && state.mode !== 'live') state.anchor = null;
@@ -280,11 +326,46 @@ function undo(state) {
 }
 // Start a clean session: rehearsal GOs, check-ins and alerts stay in ClickUp history but stop counting.
 function freshSession(state, now) {
-  Object.assign(state, { anchor: null, calls: {}, done: {}, checkins: {}, session: state.session + 1, since: now });
+  Object.assign(state, { anchor: null, calls: {}, done: {}, checkins: {}, laneRev: {}, session: state.session + 1, since: now });
 }
 async function comment(taskId, text, rec, notify) {
   await api('/task/' + encodeURIComponent(taskId) + '/comment', { method: 'POST', body: JSON.stringify({ comment_text: `${text}\n\n${MARK}${JSON.stringify(rec)}`, notify_all: !!notify }) });
 }
+// Google Sheets: read a sheet shared as "Anyone with the link can view" as CSV. Only docs.google.com.
+async function fetchSheet(raw) {
+  let u;
+  try { u = new URL(String(raw || '').trim()); } catch (_) { return { error: 'That Google Sheets link doesn\'t look right.' }; }
+  if (u.protocol !== 'https:' || u.hostname !== 'docs.google.com' || !/^\/spreadsheets\//.test(u.pathname)) return { error: 'Only Google Sheets links (docs.google.com) can be imported.' };
+  let url;
+  const pub = /\/pub(html)?$/.test(u.pathname) || u.pathname.includes('/d/e/');
+  if (pub) { u.searchParams.set('output', 'csv'); url = u.toString().replace('/pubhtml', '/pub'); }
+  else {
+    const id = (u.pathname.match(/\/spreadsheets\/d\/([A-Za-z0-9_-]+)/) || [])[1];
+    if (!id) return { error: 'That Google Sheets link doesn\'t look right.' };
+    const gid = (String(u.hash + u.search).match(/gid=(\d+)/) || [])[1];
+    url = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv${gid ? '&gid=' + gid : ''}`;
+  }
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const r = await fetch(url, { signal: ctl.signal, redirect: 'follow' });
+    const type = String((r.headers && r.headers.get && r.headers.get('content-type')) || '');
+    if (!r.ok || /html/i.test(type)) return { error: 'Couldn\'t open that sheet. Share it as "Anyone with the link can view", or use File > Download > CSV and paste it here.' };
+    const text = await r.text();
+    if (text.length > 300000) return { error: 'That sheet is too big. Keep it to one event.' };
+    return { text };
+  } catch (_) { return { error: 'Couldn\'t reach Google Sheets. Try again, or paste the CSV.' }; }
+  finally { clearTimeout(timer); }
+}
+async function planInput(p) {
+  let sessions = String(p.sessions || '').slice(0, 200000), crew = String(p.crew || '').slice(0, 100000);
+  if (p.sessionsUrl) { const r = await fetchSheet(p.sessionsUrl); if (r.error) return { error: 'Agenda: ' + r.error }; sessions = r.text; }
+  if (p.crewUrl) { const r = await fetchSheet(p.crewUrl); if (r.error) return { error: 'Crew: ' + r.error }; crew = r.text; }
+  if (!sessions.trim()) return { error: 'Add the agenda first: paste it, choose a CSV file, or link a Google Sheet.' };
+  return { sessions, crew };
+}
+// Offline phones resend with the same client id; a resend that already landed is not posted again.
+const cidOf = (p) => (/^[A-Za-z0-9_-]{8,40}$/.test(String(p.cid || '')) ? String(p.cid) : null);
+const already = (evs, cid, who) => !!cid && evs.some((e) => e.cid === cid && (e.vendor === who || e.from === who));
 exports.handler = async (event) => {
   if (!process.env.CLICKUP_API_TOKEN || !process.env.CUE_SECRET_V2) return reply(503, { ok: false, error: 'Cue Sheet is not set up yet' });
   loader.connect(event);
@@ -306,14 +387,22 @@ exports.handler = async (event) => {
     let ev = Object.prototype.hasOwnProperty.call(EVENTS, slug) ? EVENTS[slug] : null;
     if (!ev) return reply(404, { ok: false, error: 'Event not found' });
     const coord = isCoordinator(key);
-    const vendor = coord ? null : vendorByToken(slug, ev, p.t);
-    if (!coord && !vendor) return reply(auth ? 401 : 404, { ok: false, error: auth ? 'Wrong coordinator passcode' : 'This link is turned off' });
+    let vendor = null, room = null;
+    if (!coord && !auth && (looksLikeToken(p.t) || looksLikeToken(p.r))) {
+      // Links are checked against the event as it runs today, including people and rooms from an imported plan.
+      const { task } = await loadTask(ev.taskId, false);
+      ev = eventFor(slug, task);
+      vendor = p.t ? vendorByToken(slug, ev, p.t) : null;
+      room = !vendor && p.r ? roomByToken(slug, ev, p.r) : null;
+    }
+    if (!coord && !vendor && !room) return reply(auth ? 401 : 404, { ok: false, error: auth ? 'Wrong coordinator passcode' : 'This link is turned off' });
     const now = Date.now();
     if (event.httpMethod === 'GET') {
       // Reads never write. Check-ins and alert status are derived from comments every time.
       const { task, comments } = await loadTask(ev.taskId, coord);
-      ev = withContact(ev, task);
+      ev = eventFor(slug, task);
       const state = readState(task), { alerts, broadcasts, reviewTaps } = derive(state, events(comments));
+      if (room) return ev.lanes.includes(room) ? reply(200, roomView(slug, ev, room, state, alerts, broadcasts, now)) : reply(404, { ok: false, error: 'This link is turned off' });
       if (state.closed && !coord) return linkExpired(state, now) ? reply(404, { ok: false, error: 'This link is turned off' }) : reply(200, closedVendorView(slug, ev, vendor, state, reviewTaps, now));
       const songs = coord || isMusic(vendor) ? await songsFor(ev) : null;
       if (coord) return reply(200, coordinatorView(slug, ev, state, alerts, broadcasts, now, origin, reviewTaps, songs));
@@ -323,6 +412,7 @@ exports.handler = async (event) => {
     if (vendor) {
       // A closed-out show only takes the review tap. Check-ins, alerts and Got it are over.
       const { task, comments } = await loadTask(ev.taskId, action === 'review');
+      ev = eventFor(slug, task);
       const st = readState(task);
       if (st.closed && linkExpired(st, now)) return reply(404, { ok: false, error: 'This link is turned off' });
       if (action === 'review') {
@@ -348,11 +438,14 @@ exports.handler = async (event) => {
         if (to !== 'all' && !target) return reply(400, { ok: false, error: 'Pick someone from the list' });
         if (target && target.id === vendor.id) return reply(400, { ok: false, error: 'Pick someone else' });
         const { task, comments } = await loadTask(ev.taskId, true);
-        const st = readState(task), { broadcasts } = derive(st, events(comments));
+        const evs = events(comments), st = readState(task), { broadcasts } = derive(st, evs);
+        const cid = cidOf(p);
+        if (already(evs, cid, vendor.id)) return reply(200, { ok: true, dedup: true });
         if (broadcasts.filter((b) => b.from === vendor.id && now - b.at < MSG_WINDOW).length >= MSG_LIMIT) return reply(429, { ok: false, error: 'Lots of messages just now. Give it a minute, or call.' });
         const show = showMinutes(st, ev, now) ?? wallMinutes(now, ev.tz);
         const rec = { id: crypto.randomUUID(), type: 'broadcast', from: vendor.id, by: vendor.name, at: now, show, level: 'note', text, session: st.session };
         if (target) rec.to = target.id;
+        if (cid) rec.cid = cid;
         await comment(ev.taskId, `💬 ${vendor.name} to ${target ? target.name : 'everyone'}: ${text}`, rec, false);
         cache.delete(ev.taskId);
         return reply(200, { ok: true, id: rec.id, at: now, show, to: target ? target.id : 'all' });
@@ -377,17 +470,72 @@ exports.handler = async (event) => {
       const text = String(p.text || '').trim().slice(0, 500);
       if (action === 'alert' && !text) return reply(400, { ok: false, error: 'Write what is going on' });
       const level = p.level === 'urgent' ? 'urgent' : 'note';
-      const { task } = await loadTask(ev.taskId, false);
-      const st = readState(task);
-      const show = showMinutes(st, ev, now) ?? wallMinutes(now, ev.tz);
+      const { task, comments } = await loadTask(ev.taskId, !!p.cid);
+      const st = readState(task), cid = cidOf(p);
+      if (already(events(comments), cid, vendor.id)) return reply(200, { ok: true, dedup: true, session: st.session });
+      // A check-in queued with no signal keeps the time the vendor actually tapped I'm here.
+      const tapped = Number(p.tappedAt);
+      const when = action === 'checkin' && tapped && tapped <= now && now - tapped < 6 * 3600e3 && tapped >= st.since ? tapped : now;
+      const show = showMinutes(st, ev, when) ?? wallMinutes(when, ev.tz);
       const rec = { id: crypto.randomUUID(), type: action, vendor: vendor.id, by: vendor.name, at: now, show, level, text, session: st.session };
+      if (cid) rec.cid = cid;
       const human = action === 'checkin' ? `✅ ${vendor.name} (${vendor.role}) checked in · ${fmt(show)}` : `${level === 'urgent' ? '🚨 URGENT' : '📣 Heads up'} from ${vendor.name}: ${text}`;
       await comment(ev.taskId, human, rec, true);
       cache.delete(ev.taskId);
       return reply(200, { ok: true, id: rec.id, at: now, show, session: st.session });
     }
+    if (room) {
+      // Stage manager: GO, finish and undo for this room only, plus a message to the show caller.
+      if (!['go', 'finish', 'undo', 'alert'].includes(action)) return reply(403, { ok: false, error: 'Not allowed' });
+      if (action === 'alert') {
+        const text = String(p.text || '').trim().slice(0, 500);
+        if (!text) return reply(400, { ok: false, error: 'Write what is going on' });
+        const { task, comments } = await loadTask(ev.taskId, true);
+        const st = readState(task), cid = cidOf(p), who = 'room:' + room;
+        if (st.closed) return reply(409, { ok: false, error: 'This show is closed out.' });
+        if (already(events(comments), cid, who)) return reply(200, { ok: true, dedup: true });
+        const level = p.level === 'urgent' ? 'urgent' : 'note';
+        const show = showMinutes(st, ev, now) ?? wallMinutes(now, ev.tz);
+        const rec = { id: crypto.randomUUID(), type: 'alert', vendor: who, by: room + ' stage manager', at: now, show, level, text, session: st.session };
+        if (cid) rec.cid = cid;
+        await comment(ev.taskId, `${level === 'urgent' ? '🚨 URGENT' : '📣 Heads up'} from ${room} stage manager: ${text}`, rec, true);
+        cache.delete(ev.taskId);
+        return reply(200, { ok: true, id: rec.id });
+      }
+      const release = await loader.lock(ev.taskId);
+      if (!release) return reply(409, { ok: false, busy: true, error: 'Another room is saving a GO. Tap again.' });
+      try {
+        const { task, comments } = await loadTask(ev.taskId, true);
+        ev = eventFor(slug, task);
+        if (!ev.lanes.includes(room)) return reply(404, { ok: false, error: 'This link is turned off' });
+        const state = readState(task), { alerts, broadcasts } = derive(state, events(comments));
+        const view = () => roomView(slug, ev, room, state, alerts, broadcasts, now);
+        if (state.closed) return reply(409, { ...view(), ok: false, error: 'This show is closed out.' });
+        if (Number(p.laneRev) !== (state.laneRev[lk(room)] || 0)) return reply(409, { ...view(), ok: false, error: `${room} changed on another device. Check the screen, then tap again.` });
+        if (action === 'undo') {
+          if (!undo(state, ev, room)) return reply(409, { ...view(), ok: false, error: 'Nothing to undo in ' + room });
+        } else {
+          const m = ev.moments.find((x) => x.id === p.momentId);
+          if (!m || (m.lane || null) !== room) return reply(404, { ok: false, error: 'Moment not found in ' + room });
+          if (action === 'go') {
+            if (state.calls[m.id] && !state.done[m.id]) return reply(409, { ...view(), ok: false, error: `${m.title} is already live.` });
+            go(state, ev, m, now);
+          } else {
+            if (!state.calls[m.id]) return reply(409, { ...view(), ok: false, error: `${m.title} hasn't started.` });
+            state.done[m.id] = now; bumpLane(state, room);
+          }
+        }
+        state.rev += 1;
+        await writeState(ev.taskId, state); cache.delete(ev.taskId);
+        return reply(200, view());
+      } finally { await release(); }
+    }
+    const needsLock = FLOW.includes(action) || action === 'ready' || action === 'plan-publish';
+    const release = needsLock ? await loader.lock(ev.taskId) : async () => {};
+    if (!release) return reply(409, { ok: false, busy: true, error: 'Another device is saving. Tap again.' });
+    try {
     const { task, comments } = await loadTask(ev.taskId, true);
-    ev = withContact(ev, task);
+    ev = eventFor(slug, task);
     const state = readState(task), evs = events(comments);
     let { alerts, broadcasts, reviewTaps } = derive(state, evs);
     const songs = await songsFor(ev);
@@ -429,17 +577,45 @@ exports.handler = async (event) => {
       await writeState(ev.taskId, state); cache.delete(ev.taskId);
       return reply(200, view());
     }
+    if (action === 'plan-preview' || action === 'plan-publish') {
+      const input = await planInput(p);
+      if (input.error) return reply(400, { ok: false, error: input.error });
+      const current = PLAN.readPlan(task, PLAN_FIELD);
+      const { plan, issues } = PLAN.buildPlan(input, current);
+      const base = EVENTS[slug];
+      const changes = PLAN.diff(current || { moments: base.moments, vendors: base.vendors }, plan);
+      const version = (current && current.version) || 0;
+      const summary = { sessions: plan.moments.length, rooms: plan.lanes.length, crew: plan.vendors.length };
+      if (action === 'plan-preview') return reply(200, { ok: true, preview: { plan, issues, changes, version, summary } });
+      if (issues.errors.length) return reply(400, { ok: false, error: issues.errors[0], issues });
+      if (Number(p.version) !== version) return reply(409, { ...view(), ok: false, error: 'Someone published a newer plan. Preview again.' });
+      plan.version = version + 1; plan.publishedAt = now; plan.by = ev.coordinator.name;
+      plan.history = [{ version: plan.version, at: now, by: plan.by, ...summary, added: changes.added.length, removed: changes.removed.length, changed: changes.changed.length }, ...((current && current.history) || [])].slice(0, 20);
+      await api('/task/' + encodeURIComponent(ev.taskId) + '/field/' + PLAN_FIELD, { method: 'POST', body: JSON.stringify({ value: JSON.stringify(plan) }) });
+      const rec = { id: crypto.randomUUID(), type: 'plan', version: plan.version, by: plan.by, at: now, ...summary };
+      const delta = [changes.added.length && `${changes.added.length} new`, changes.changed.length && `${changes.changed.length} changed`, changes.removed.length && `${changes.removed.length} removed`].filter(Boolean).join(', ');
+      try { await comment(ev.taskId, `📋 Plan v${plan.version} published by ${plan.by}: ${summary.sessions} sessions in ${summary.rooms} room${summary.rooms === 1 ? '' : 's'}, ${summary.crew} crew${delta ? ' (' + delta + ')' : ''}.`, rec, false); }
+      catch (e) { console.error('Cue plan comment failed:', e.message); }
+      cache.delete(ev.taskId);
+      ev = PLAN.effective(withContact(EVENTS[slug], task), plan);
+      return reply(200, { ...view(), published: plan.version });
+    }
     if (!FLOW.includes(action)) return reply(400, { ok: false, error: 'Unknown action' });
     let closing = null;
     if (p.rev !== undefined && Number(p.rev) !== state.rev) {
-      return reply(409, { ...view(), ok: false, error: 'Another device changed the show. Check the screen, then tap again.' });
+      // Multi-room shows: another room's GO doesn't make this console stale. Only a change in the
+      // same room does, so GO, finish and room undo check that room's own revision instead.
+      const m = action === 'go' || action === 'finish' ? ev.moments.find((x) => x.id === p.momentId) : action === 'undo' && p.lane !== undefined ? { lane: p.lane } : null;
+      const laneOk = ev.lanes.length > 1 && m && p.laneRev !== undefined && Number(p.laneRev) === (state.laneRev[lk(m.lane)] || 0);
+      if (!laneOk) return reply(409, { ...view(), ok: false, error: 'Another device changed the show. Check the screen, then tap again.' });
     }
     if (action === 'go' || action === 'finish') {
       const m = ev.moments.find((x) => x.id === p.momentId);
       if (!m) return reply(404, { ok: false, error: 'Moment not found' });
-      if (action === 'go') go(state, ev, m, now); else if (state.calls[m.id]) state.done[m.id] = now;
+      if (action === 'go') go(state, ev, m, now); else if (state.calls[m.id]) { state.done[m.id] = now; bumpLane(state, m.lane); }
     } else if (action === 'undo') {
-      if (!undo(state)) return reply(409, { ...view(), ok: false, error: 'Nothing to undo' });
+      const multi = ev.lanes.length > 1 && p.lane !== undefined;
+      if (!undo(state, ev, multi ? (p.lane || null) : undefined)) return reply(409, { ...view(), ok: false, error: 'Nothing to undo' });
     } else if (action === 'closeout') {
       if (state.mode !== 'live') return reply(409, { ...view(), ok: false, error: 'Close out is for Show day. Switch to Show day first.' });
       const open = alerts.filter((a) => !a.resolved);
@@ -474,9 +650,10 @@ exports.handler = async (event) => {
     if (closing) { try { await comment(ev.taskId, closing.text, closing.rec, false); } catch (e) { console.error('Cue close out comment failed:', e.message); } }
     ({ alerts, broadcasts, reviewTaps } = derive(state, evs));
     return reply(200, view());
+    } finally { await release(); }
   } catch (e) {
     console.error('Cue error:', e.message);
     return reply(503, { ok: false, error: 'Cue Sheet is unavailable, try again in a moment' });
   }
 };
-exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE, REVIEW_URL, CLOSED_LINK_DAYS, cardOf, team, isMusic, musicOf, playlistOf, songCache, AGREEMENT_DATA, MSG_LIMIT, loader };
+exports._test = { tokenFor, vendorByToken, go, undo, derive, events, showMinutes, wallMinutes, readState, blank, READY, phoneOf, withContact, CONTACT_NAME, CONTACT_PHONE, REVIEW_URL, CLOSED_LINK_DAYS, cardOf, team, isMusic, musicOf, playlistOf, songCache, AGREEMENT_DATA, MSG_LIMIT, loader, roomToken, PLAN_FIELD, eventFor };

@@ -47,5 +47,15 @@ const EVENTS = {
       notes: 'Sample songs for the demo only.',
     },
   },
+  // Conference demo: starts empty. Import the agenda and crew in the console; the published plan
+  // (rooms, sessions, crew) is saved on the task's Cue Plan field and replaces these defaults.
+  summit: {
+    name: 'Wasatch Leaders Summit', kind: 'conference', date: '2027-04-15', dateLabel: 'Thu, Apr 15, 2027',
+    venue: 'Salt Palace Convention Center, SLC', tz: 'America/Denver', taskId: '86bcz7rmz',
+    coordinator: { name: 'Afia', phone: '+15127994646', phoneLabel: '(512) 799-4646' },
+    lanes: ['Main Stage'],
+    vendors: [],
+    moments: [],
+  },
 };
 module.exports = { EVENTS };

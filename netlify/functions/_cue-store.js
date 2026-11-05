@@ -118,7 +118,29 @@ function makeLoader({ api, sinceOf, ttl = 4000, sharedTtl = 3000, staleOk = 1500
     if (store) store.delete('snap/' + taskId).catch(() => {});
   }
 
-  return { load, connect, forget, local, get usingShared() { return !!store; } };
+  // Show-flow writes read the Cue State field, change it and write it back. With several rooms
+  // calling GO at once, two functions could read the same state and the second write would erase
+  // the first GO. This lock lets one write through at a time (claim-a-key with onlyIfNew).
+  // A lock older than lockStale is from a function that died mid-write and is taken over.
+  async function lock(taskId, { wait = 4000, lockStale = 8000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+    if (!store) return async () => {};
+    const k = 'wlock/' + taskId, me = Math.random().toString(36).slice(2);
+    const until = now() + wait;
+    for (;;) {
+      let got = false;
+      try { got = !!(await store.set(k, JSON.stringify({ at: now(), me }), { onlyIfNew: true })).modified; }
+      catch (e) { warn(e.message); return async () => {}; } // store down: same behaviour as before the lock
+      if (got) return async () => { try { await store.delete(k); } catch (_) { /* goes stale on its own */ } };
+      let held = null;
+      try { held = await store.get(k, { type: 'json' }); } catch (_) { held = null; }
+      const heldAt = Number(held && held.at);
+      if (!held || !Number.isFinite(heldAt) || now() - heldAt > lockStale) { try { await store.delete(k); } catch (_) { /* retry */ } continue; }
+      if (now() > until) return null;
+      await sleep(120 + Math.floor(Math.random() * 120));
+    }
+  }
+
+  return { load, connect, forget, lock, local, get usingShared() { return !!store; } };
 }
 
 module.exports = { makeLoader, fetchComments, slim, PAGE, MAX_PAGES };
