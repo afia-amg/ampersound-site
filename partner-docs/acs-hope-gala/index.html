@@ -181,6 +181,29 @@
  };
 })();
 </script>
+<script>
+/* One-time unsigned reset for this client only. Keep planning drafts intact. */
+(function () {
+ var key = 'amg-portal-acs-hope-gala-v1';
+ var reset = '2026-11-05T01:54:00.000Z';
+ try {
+  var saved = JSON.parse(localStorage.getItem(key) || '{}');
+  if (saved.signatureResetVersion === reset) return;
+  var booking = saved.booking || {};
+  if (!booking.signedAt || Date.parse(booking.signedAt) <= Date.parse(reset)) {
+   delete booking.signedAt;
+   delete booking.signedName;
+   delete booking.serverSigned;
+   delete booking.signaturePending;
+   delete saved.pendingSignature;
+   saved.outbox = (saved.outbox || []).filter(function (item) { return item.kind !== 'signature'; });
+  }
+  saved.booking = booking;
+  saved.signatureResetVersion = reset;
+  localStorage.setItem(key, JSON.stringify(saved));
+ } catch (e) {}
+})();
+</script>
 <script src="/partner-docs/_assets/portal.js"></script>
 <script>
 /* ACS pays the full fee by ACH against one invoice through its vendor system
