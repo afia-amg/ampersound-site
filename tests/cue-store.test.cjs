@@ -21,8 +21,8 @@ function memoryStore() {
   const data = new Map(), ops = [];
   return {
     data, ops,
-    async get(k) { ops.push('get ' + k); return data.has(k) ? JSON.parse(data.get(k)) : null; },
-    async set(k, v, o = {}) { ops.push('set ' + k); if (o.onlyIfNew && data.has(k)) return { modified: false }; data.set(k, JSON.stringify(v)); return { modified: true, etag: '"1"' }; },
+    async get(k) { ops.push('get ' + k); if (!data.has(k)) return null; try { return JSON.parse(data.get(k)); } catch (_) { return data.get(k); } },
+    async set(k, v, o = {}) { ops.push('set ' + k); if (o.onlyIfNew && data.has(k)) return { modified: false }; data.set(k, typeof v === 'string' ? v : JSON.stringify(v)); return { modified: true, etag: '"1"' }; },
     async setJSON(k, v) { ops.push('setJSON ' + k); data.set(k, JSON.stringify(v)); return { modified: true }; },
     async delete(k) { ops.push('delete ' + k); data.delete(k); },
   };
@@ -103,4 +103,23 @@ test('a broken shared store falls back to ClickUp', async () => {
   assert.equal(got.comments.length, 4);
   const none = makeLoader({ api, sinceOf: () => 0 }); none.connect({});
   assert.equal((await none.load('task', false)).comments.length, 4, 'no Blobs package or environment: plain ClickUp reads');
+});
+
+test('show-flow writes take turns through the lock', async () => {
+  const store = memoryStore();
+  let t = 1000;
+  const l = makeLoader({ api: async () => ({}), sinceOf: () => 0, now: () => t }); l.connect(null, store);
+  const release = await l.lock('task');
+  assert.ok(release, 'first writer gets the lock');
+  const sleep = async (ms) => { t += ms; };
+  assert.equal(await l.lock('task', { wait: 500, sleep }), null, 'second writer gives up instead of overwriting');
+  await release();
+  const again = await l.lock('task', { sleep });
+  assert.ok(again, 'free again after release'); await again();
+  // A writer that died mid-write leaves a stale lock; the next writer takes it over.
+  await store.set('wlock/task', JSON.stringify({ at: t - 60000, me: 'dead' }), { onlyIfNew: true });
+  const taken = await l.lock('task', { sleep });
+  assert.ok(taken, 'stale lock is taken over'); await taken();
+  const none = makeLoader({ api: async () => ({}), sinceOf: () => 0 }); none.connect({});
+  assert.equal(typeof (await none.lock('task')), 'function', 'no shared store: writes run as before');
 });
