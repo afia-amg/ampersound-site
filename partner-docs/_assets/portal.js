@@ -129,6 +129,6 @@ function wire(){each('[data-check-payment]',function(b){b.addEventListener('clic
 // this second pass can run after DOMContentLoaded has already fired; waiting for
 // that event then would leave the portal blank.
 function boot(){document.title=P.client.name+' | Ampersound Media Group';render();verifyPayment();pullData().then(function(changed){pulled=true;if(changed)render();pushPending();});var s=readStore(),queued=(s.outbox||[]).some(function(i){return i.kind==='signature';});if(s.pendingSignature&&!queued)queueOutbox('signature',AGREEMENT,agreementPayload('signed',{signature:s.pendingSignature,signedAt:s.booking&&s.booking.signedAt||new Date().toISOString(),signerName:s.booking&&s.booking.signedName||P.client.contacts}));flushOutbox();if(P.mode==='proposal'&&!booking.viewedAt){booking.viewedAt=new Date().toISOString();var s2=readStore();s2.booking=booking;writeStore(s2);post(AGREEMENT,agreementPayload('viewed')).catch(function(){});}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+if(document.readyState==='interactive'||document.readyState==='complete')boot();else document.addEventListener('DOMContentLoaded',boot);
 window.addEventListener('focus',function(){if(!unlocked)verifyPayment();if(pulled&&!pendingSections().length)pullData().then(function(c){if(c)render();});});
 })();
