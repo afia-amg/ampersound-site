@@ -19,14 +19,34 @@ function backend(file,{paid=false,signed=false,legacy=false,data={},email=config
   {id:EMAIL_FIELD,value:email},{id:DEPOSIT_FIELD,value:637.50},
   {id:DATA_FIELD,value:JSON.stringify(data)}
  ]};
- const deps={
-  PORTALS:{test:{...config,legacyBooked:legacy}},
-  findAgreement:async()=>{if(fail)throw Error('mock outage');return missing?null:task;},
-  receipts:async()=>paid?[{amount,paymentLink:link,paidAt:'2026-10-28T12:00:00Z'}]:[],
-  signatureRecord:async()=>signed?{signedName:'Test Signer',signedAt:'2026-10-27T12:00:00Z'}:null,
-  api:async(url,options)=>{writes.push({url,value:JSON.parse(options.body).value});return {};},
+ const integration=require('../netlify/functions/_integration');
+ const crypto=require('node:crypto');
+ let helpers;
+ const api=async(url,options)=>{
+  if(!options){
+   if(fail)throw Error('mock outage');
+   if(url.endsWith('/comment')){
+    const comments=[];
+    if(signed)comments.push({comment_text:'Agreement signed digitally\nSigned by: Test Signer\nDate: 2026-10-27T12:00:00Z'});
+    if(paid)comments.push({comment_text:helpers.seal({v:1,taskId:task.id,sessionId:'test-session',currency:'usd',amount,paymentLink:link,paidAt:'2026-10-28T12:00:00Z'})});
+    return {comments};
+   }
+   return missing?null:task;
+  }
+  writes.push({url,value:JSON.parse(options.body).value});return {};
  };
- const context={exports:{},require:name=>{assert.equal(name,'./_payment-receipts');return deps;},
+ // Load the real shared helper against mocked transport, not a duplicate gate.
+ const helperContext={exports:{},module:{exports:{}},Buffer,
+  process:{env:{STRIPE_WEBHOOK_SECRET:'mock'}},
+  require:name=>name==='crypto'?crypto:{...integration,api}};
+ vm.runInNewContext(read('netlify/functions/_payment-receipts.js'),helperContext);
+ helpers=helperContext.module.exports;
+ helpers.PORTALS.test={...config,legacyBooked:legacy};
+ const context={exports:{},require:name=>{
+   if(name==='./_payment-receipts')return helpers;
+   if(name==='./_cue-sync')return {syncTimeline:async()=>({synced:false,reason:'mock-only'})};
+   throw Error('Unexpected dependency '+name);
+  },
   process:{env:{CLICKUP_API_TOKEN:'mock',STRIPE_WEBHOOK_SECRET:'mock'}},console:quiet};
  vm.runInNewContext(read('netlify/functions/'+file),context,{filename:file});
  return {writes,call:async(method='GET',body)=>{const r=await context.exports.handler({
@@ -120,12 +140,14 @@ test('invalid sections and oversized data are rejected without writes',async()=>
  assert.equal((await b.call('POST',{slug:'test',section:'songs',value:{notes:'x'.repeat(61000)}})).status,413);
  assert.equal(b.writes.length,0);
 });
-test('payment only unlocks for matching amount and Stripe link',async()=>{
+test('payment only unlocks with a current signature, matching amount and Stripe link',async()=>{
  for(const options of [{paid:false},{paid:true,amount:1},{paid:true,link:'wrong'}]){
   const r=await backend('payment-status.js',options).call();
   assert.equal(r.unlocked,false);assert.equal(r.verified,false);
  }
- const r=await backend('payment-status.js',{paid:true}).call();
+ const unsigned=await backend('payment-status.js',{paid:true}).call();
+ assert.equal(unsigned.verified,true);assert.equal(unsigned.unlocked,false);
+ const r=await backend('payment-status.js',{paid:true,signed:true}).call();
  assert.equal(r.unlocked,true);assert.equal(r.verified,true);
 });
 test('server signature is returned even before deposit payment',async()=>{
