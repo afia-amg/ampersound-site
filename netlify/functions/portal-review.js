@@ -3,7 +3,7 @@
 // task (created if Rex has not made one yet) and mirrored on their agreement so
 // the portal shows it on any device. Only booked clients whose event has passed
 // can submit, and the server decides both from ClickUp, never from the browser.
-const {PORTALS,findAgreement,receipts,api}=require('./_payment-receipts');
+const {PORTALS,findAgreement,bookingState,api}=require('./_payment-receipts');
 const POST_EVENT_LIST='901418578200';
 const A={email:'3f38f15e-6aa4-4481-9365-d4a911d68195',deposit:'f18252f2-13c7-4b04-a8d3-2b38dc096791',data:'eb1c1d22-4c8c-46aa-bf7b-d63a07b283b3',eventName:'4299965c-96e2-430e-947a-ac16e9068aee',eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8'};
 const R={clientName:'01b694ba-6da6-4e4c-a3d3-af4b96a7a0c5',eventName:'4299965c-96e2-430e-947a-ac16e9068aee',eventDate:'4006b42c-6597-49ea-bbb6-beb6bcc323b8',email:'6662e48d-f76c-4bf4-aa23-1d56037dd61c',rating:'6bee26d1-b86e-46ef-b523-50f6261f702e',text:'39d4731e-5ae4-41be-8c3f-bb8701814691',highlight:'b9310261-4733-4541-9ee6-854397abc11a',permission:'fdedaddf-03ff-4a31-8872-480a88ef5b69',share:'cf7545e5-fb80-4fb1-9ec9-44f82f084930',publish:'f39956bc-e153-47f8-a47e-413a0eb347b6',status:'46af20f3-ccab-4340-84c2-cf1d41482949'};
@@ -17,12 +17,7 @@ const field=(task,id)=>(task.custom_fields||[]).find(f=>f.id===id);
 const str=(v,max)=>String(v==null?'':v).trim().slice(0,max);
 
 async function booked(config,task){
- if(config.legacyBooked)return true;
- const deposit=field(task,A.deposit);
- const expected=config.amount||Math.round(Number(deposit&&deposit.value)*100);
- if(!Number.isInteger(expected)||expected<=0)return false;
- const rr=await receipts(task.id);
- return rr.some(r=>r.amount===expected&&(!config.linkId||r.paymentLink===config.linkId));
+ return (await bookingState(config,task)).unlocked===true;
 }
 async function findPostEvent(email,eventName){
  for(let page=0;page<20;page++){
