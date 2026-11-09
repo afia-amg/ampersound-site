@@ -216,7 +216,9 @@ function reviewBackend({legacy=true,eventMs=Date.now()-3*864e5,existing=true}={}
  const task={id:'test-only',name:'Test | Wedding | 2026-01-01',custom_fields:[
   {id:EMAIL_FIELD,value:config.email},{id:DEPOSIT_FIELD,value:637.50},{id:DATA_FIELD,value:'{"songs":{"notes":"Keep"}}'},
   {id:'4006b42c-6597-49ea-bbb6-beb6bcc323b8',value:String(eventMs)},{id:'4299965c-96e2-430e-947a-ac16e9068aee',value:'Test Wedding'}]};
- const deps={PORTALS:{test:{...config,legacyBooked:legacy}},findAgreement:async()=>task,receipts:async()=>[],
+ const portalConfig={...config,legacyBooked:legacy};
+ const deps={PORTALS:{test:portalConfig},findAgreement:async()=>task,
+  bookingState:async(cfg,t)=>legacy?{verified:false,unlocked:true,signed:true,source:'existing-booking'}:{verified:false,unlocked:false,signed:false,source:'stripe-webhook'},
   api:async(url,options={})=>{calls.push({url,method:options.method||'GET',body:options.body?JSON.parse(options.body):null});
    if(url.startsWith('/list/901418578200/task?'))return {tasks:existing?[{id:'post-1',custom_fields:[{id:'6662e48d-f76c-4bf4-aa23-1d56037dd61c',value:config.email}]}]:[],last_page:true};
    if(url==='/list/901418578200/task')return {id:'post-new'};
