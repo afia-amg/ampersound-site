@@ -57,7 +57,7 @@ test('signature alone and forged receipt stay locked',async()=>{
  assert.equal((await R.bookingState(R.PORTALS['angela-joe'],a)).unlocked,false);
 });
 test('reset blocks older signature; a new signature after reset works',async()=>{
- const a=reset();commentRows[a.id]=[{comment_text:'Previous digital signature (portal reset to unsigned)\nHistorical record only. A new signature is required.'},sig];
+ const a=reset();commentRows[a.id]=[{comment_text:'AMG_SIGNATURE_RESET_V1'},sig];
  assert.equal(await R.signatureRecord(a),null);
  commentRows[a.id].unshift(sig);assert.equal((await R.signatureRecord(a)).signedName,'Angela Hussain');
 });
