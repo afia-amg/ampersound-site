@@ -2,7 +2,7 @@
 // Every portal entry (songs, timeline, package choice) lives on the client's
 // ClickUp agreement, so it follows them to any browser and Afia sees it live.
 // A saved timeline also becomes the event's draft run of show on the Cue Sheet (_cue-sync.js).
-const {PORTALS,findAgreement,receipts,api}=require('./_payment-receipts');
+const {PORTALS,findAgreement,bookingState,api}=require('./_payment-receipts');
 const {syncTimeline}=require('./_cue-sync');
 const DATA_FIELD='eb1c1d22-4c8c-46aa-bf7b-d63a07b283b3';
 const SUMMARY_FIELD='f42375bc-bf82-4914-88f7-c3a06e812c91';
@@ -17,12 +17,8 @@ async function access(config){
  if(!task)return {task:null,unlocked:false};
  const email=(task.custom_fields||[]).find(f=>f.id===EMAIL_FIELD);
  if(!email||String(email.value||'').toLowerCase()!==config.email)throw new Error('Agreement email mismatch');
- if(config.legacyBooked)return {task,unlocked:true};
- const deposit=(task.custom_fields||[]).find(f=>f.id===DEPOSIT_FIELD);
- const expected=config.amount||Math.round(Number(deposit&&deposit.value)*100);
- if(!Number.isInteger(expected)||expected<=0)return {task,unlocked:false};
- const rr=await receipts(task.id);
- return {task,unlocked:rr.some(r=>r.amount===expected&&(!config.linkId||r.paymentLink===config.linkId))};
+ const state=await bookingState(config,task);
+ return {task,unlocked:state.unlocked};
 }
 function readData(task){
  const f=(task.custom_fields||[]).find(x=>x.id===DATA_FIELD);
