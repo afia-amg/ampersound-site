@@ -58,4 +58,8 @@ const EVENTS = {
     moments: [],
   },
 };
+// Real bookings live in their own file so adding one never touches the demos above.
+// A booking can never replace a demo slug.
+const { BOOKINGS } = require('./_cue-bookings');
+for (const [slug, ev] of Object.entries(BOOKINGS)) if (!Object.prototype.hasOwnProperty.call(EVENTS, slug)) EVENTS[slug] = ev;
 module.exports = { EVENTS };

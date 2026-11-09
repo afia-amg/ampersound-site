@@ -1,7 +1,9 @@
 'use strict';
 // Every portal entry (songs, timeline, package choice) lives on the client's
 // ClickUp agreement, so it follows them to any browser and Afia sees it live.
+// A saved timeline also becomes the event's draft run of show on the Cue Sheet (_cue-sync.js).
 const {PORTALS,findAgreement,receipts,api}=require('./_payment-receipts');
+const {syncTimeline}=require('./_cue-sync');
 const DATA_FIELD='eb1c1d22-4c8c-46aa-bf7b-d63a07b283b3';
 const SUMMARY_FIELD='f42375bc-bf82-4914-88f7-c3a06e812c91';
 const EMAIL_FIELD='3f38f15e-6aa4-4481-9365-d4a911d68195';
@@ -94,6 +96,8 @@ exports.handler=async(event)=>{
   if(p.labels&&typeof p.labels==='object'&&JSON.stringify(p.labels).length<8000)d.labels[p.section]=p.labels;
   await api('/task/'+encodeURIComponent(task.id)+'/field/'+DATA_FIELD,{method:'POST',body:JSON.stringify({value:JSON.stringify(d)})});
   try{await api('/task/'+encodeURIComponent(task.id)+'/field/'+SUMMARY_FIELD,{method:'POST',body:JSON.stringify({value:summarize(d)})});}catch(e){console.error('Summary update failed:',e.message);}
+  // The client's save already succeeded. A Cue Sheet hiccup is logged, never shown to the client.
+  if(p.section==='timeline'){try{await syncTimeline({agreementTaskId:task.id,timeline:p.value,api});}catch(e){console.error('Cue Sheet sync failed:',e.message);}}
   return reply(200,{ok:true,section:p.section,at});
  }catch(e){console.error('Portal data error:',e.message);return reply(503,{ok:false,error:'Portal data unavailable'});}
 };
