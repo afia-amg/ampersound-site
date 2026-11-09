@@ -19,13 +19,20 @@ function unseal(v){try{if(typeof v!=='string'||!v.startsWith(PREFIX))return null
 async function receipts(taskId){const u=new Map();for(const c of await comments(taskId)){const r=unseal(text(c));if(r&&r.taskId===taskId)u.set(r.sessionId,r)}return[...u.values()]}
 async function receiptsForAgreement(agreementId,installmentIds=[]){const ids=[agreementId,...installmentIds].filter(Boolean),u=new Map();for(const id of ids)for(const r of await receipts(id))u.set(r.sessionId,r);return[...u.values()]}
 function iso(v){const d=new Date(String(v||'').replace(/\s+at\s+/i,' ').replace(/\*/g,'').trim());return Number.isNaN(d.getTime())?null:d.toISOString()}
+function isSignatureReset(value){
+ const t=String(value||'').replace(/\r\n/g,'\n').trim();
+ // Explicit control record only. Mentions or quotes in ordinary notes do not count.
+ if(t==='AMG_SIGNATURE_RESET_V1')return true;
+ // Compatibility with the historical Hope Gala reset record already on file.
+ return /^Previous digital signature \(portal reset to unsigned at Afia's request on [A-Z][a-z]{2} \d{1,2}, \d{4}\)\nHistorical record only\. A new signature is required\.\nSigned by: [^\n]+\nDate: [^\n]+(?:\n|$)/.test(t);
+}
 async function signatureRecord(task){
  const status=String(task.status&&task.status.status||'').toLowerCase();
  if(task.archived||['lost','closed [lost]','cancelled','canceled','declined'].includes(status))return null;
  // Comments arrive newest first. A reset invalidates older signatures.
  for(const c of await comments(task.id)){
   const t=text(c);
-  if(/signature.*(?:reset|unsigned)|(?:reset|unsigned).*signature|historical record only|new signature is required/i.test(t))return null;
+  if(isSignatureReset(t))return null;
   if(t.includes(SIGNED_MARK)){
    const n=/Signed by:\**\s*([^\n*]+)/.exec(t),d=/Date:\**\s*([^\n]+)/.exec(t);
    const signedAt=(d&&iso(d[1]))||(c.date?iso(new Date(Number(c.date)).toISOString()):null);
