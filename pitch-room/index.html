@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Pitch Room | Ampersound Media Group</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:oklch(13% 0.01 250);--surface:oklch(16% 0.008 250);--border:oklch(35% 0.02 70/0.2);--border-strong:oklch(55% 0.08 70/0.35);--text:oklch(94% 0.008 70);--text-dim:oklch(78% 0.008 70);--text-muted:oklch(62% 0.01 70);--gold:oklch(72% 0.1 70);--gold-bright:oklch(80% 0.1 70);--violet:oklch(52% 0.2 280);--field-bg:oklch(14% 0.008 250);--field-border:oklch(30% 0.03 70/0.3);--error:oklch(66% 0.18 25)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Open Sans',sans-serif;font-size:16px;line-height:1.6;color:var(--text);background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:3rem 1rem;-webkit-font-smoothing:antialiased}
+.wrap{width:100%;max-width:560px}
+.nav-back{display:inline-flex;gap:.4rem;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:600;color:var(--text-muted);text-decoration:none;margin-bottom:2rem}
+.nav-back:hover{color:var(--gold)}
+header{text-align:center;margin-bottom:2.5rem}
+.mark{font-family:'Montserrat',sans-serif;font-weight:700;letter-spacing:.32em;text-transform:uppercase;font-size:.85rem}
+.mark span{color:var(--gold);letter-spacing:0;font-size:1.3rem;margin-left:.35rem}
+h1{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.8rem;letter-spacing:-.02em;margin:1rem 0 .5rem}
+header p{color:var(--text-dim);max-width:420px;margin:0 auto}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem 2.25rem}
+label{display:block;font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:600;letter-spacing:.04em;color:var(--text-muted);margin-bottom:.4rem}
+input{width:100%;font:inherit;padding:.75rem 1rem;border:1px solid var(--field-border);border-radius:8px;background:var(--field-bg);color:var(--text);outline:none}
+input:focus{border-color:var(--gold);box-shadow:0 0 0 3px oklch(72% 0.1 70/0.12)}
+input[aria-invalid=true]{border-color:var(--error)}
+button{width:100%;margin-top:1.25rem;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.9rem;letter-spacing:.03em;padding:.85rem;background:var(--gold);color:var(--bg);border:none;border-radius:8px;cursor:pointer}
+button:hover{background:var(--gold-bright)}
+button:disabled{opacity:.55;cursor:wait}
+button:focus-visible,a:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.msg{margin-top:1rem;padding:.75rem 1rem;border-radius:8px;font-size:.9rem;border:1px solid var(--error);color:var(--error);background:oklch(60% 0.2 25/0.08)}
+.msg[hidden]{display:none}
+.results{margin-top:2rem}
+.results[hidden]{display:none}
+.label{font-family:'Montserrat',sans-serif;font-weight:700;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem}
+.pitch{display:block;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:.75rem;text-decoration:none;color:var(--text)}
+.pitch:hover{border-color:var(--border-strong)}
+.pitch strong{display:block;font-family:'Montserrat',sans-serif;font-size:1rem}
+.pitch span{font-size:.9rem;color:var(--text-dim)}
+.again{background:none;color:var(--gold);width:auto;padding:0;margin-top:.5rem;font-size:.8rem}
+.again:hover{background:none;color:var(--gold-bright)}
+footer{margin-top:3rem;text-align:center;font-size:.8rem;color:var(--text-muted)}
+footer a{color:var(--gold);text-decoration:none}
+@media(max-width:640px){.card{padding:1.5rem 1.25rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <a href="/" class="nav-back">&larr; Back to ampersoundmediagroup.com</a>
+ <header>
+  <div class="mark">Ampersound<span>&amp;</span></div>
+  <h1>Pitch Room</h1>
+  <p>Your pitch from Afia and Adam. Enter the email address we reached out to.</p>
+ </header>
+ <div class="card" id="lookup">
+  <label for="email">Email address</label>
+  <input type="email" id="email" autocomplete="email" inputmode="email" aria-describedby="msg">
+  <button type="button" id="go">Open my pitch</button>
+  <p class="msg" id="msg" role="alert" hidden></p>
+ </div>
+ <div class="results" id="results" hidden>
+  <p class="label">Your pitches</p>
+  <div id="list"></div>
+  <button type="button" class="again" id="again">Use a different email</button>
+ </div>
+ <footer><a href="https://ampersoundmediagroup.com">ampersoundmediagroup.com</a> &middot; afia@ampersoundmediagroup.com<br>Sound. Presence. Atmosphere.</footer>
+</div>
+<script>
+(function () {
+ var LOOKUP = '/.netlify/functions/pitch-room-lookup';
+ var input = document.getElementById('email'), btn = document.getElementById('go'), msg = document.getElementById('msg');
+ var lookup = document.getElementById('lookup'), results = document.getElementById('results'), list = document.getElementById('list');
+ function show(text) { msg.textContent = text; msg.hidden = false; }
+ // Only same-site pitch paths are ever opened.
+ function safe(url) { return typeof url === 'string' && /^\/pitch-room\/[a-z0-9-]+\/$/.test(url); }
+ async function open() {
+  var email = input.value.trim();
+  msg.hidden = true; input.removeAttribute('aria-invalid');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { input.setAttribute('aria-invalid', 'true'); show('Enter a valid email address.'); return; }
+  btn.disabled = true; btn.textContent = 'Checking\u2026';
+  try {
+   var res = await fetch(LOOKUP, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) });
+   var data = await res.json().catch(function () { return {}; });
+   if (!res.ok) throw new Error(data.message || 'Something went wrong. Try again in a moment.');
+   var pitches = (data.pitches || []).filter(function (p) { return safe(p.url); });
+   if (!pitches.length) throw new Error('Something went wrong. Try again in a moment.');
+   if (pitches.length === 1) { location.assign(pitches[0].url); return; }
+   list.textContent = '';
+   pitches.forEach(function (p) {
+    var a = document.createElement('a'), t = document.createElement('strong'), o = document.createElement('span');
+    a.className = 'pitch'; a.href = p.url; t.textContent = p.title; o.textContent = p.org || '';
+    a.appendChild(t); a.appendChild(o); list.appendChild(a);
+   });
+   lookup.hidden = true; results.hidden = false;
+  } catch (e) { show(e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Open my pitch'; }
+ }
+ btn.addEventListener('click', open);
+ input.addEventListener('keydown', function (e) { if (e.key === 'Enter') open(); });
+ document.getElementById('again').addEventListener('click', function () { results.hidden = true; lookup.hidden = false; input.value = ''; input.focus(); });
+})();
+</script>
+</body>
+</html>
