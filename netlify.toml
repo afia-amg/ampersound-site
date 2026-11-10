@@ -69,3 +69,11 @@
     X-Robots-Tag = "noindex, nofollow"
     Referrer-Policy = "no-referrer"
     Cache-Control = "no-cache"
+
+# Pitch Room: prospect decks behind the email lookup. Kept out of search and referrer logs.
+[[headers]]
+  for = "/pitch-room/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-cache"
