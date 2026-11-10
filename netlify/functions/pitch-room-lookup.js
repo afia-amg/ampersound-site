@@ -22,7 +22,7 @@ const PITCHES = {
 const H = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' };
 const reply = (status, body) => ({ statusCode: status, headers: H, body: JSON.stringify(body) });
 const hash = (email) => crypto.createHash('sha256').update(email).digest('hex');
-const NOT_FOUND = "We couldn't find a pitch for that email. Use the address we emailed you at, or reach Afia at afia@ampersoundmediagroup.com.";
+const NOT_FOUND = "Hmm, we don't have a pitch under that email yet. Try the address we reached you at, or say hi to Afia at afia@ampersoundmediagroup.com.";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function find(email) {
@@ -35,7 +35,7 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch (_) { return reply(400, { message: 'Invalid request' }); }
   const email = String((body && body.email) || '').trim().toLowerCase();
-  if (email.length > 254 || !EMAIL.test(email)) return reply(400, { message: 'Enter a valid email address.' });
+  if (email.length > 254 || !EMAIL.test(email)) return reply(400, { message: 'That email doesn\u2019t look quite right. Give it another try.' });
   const pitches = find(email);
   if (!pitches.length) return reply(404, { message: NOT_FOUND });
   return reply(200, { pitches });
