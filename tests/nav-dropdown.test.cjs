@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 // CSS contract checks complement the slow-pointer browser regression test.
-for (const [file, breakpoint] of [['index.html', 1000], ['speaking.html', 800], ['testimonials.html', 800], ['book.html', 800]]) {
+// Every public page carries the full navigation, so all collapse at the same 1000px breakpoint.
+for (const [file, breakpoint] of [['index.html', 1000], ['speaking.html', 1000], ['testimonials.html', 1000], ['book.html', 1000], ['intake.html', 1000]]) {
   test(`${file}: desktop hover bridge covers the submenu gap without changing mobile taps`, () => {
     const html = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
     const gap = Number(html.match(/\.nav-dropdown-menu\{[^}]*top:calc\(100% \+ (\d+)px\)/)[1]);
