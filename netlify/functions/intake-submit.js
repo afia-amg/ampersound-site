@@ -23,7 +23,7 @@ const FIELDS=Object.freeze({
   business_name:['859f2865-375b-444b-a80e-88d941740249','short_text'],
   referral:['2cdd3842-f23c-4e3e-8d7e-39b2fd026e42','short_text']
 });
-const SERVICE_MAP={dj:['DJ/Sound Direction'],mc:['MC/Event Hosting'],both:['DJ/Sound Direction','MC/Event Hosting'],spoken:['Spoken Word'],equip:['Equipment Rental'],unsure:[]};
+const SERVICE_MAP={dj:['DJ/Sound Direction'],mc:['MC/Event Hosting'],both:['DJ/Sound Direction','MC/Event Hosting'],spoken:['Spoken Word'],equip:['Equipment Rental'],keynote:['Speaker/Keynote'],training:['Speaker/Keynote'],playlist:['Custom Playlist'],unsure:[]};
 function optionName(f,v){const wanted=String(v||'').trim().toLowerCase();return(f.type_config&&f.type_config.options||[]).find(x=>String(x.name||x.label||'').trim().toLowerCase()===wanted)||null}
 function phoneValue(v){
   const s=string(v),digits=s.replace(/\D/g,'');
