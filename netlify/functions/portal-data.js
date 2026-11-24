@@ -11,6 +11,8 @@ const DEPOSIT_FIELD='f18252f2-13c7-4b04-a8d3-2b38dc096791';
 const SECTIONS=['songs','timeline','option'];
 const headers={'Content-Type':'application/json','Cache-Control':'no-store, private, max-age=0','X-Content-Type-Options':'nosniff'};
 const reply=(status,body)=>({statusCode:status,headers,body:JSON.stringify(body)});
+// Registered portals first; Phase 2 portals read their identity from ClickUp.
+async function configOf(slug){slug=String(slug||'');if(Object.prototype.hasOwnProperty.call(PORTALS,slug))return PORTALS[slug];const r=require('./_portal-record');const t=await r.findBySlug(slug);return t?r.configFor(t):null;}
 
 async function access(config){
  const task=await findAgreement(config.taskId?config:{email:config.email});
@@ -65,7 +67,7 @@ exports.handler=async(event)=>{
  if(!process.env.CLICKUP_API_TOKEN||!process.env.STRIPE_WEBHOOK_SECRET)return reply(503,{ok:false,error:'Portal data unavailable'});
  try{
   if(event.httpMethod==='GET'){
-   const config=PORTALS[(event.queryStringParameters||{}).slug];
+   const config=await configOf((event.queryStringParameters||{}).slug);
    if(!config)return reply(404,{ok:false,error:'Portal not found'});
    const {task,unlocked}=await access(config);
    if(!task)return reply(200,{ok:true,unlocked:false,data:{}});
@@ -76,7 +78,7 @@ exports.handler=async(event)=>{
   }
   if(event.httpMethod!=='POST')return reply(405,{ok:false,error:'Method not allowed'});
   let p;try{p=JSON.parse(event.body||'{}');}catch(_){return reply(400,{ok:false,error:'Invalid JSON'});}
-  const config=PORTALS[p.slug];
+  const config=await configOf(p.slug);
   if(!config)return reply(404,{ok:false,error:'Portal not found'});
   if(!SECTIONS.includes(p.section))return reply(400,{ok:false,error:'Invalid section'});
   const raw=JSON.stringify(p.value===undefined?null:p.value);

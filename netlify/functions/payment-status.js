@@ -1,11 +1,15 @@
 'use strict';
 const {PORTALS,findAgreement,receipts,receiptsForAgreement,bookingState}=require('./_payment-receipts');
 async function aggregate(taskId,ids){if(typeof receiptsForAgreement==='function')return receiptsForAgreement(taskId,ids);let out=[];for(const id of [taskId,...ids].filter(Boolean))out=out.concat(await receipts(id));return out;}
+// Registered portals first; Phase 2 portals read their payment identity from ClickUp.
+async function configOf(slug){if(Object.prototype.hasOwnProperty.call(PORTALS,slug))return PORTALS[slug];if(!process.env.CLICKUP_API_TOKEN)return null;const r=require('./_portal-record');const t=await r.findBySlug(slug);return t?r.configFor(t):null;}
 const headers={'Content-Type':'application/json','Cache-Control':'no-store, private, max-age=0','X-Content-Type-Options':'nosniff'};
 exports.handler=async(event)=>{
  const reply=(status,body)=>({statusCode:status,headers,body:JSON.stringify(body)});
  if(event.httpMethod!=='GET')return reply(405,{error:'Method not allowed'});
- const config=PORTALS[(event.queryStringParameters||{}).slug];
+ let config;
+ try{config=await configOf(String((event.queryStringParameters||{}).slug||''));}
+ catch(e){console.error('Payment config unavailable:',e.message);return reply(503,{verified:false,unlocked:false,error:'Payment verification unavailable'});}
  if(!config)return reply(404,{error:'Portal not found',verified:false,unlocked:false});
  if(!process.env.CLICKUP_API_TOKEN||!process.env.STRIPE_WEBHOOK_SECRET)return reply(503,{verified:false,unlocked:false,error:'Payment verification unavailable'});
  try{

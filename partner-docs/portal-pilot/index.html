@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Portal Pilot | Ampersound Media Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/partner-docs/_assets/portal.css">
+</head>
+<body>
+<nav class="nav" id="nav"></nav>
+<main id="main"></main>
+<footer class="site">Ampersound Media Group &middot; Internal test portal</footer>
+<script src="/partner-docs/_assets/defaults.js"></script>
+<script>
+/* Internal Phase 2 pilot. Every client fact comes from the "TEST | Portal pilot"
+ * agreement in ClickUp (Portal Slug: portal-pilot). Not a client. */
+window.PORTAL = {
+ "slug": "portal-pilot",
+ "source": "clickup",
+ "mode": "proposal",
+ "client": {
+  "packageName": "Test Package",
+  "inclusions": ["Internal test only, {{start}} to {{end}}"]
+ },
+ "pricing": {
+  "lines": [{ "label": "Test service, {{start}} to {{end}}", "note": "Pilot of the ClickUp-backed portal", "value": "{{total}}" }],
+  "totalNote": "Internal test record. Paid by bank transfer, so no Stripe link."
+ },
+ "heard": { "title": "What this tests", "body": ["Every name, date, price and email on this page comes from the ClickUp agreement, not this file."] },
+ "nextStep": { "body": "Sign the agreement to confirm the signature saves to {{client}}'s ClickUp agreement.", "callLabel": "Email Afia", "callUrl": "mailto:afia@ampersoundmediagroup.com" },
+ "agreement": function (P) {
+  return AMG.standardAgreement({ client: P.client.name, eventDateLong: P.client.eventDateLong, venue: P.client.venue + (P.client.venueDetail ? ", " + P.client.venueDetail : ""), start: P.client.start, end: P.client.end, guests: P.client.guests, crew: "Test crew", scope: "Internal test service for the portal pilot.", balanceDue: P.pricing.balanceDue, intro: "Internal test agreement. Not a real booking." });
+ },
+ "footnote": "Internal test portal.",
+ "labels": AMG.weddingLabels,
+ "momentFields": [{ "key": "opener", "label": "Opening song", "hint": "At {{start}}" }],
+ "vibes": [["mixed", "Read the room"]],
+ "requests": [["none", "No guest requests"]],
+ "vendors": null,
+ "songSeed": { "moments": { "opener": "" }, "mustPlay": [""], "dontPlay": [""], "playlist": "", "vibe": "mixed", "guestRequests": "none", "notes": "" },
+ "timelineSeed": { "moments": [{ "time": "{{start}}", "event": "Test moment" }], "notes": "" },
+ "staffingOptions": null
+};
+</script>
+<script src="/partner-docs/_assets/portal-loader.js"></script>
+</body>
+</html>
