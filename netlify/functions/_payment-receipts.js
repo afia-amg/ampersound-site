@@ -4,7 +4,7 @@ const {api,listTasks,scalarField,AGREEMENTS_LIST,AGREEMENT_FIELDS}=require('./_i
 const PREFIX='AMG_STRIPE_RECEIPT_V1:',SIGNED_MARK='Agreement signed digitally',PAYMENTS_LIST='901422326497';
 const PORTALS={
  'rose-josh':{email:'rose.josh.home@gmail.com',taskId:'86bct9jkz',linkId:'plink_1UVEajBKPpxdHQElGhLmUODv',amount:67500},
- 'angela-joe':{email:'angelahussain99@gmail.com',taskId:'86bctjffd',linkId:'plink_1UVa9PBKPpxdHQEl78mAIESl',amount:63750,installments:[{num:2,taskId:'86bd0phz5',amount:63750}]},
+ 'angela-joe':{email:'angelahussain99@gmail.com',taskId:'86bctjffd',linkId:'plink_1UVa9PBKPpxdHQEl78mAIESl',amount:63750,installments:[{num:2,taskId:'86bd0phz5',amount:63750,allowMappedIdentity:false}]},
  'acs-hope-gala':{email:'averiel.bailey@cancer.org',taskId:'86bcxhw1t',paymentMethod:'external',amount:165000},
  'jaylin-goines':{email:'jaylingoines131594@gmail.com',legacyBooked:true},'portal-test':{email:'signature-test@ampersoundmediagroup.com',taskId:'86bct9u1m',legacyBooked:true},
  'angelica-nathan':{email:'liffcakeparties@gmail.com',legacyBooked:true},'katie-ryan':{email:'ryan.nelson.jrn@gmail.com',legacyBooked:true},
@@ -50,12 +50,12 @@ function validateInstallment(task,agreement,identity){
  if(!named||Number(named[1])!==number)return false;
  const own=taskIdentity(task,AGREEMENT_FIELDS);
  if((own.email&&own.email!==expected.email)||(own.date&&own.date!==expected.date)||(own.type&&own.type!==expected.type))return false;
- const mapped=Object.values(PORTALS).some(p=>p.taskId===agreement.id&&(p.installments||[]).some(i=>i.taskId===task.id&&i.num===number));
+ // A display/receipt mapping does not replace Angela's live relationship.
+ const mapped=Object.values(PORTALS).some(p=>p.taskId===agreement.id&&(p.installments||[]).some(i=>i.taskId===task.id&&i.num===number&&i.allowMappedIdentity!==false));
  const linked=(a,b)=>(a.linked_tasks||[]).some(x=>String(x.task_id||x.id||'')===b);
  return mapped||linked(task,agreement.id)||linked(agreement,task.id);
 }
-// Only the operator-controlled ClickUp field is accepted for the explicitly
-// mapped external-payment exception. Browser payloads/localStorage never count.
+// Only the operator-controlled ClickUp field counts for this mapped exception.
 function externalPaymentConfirmed(task,config){
  if(!task)return false;
  const c=config||Object.values(PORTALS).find(p=>p.taskId===task.id);
@@ -79,8 +79,6 @@ async function bookingState(config,task){
  const signedFields={signed:!!sig,signedName:sig?sig.signedName:null,signedAt:sig?sig.signedAt:null};
  if(config.paymentMethod==='external'){
   const confirmed=externalPaymentConfirmed(task,config);
-  // existing-booking is the engine's explicit non-Stripe access path. Never
-  // label an operator-confirmed ACH as a verified Stripe receipt.
   return{verified:false,unlocked:!!sig&&confirmed,source:confirmed?'existing-booking':'external-payment',paymentMethod:'external',confirmationSource:confirmed?'operator-confirmed-ach':null,...signedFields};
  }
  const expected=config.amount||Math.round(Number(scalarField(task,AGREEMENT_FIELDS.deposit))*100);
