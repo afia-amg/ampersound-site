@@ -16,156 +16,134 @@
 <footer class="site">Ampersound Media Group &middot; Sound. Presence. Atmosphere.</footer>
 <script src="/partner-docs/_assets/defaults.js"></script>
 <script>
-/* Grand opening proposal, so it sets PORTAL directly instead of using the
- * wedding defaults. Built from the quote Aubrey accepted on GigSalad on
- * Nov 20, 2026: $400, 4 hours (5:00 to 9:00 PM), Adam live-mixing with a full
- * sound system. The 4-hour scope replaces the 3-hour boilerplate that was
- * attached to the original GigSalad quote. Standard clauses come from
- * AMG.standardAgreement(); only DJ-only coordination and travel are adjusted. */
-(function () {
- var agreement = AMG.standardAgreement({
-  client: "Vessel Kitchen",
-  eventDateLong: "Wednesday, December 9, 2026",
-  venue: "Vessel Kitchen, 13314 S Towne Cmns Dr, Suite A-100, Herriman, UT 84096",
-  start: "5:00 PM",
-  end: "9:00 PM",
-  guests: "100",
-  crew: "Adam Roberts, DJ",
-  scope: "4 hours of live DJ mixing from 5:00 PM to 9:00 PM for the Vessel Kitchen VIP Grand Opening, with music customized to the event and its guests, and a full professional sound system. Load-in and soundcheck begin at 3:30 PM.",
-  balanceDue: "November 25, 2026",
-  intro: "This is the full agreement between Ampersound and Vessel Kitchen, with the numbers from the quote you accepted built in. If anything needs adjusting, we are open to that conversation.",
-  special: [
-   { title: "Crew Meal", body: "As offered in Client's booking request, Vessel Kitchen provides a complimentary meal for the Ampersound crew on the event day. The meal is a courtesy and does not change the fee." }
+/* Vessel Kitchen VIP Grand Opening. Phase 2 portal: this file holds only design and
+ * copy. Every client fact (names, email, date, times, venue, prices, payment link)
+ * comes from the Vessel Kitchen agreement in ClickUp (Portal Slug:
+ * vessel-kitchen-herriman). Tokens like {{deposit}} are filled from that agreement.
+ * Built from the quote Aubrey accepted on GigSalad on Nov 20, 2026: Adam live-mixing
+ * with a full sound system. The 4-hour scope replaces the 3-hour GigSalad boilerplate. */
+window.PORTAL = {
+ "slug": "vessel-kitchen-herriman",
+ "source": "clickup",
+ "mode": "proposal",
+ "client": {
+  "packageName": "Essential DJ",
+  "inclusions": [
+   "Adam Roberts live-mixing from {{start}} to {{end}}",
+   "Music customized to Vessel Kitchen and your guests, never a playlist on shuffle",
+   "Full professional sound system: speakers, mixer, and DJ gear",
+   "Setup and soundcheck 90 minutes before doors, breakdown after the last song"
   ]
- });
- agreement.clauses = agreement.clauses.map(function (c) {
-  if (c.title === "Travel") return { title: c.title, body: "No travel fee applies. Vessel Kitchen in Herriman is within 50 miles of Salt Lake City." };
-  if (c.title === "Timeline & Coordination") return { title: c.title, body: "This is a DJ-only engagement. Ampersound does not provide MC or event planning services. Ampersound follows Client's run of show and takes cues from Client's day-of contact. The final run of show is locked 14 days before the event." };
-  return c;
- });
-
- window.PORTAL = {
-  "slug": "vessel-kitchen-herriman",
-  "mode": "proposal",
-  "client": {
-   "name": "Vessel Kitchen",
-   "contacts": "Aubrey",
-   "signerDefault": "",
-   "primaryEmail": "",
-   "allEmails": [],
-   "eventDate": "2026-12-09",
-   "eventDateLong": "Wednesday, December 9, 2026",
-   "badge": "Dec 9, 2026",
-   "eventName": "VIP Grand Opening \u00b7 Herriman",
-   "eventType": "Other",
-   "venue": "Vessel Kitchen Herriman",
-   "venueDetail": "13314 S Towne Cmns Dr, Suite A-100, Herriman, UT 84096",
-   "coverageWindow": "5:00 PM to 9:00 PM",
-   "guests": "100",
-   "packageName": "Essential DJ",
-   "hours": "5:00 to 9:00 PM",
-   "services": ["DJ / Sound Direction"],
-   "inclusions": [
-    "Adam Roberts live-mixing from 5:00 to 9:00 PM, 4 hours",
-    "Music customized to Vessel Kitchen and your guests, never a playlist on shuffle",
-    "Full professional sound system: speakers, mixer, and DJ gear",
-    "Setup and soundcheck from 3:30 PM, breakdown after the last song"
+ },
+ "pricing": {
+  "lines": [
+   { "label": "Essential DJ, {{start}} to {{end}}", "note": "Adam live-mixing \u00b7 full sound system", "value": "{{total}}" }
+  ],
+  "totalNote": "The quote you accepted on November 20. Local to Herriman, so no travel fee."
+ },
+ "heard": {
+  "title": "What we heard",
+  "body": [
+   "Vessel Kitchen is opening in Herriman, and the night before the doors open to everyone, you are hosting the people who matter most: invited guests, community members, and local influencers.",
+   "You want a fun, upbeat atmosphere and music that keeps going from {{start}} to {{end}}, with a DJ who brings the full sound setup.",
+   "And you want the music built for your evening, not pulled from a set playlist."
+  ]
+ },
+ "nextStep": {
+  "body": "Read the agreement, sign it here, and pay the {{deposit}} deposit to lock in {{dateShort}}. Questions first? Email Afia.",
+  "callLabel": "Email Afia",
+  "callUrl": "mailto:afia@ampersoundmediagroup.com?subject=Vessel%20Kitchen%20VIP%20Grand%20Opening"
+ },
+ "agreement": function (P) {
+  var c = P.client;
+  var a = AMG.standardAgreement({
+   client: c.name,
+   eventDateLong: c.eventDateLong,
+   venue: c.venue + (c.venueDetail ? ", " + c.venueDetail : ""),
+   start: c.start,
+   end: c.end,
+   guests: c.guests,
+   crew: "Adam Roberts, DJ",
+   scope: "Live DJ mixing from " + c.start + " to " + c.end + " for the Vessel Kitchen VIP Grand Opening, with music customized to the event and its guests, and a full professional sound system. Load-in and soundcheck begin 90 minutes before the start time.",
+   balanceDue: P.pricing.balanceDue,
+   intro: "This is the full agreement between Ampersound and " + c.name + ", with the numbers from the quote you accepted built in. If anything needs adjusting, we are open to that conversation.",
+   special: [
+    { title: "Crew Meal", body: "As offered in Client's booking request, Vessel Kitchen provides a complimentary meal for the Ampersound crew on the event day. The meal is a courtesy and does not change the fee." }
    ]
-  },
-  "pricing": {
-   "lines": [
-    { "label": "Essential DJ, 5:00 to 9:00 PM", "note": "4 hours \u00b7 Adam live-mixing \u00b7 full sound system", "value": 400 }
-   ],
-   "serviceSubtotal": 400,
-   "total": 400,
-   "deposit": 200,
-   "balance": 200,
-   "balanceDue": "November 25, 2026",
-   "totalNote": "The quote you accepted on November 20. Local to Herriman, so no travel fee."
-  },
-  "heard": {
-   "title": "What we heard",
-   "body": [
-    "Vessel Kitchen is opening in Herriman, and the night before the doors open to everyone, you are hosting the people who matter most: invited guests, community members, and local influencers.",
-    "You want a fun, upbeat atmosphere and music that keeps going from 5:00 to 9:00 PM, with a DJ who brings the full sound setup.",
-    "And you want the music built for your evening, not pulled from a set playlist."
-   ]
-  },
-  "nextStep": {
-   "body": "Read the agreement, sign it here, and pay the $200 deposit to lock in December 9. Questions first? Email Afia.",
-   "callLabel": "Email Afia",
-   "callUrl": "mailto:afia@ampersoundmediagroup.com?subject=Vessel%20Kitchen%20VIP%20Grand%20Opening"
-  },
-  "agreement": agreement,
-  "paymentLink": "#",
-  "footnote": "Quote accepted November 20, 2026. Card and bank payments go through a secure Stripe link.",
-  "playbookIntro": "{{free}} of these {{n}} ideas cost nothing. Use them whether or not you book us.",
-  "playbookLead": { "title": "The goal", "body": "Guests leave the VIP night already planning their next visit, and the influencers leave with content that sounds as good as the food looks." },
-  "playbook": [
-   { "title": "Keep the first 30 minutes conversational", "cost": "Free", "body": "Doors are when guests meet your team and try the menu. Warm, lower-volume music lets them talk, and the energy builds as the room fills." },
-   { "title": "Pick a moment for welcome remarks", "cost": "Free", "body": "If someone is saying a few words, tell us the time. We bring the music down for it and lift it right back up after, so the room never goes flat." },
-   { "title": "Give the influencers a peak window", "cost": "Free", "body": "Tell your creators when the room will be at its liveliest, and we will make sure the music is there. Their clips get better audio, and your launch looks packed." },
-   { "title": "Send us any songs to avoid", "cost": "Free", "body": "Brand-safe matters on a launch night with cameras out. A short do-not-play list keeps every clip usable." }
+  });
+  a.clauses = a.clauses.map(function (cl) {
+   if (cl.title === "Travel") return { title: cl.title, body: "No travel fee applies. Vessel Kitchen in Herriman is within 50 miles of Salt Lake City." };
+   if (cl.title === "Timeline & Coordination") return { title: cl.title, body: "This is a DJ-only engagement. Ampersound does not provide MC or event planning services. Ampersound follows Client's run of show and takes cues from Client's day-of contact. The final run of show is locked 14 days before the event." };
+   return cl;
+  });
+  return a;
+ },
+ "footnote": "Quote accepted November 20, 2026. Card and bank payments go through a secure Stripe link. You can always find this portal at ampersoundmediagroup.com by entering your email.",
+ "playbookIntro": "{{free}} of these {{n}} ideas cost nothing. Use them whether or not you book us.",
+ "playbookLead": { "title": "The goal", "body": "Guests leave the VIP night already planning their next visit, and the influencers leave with content that sounds as good as the food looks." },
+ "playbook": [
+  { "title": "Keep the first 30 minutes conversational", "cost": "Free", "body": "Doors are when guests meet your team and try the menu. Warm, lower-volume music lets them talk, and the energy builds as the room fills." },
+  { "title": "Pick a moment for welcome remarks", "cost": "Free", "body": "If someone is saying a few words, tell us the time. We bring the music down for it and lift it right back up after, so the room never goes flat." },
+  { "title": "Give the influencers a peak window", "cost": "Free", "body": "Tell your creators when the room will be at its liveliest, and we will make sure the music is there. Their clips get better audio, and your launch looks packed." },
+  { "title": "Send us any songs to avoid", "cost": "Free", "body": "Brand-safe matters on a launch night with cameras out. A short do-not-play list keeps every clip usable." }
+ ],
+ "labels": {
+  "songs": "Music",
+  "timeline": "Run of Show",
+  "songsHeading": "Music direction",
+  "songsNoun": "music direction",
+  "songsIntro": "Fill in what you know and leave the rest blank. You can update this as often as you like until we lock the plan.",
+  "momentsHeading": "Key moments",
+  "requestsHeading": "Guest requests",
+  "songNotesPlaceholder": "Artists that fit the Vessel Kitchen vibe, songs to feature, anything to avoid",
+  "timelineHeading": "VIP night run of show",
+  "timelineNoun": "run of show",
+  "momentNoun": "Moment",
+  "timelineIntro": "Our draft for the evening. Move times, rename moments, and delete what does not apply.",
+  "timelineNotesLabel": "Run of show notes",
+  "timelineNotesPlaceholder": "Remarks, ribbon cutting, menu moments, anything we should know about the space"
+ },
+ "momentFields": [
+  { "key": "doors", "label": "Doors Open / Welcome", "hint": "{{start}}, as VIP guests arrive" },
+  { "key": "remarks", "label": "Remarks Walk-Up", "hint": "A song for your team before any welcome or ribbon moment" },
+  { "key": "peak", "label": "Peak Energy", "hint": "When you want the room at its liveliest" },
+  { "key": "lastSong", "label": "Last Song", "hint": "Closing out at {{end}}" }
+ ],
+ "vibes": [
+  ["upbeat", "Fun and upbeat all night"],
+  ["build", "Relaxed and welcoming at doors, building to a celebration"],
+  ["nopref", "No preference, read the room and call it"]
+ ],
+ "requests": [
+  ["dj-first", "Take guest requests, but the plan comes first"],
+  ["none", "No guest requests"],
+  ["open", "Open requests all night"]
+ ],
+ "vendors": null,
+ "songSeed": {
+  "moments": { "doors": "", "remarks": "", "peak": "", "lastSong": "" },
+  "mustPlay": [""],
+  "dontPlay": [""],
+  "playlist": "",
+  "vibe": "upbeat",
+  "guestRequests": "dj-first",
+  "notes": "VIP preview the night before the public Grand Opening. Invited guests, community members, and local influencers."
+ },
+ "timelineSeed": {
+  "moments": [
+   { "time": "", "event": "Ampersound load-in, setup, and soundcheck (90 minutes before doors)" },
+   { "time": "{{start}}", "event": "Doors open, VIP guests arrive, welcoming music" },
+   { "time": "", "event": "Room fills, energy builds" },
+   { "time": "", "event": "Welcome remarks from the Vessel Kitchen team, if planned" },
+   { "time": "", "event": "Upbeat celebration set" },
+   { "time": "{{end}}", "event": "Last song, event ends" },
+   { "time": "", "event": "Breakdown and load-out" }
   ],
-  "labels": {
-   "songs": "Music",
-   "timeline": "Run of Show",
-   "songsHeading": "Music direction",
-   "songsNoun": "music direction",
-   "songsIntro": "Fill in what you know and leave the rest blank. You can update this as often as you like until we lock the plan.",
-   "momentsHeading": "Key moments",
-   "requestsHeading": "Guest requests",
-   "songNotesPlaceholder": "Artists that fit the Vessel Kitchen vibe, songs to feature, anything to avoid",
-   "timelineHeading": "VIP night run of show",
-   "timelineNoun": "run of show",
-   "momentNoun": "Moment",
-   "timelineIntro": "Our draft for the evening. Move times, rename moments, and delete what does not apply.",
-   "timelineNotesLabel": "Run of show notes",
-   "timelineNotesPlaceholder": "Remarks, ribbon cutting, menu moments, anything we should know about the space"
-  },
-  "momentFields": [
-   { "key": "doors", "label": "Doors Open / Welcome", "hint": "5:00 PM, as VIP guests arrive" },
-   { "key": "remarks", "label": "Remarks Walk-Up", "hint": "A song for your team before any welcome or ribbon moment" },
-   { "key": "peak", "label": "Peak Energy", "hint": "When you want the room at its liveliest" },
-   { "key": "lastSong", "label": "Last Song", "hint": "Closing out at 9:00 PM" }
-  ],
-  "vibes": [
-   ["upbeat", "Fun and upbeat all night"],
-   ["build", "Relaxed and welcoming at doors, building to a celebration"],
-   ["nopref", "No preference, read the room and call it"]
-  ],
-  "requests": [
-   ["dj-first", "Take guest requests, but the plan comes first"],
-   ["none", "No guest requests"],
-   ["open", "Open requests all night"]
-  ],
-  "vendors": null,
-  "songSeed": {
-   "moments": { "doors": "", "remarks": "", "peak": "", "lastSong": "" },
-   "mustPlay": [""],
-   "dontPlay": [""],
-   "playlist": "",
-   "vibe": "upbeat",
-   "guestRequests": "dj-first",
-   "notes": "VIP preview the night before the public Grand Opening. About 100 guests: invited guests, community members, and local influencers."
-  },
-  "timelineSeed": {
-   "moments": [
-    { "time": "3:30 PM", "event": "Ampersound load-in, setup, and soundcheck" },
-    { "time": "5:00 PM", "event": "Doors open, VIP guests arrive, welcoming music" },
-    { "time": "6:00 PM", "event": "Room fills, energy builds" },
-    { "time": "6:30 PM", "event": "Welcome remarks from the Vessel Kitchen team, if planned" },
-    { "time": "6:45 PM", "event": "Upbeat celebration set" },
-    { "time": "8:45 PM", "event": "Closing set" },
-    { "time": "9:00 PM", "event": "Last song, event ends" },
-    { "time": "9:15 PM", "event": "Breakdown and load-out" }
-   ],
-   "notes": ""
-  },
-  "staffingOptions": null
- };
-})();
+  "notes": ""
+ },
+ "staffingOptions": null
+};
 </script>
-<script src="/partner-docs/_assets/portal.js"></script>
+<script src="/partner-docs/_assets/portal-loader.js"></script>
 </body>
 </html>

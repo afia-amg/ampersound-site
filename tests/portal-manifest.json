@@ -1,5 +1,5 @@
 {
-  "_how": "Every folder in partner-docs must be listed here. kind: client | partner | test. stage (clients): draft (not sendable, hidden from lookup), awaiting-signature (sent, unsigned), booked (signed, money still owed), paid (nothing owed), closed (lost or ghosted; no signing or payment). payment: stripe | installments | external | legacy. Moving a portal out of draft is the ready-to-send switch: the deploy fails until email, payment registry, payment link and pricing all line up.",
+  "_how": "Every folder in partner-docs must be listed here. kind: client | partner | test. stage (clients): draft (not sendable, hidden from lookup), awaiting-signature (sent, unsigned), booked (signed, money still owed), paid (nothing owed), closed (lost or ghosted; no signing or payment). payment: stripe | installments | external | legacy. source: clickup means the page holds only design and copy and every client fact comes from the ClickUp agreement whose Portal Slug matches the folder. Moving a portal out of draft is the ready-to-send switch.",
   "portals": {
     "acs-hope-gala": { "kind": "client", "stage": "awaiting-signature", "payment": "external", "agreementTaskId": "86bcxhw1t" },
     "angela-joe": { "kind": "client", "stage": "booked", "payment": "stripe", "agreementTaskId": "86bctjffd" },
@@ -8,8 +8,9 @@
     "jesse-zariah": { "kind": "client", "stage": "booked", "payment": "installments", "agreementTaskId": "86bb71btb" },
     "katie-ryan": { "kind": "client", "stage": "paid", "payment": "legacy" },
     "rose-josh": { "kind": "client", "stage": "closed" },
-    "vessel-kitchen-herriman": { "kind": "client", "stage": "draft", "payment": "stripe" },
+    "vessel-kitchen-herriman": { "kind": "client", "stage": "draft", "payment": "stripe", "source": "clickup" },
     "donnielle": { "kind": "partner" },
-    "portal-test": { "kind": "test" }
+    "portal-test": { "kind": "test" },
+    "portal-pilot": { "kind": "test", "source": "clickup" }
   }
 }

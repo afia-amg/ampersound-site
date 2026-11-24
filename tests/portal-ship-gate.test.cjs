@@ -20,7 +20,9 @@ const {PORTALS}=require('../netlify/functions/_payment-receipts');
 const lookup=require('../netlify/functions/lookup-agreement')._test;
 const toml=read('netlify.toml');
 const slugs=kind=>Object.keys(MANIFEST).filter(s=>MANIFEST[s].kind===kind);
+const clickup=s=>MANIFEST[s].source==='clickup';
 const clients=stages=>slugs('client').filter(s=>stages.has(MANIFEST[s].stage));
+const handTyped=stages=>clients(stages).filter(s=>!clickup(s));
 const slugOf=url=>{const m=/\/client-portal\/([a-z0-9-]+)/.exec(String(url||''));return m&&m[1];};
 
 // Evaluate the page's own data script against the real shared defaults.
@@ -37,7 +39,7 @@ function load(slug){
   vm.runInContext(m[2],sandbox,{filename:slug+'/index.html'});found=true;
  }
  const portal=found&&sandbox.PORTAL?JSON.parse(JSON.stringify(sandbox.PORTAL)):null;
- const out={html,portal};cache.set(slug,out);return out;
+ const out={html,portal,raw:found?sandbox.PORTAL:null};cache.set(slug,out);return out;
 }
 function pricing(p){
  if(p.pricing)return p.pricing;
@@ -55,11 +57,30 @@ test('every portal folder is registered with a valid stage',()=>{
   assert.ok(dirs.includes(s),'Manifest lists "'+s+'" but partner-docs/'+s+' does not exist.');
   const m=MANIFEST[s];
   assert.ok(['client','partner','test'].includes(m.kind),s+': unknown kind '+m.kind);
+  if(m.source!==undefined)assert.equal(m.source,'clickup',s+': source must be clickup when set');
   if(m.kind!=='client')continue;
   assert.ok(STAGES.has(m.stage),s+': unknown stage '+m.stage);
   if(m.stage!=='closed')assert.ok(PAYMENTS.has(m.payment),s+': payment must be one of '+[...PAYMENTS].join(', '));
  }
  for(const s of Object.keys(PORTALS))assert.ok(MANIFEST[s],'Payment registry has "'+s+'" but it is not in the portal manifest.');
+});
+
+test('ClickUp-sourced pages carry no hand-typed client facts',()=>{
+ const FACTS=['primaryEmail','allEmails','eventDate','eventDateLong','badge','venue','venueDetail','guests','contacts','signerDefault'];
+ for(const s of Object.keys(MANIFEST).filter(clickup)){
+  const {html,portal}=load(s);
+  assert.ok(portal,s+': no portal data found on the page');
+  assert.equal(portal.source,'clickup',s+': page does not declare source clickup');
+  assert.equal(portal.slug,s,s+': page slug does not match its folder');
+  assert.ok(html.includes('src="/partner-docs/_assets/portal-loader.js"'),s+': page must start through portal-loader.js');
+  assert.ok(!html.includes('_assets/portal.js'),s+': page loads the engine directly, before ClickUp facts arrive');
+  assert.ok(!html.includes('buy.stripe.com'),s+': payment links belong on the ClickUp agreement, not the page');
+  for(const f of FACTS)assert.equal((portal.client||{})[f],undefined,s+': client.'+f+' must come from ClickUp, not the page');
+  const pr=portal.pricing||{};
+  for(const k of ['total','deposit','balance','balanceDue','serviceSubtotal','installments','travel'])assert.equal(pr[k],undefined,s+': pricing.'+k+' must come from ClickUp, not the page');
+  for(const l of pr.lines||[])assert.equal(typeof l.value,'string',s+': price lines must use {{total}}-style tokens, not typed amounts');
+  assert.equal(portal.paymentLink,undefined,s+': paymentLink must come from ClickUp');
+ }
 });
 
 test('client portals use client-friendly URLs and old links redirect',()=>{
@@ -83,6 +104,7 @@ test('closed inquiries cannot take a signature or payment',()=>{
 test('draft portals stay out of the website lookup and report what blocks sending',t=>{
  for(const s of clients(new Set(['draft']))){
   for(const [email,r] of Object.entries(lookup.STATIC))assert.notEqual(slugOf(r.portalUrl),s,s+': draft portal is discoverable through lookup for '+email);
+  if(clickup(s)){t.diagnostic(s+' is a draft. Its facts live on the ClickUp agreement; open the preview to see what is still needed.');continue;}
   const {portal}=load(s),missing=[];
   if(!portal)missing.push('portal data');
   else{
@@ -96,7 +118,7 @@ test('draft portals stay out of the website lookup and report what blocks sendin
 });
 
 test('live portals match the payment registry and their own email',()=>{
- for(const s of clients(LIVE)){
+ for(const s of handTyped(LIVE)){
   const m=MANIFEST[s],{portal}=load(s);
   assert.ok(portal,s+': no portal data found on the page');
   assert.equal(portal.slug,s,s+': page slug does not match its folder');
@@ -132,7 +154,7 @@ test('live portals match the payment registry and their own email',()=>{
 });
 
 test('live portal pricing adds up and matches its stage',()=>{
- for(const s of clients(LIVE)){
+ for(const s of handTyped(LIVE)){
   const m=MANIFEST[s],pr=pricing(load(s).portal);
   assert.ok(cents(pr.total)>0,s+': total must be positive');
   const inst=pr.installments||[];
@@ -150,7 +172,7 @@ test('live portal pricing adds up and matches its stage',()=>{
 });
 
 test('clients have a working way to pay what the portal asks for',()=>{
- for(const s of clients(LIVE)){
+ for(const s of handTyped(LIVE)){
   const m=MANIFEST[s],{portal}=load(s),pr=pricing(portal);
   if(m.stage==='awaiting-signature'&&m.payment==='stripe')assert.match(String(portal.paymentLink||''),STRIPE,s+': unsigned Stripe portal has no deposit link');
   if(m.payment==='installments'&&m.stage!=='paid'){
@@ -166,6 +188,7 @@ test('website lookup fallback matches the portal it opens',()=>{
   const s=slugOf(r.portalUrl);
   assert.ok(s&&MANIFEST[s],email+': lookup points at an unregistered portal');
   assert.ok(LIVE.has(MANIFEST[s].stage),email+': lookup returns '+s+', which is '+MANIFEST[s].stage);
+  assert.ok(!clickup(s),email+': '+s+' reads ClickUp, so it must not have a hand-typed lookup fallback');
   const {portal}=load(s),pr=pricing(portal);
   assert.ok(emailsOf(portal).includes(email),email+': not listed on the '+s+' page, so that client cannot sign or save');
   assert.equal(r.eventDate,portal.client.eventDate,email+': lookup date differs from the '+s+' page');
