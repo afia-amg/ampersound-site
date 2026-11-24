@@ -1,0 +1,15 @@
+{
+  "_how": "Every folder in partner-docs must be listed here. kind: client | partner | test. stage (clients): draft (not sendable, hidden from lookup), awaiting-signature (sent, unsigned), booked (signed, money still owed), paid (nothing owed), closed (lost or ghosted; no signing or payment). payment: stripe | installments | external | legacy. Moving a portal out of draft is the ready-to-send switch: the deploy fails until email, payment registry, payment link and pricing all line up.",
+  "portals": {
+    "acs-hope-gala": { "kind": "client", "stage": "awaiting-signature", "payment": "external", "agreementTaskId": "86bcxhw1t" },
+    "angela-joe": { "kind": "client", "stage": "booked", "payment": "stripe", "agreementTaskId": "86bctjffd" },
+    "angelica-nathan": { "kind": "client", "stage": "paid", "payment": "legacy", "agreementTaskId": "86bbfuphv" },
+    "jaylin-goines": { "kind": "client", "stage": "paid", "payment": "legacy" },
+    "jesse-zariah": { "kind": "client", "stage": "booked", "payment": "installments", "agreementTaskId": "86bb71btb" },
+    "katie-ryan": { "kind": "client", "stage": "paid", "payment": "legacy" },
+    "rose-josh": { "kind": "client", "stage": "closed" },
+    "vessel-kitchen-herriman": { "kind": "client", "stage": "draft", "payment": "stripe" },
+    "donnielle": { "kind": "partner" },
+    "portal-test": { "kind": "test" }
+  }
+}

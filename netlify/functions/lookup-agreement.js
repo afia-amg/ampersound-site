@@ -3,12 +3,13 @@ const {api,listTasks,scalarField,semanticType,AGREEMENT_FIELDS,CLOSED_LOST}=requ
 const {receipts,signatureRecord}=require('./_payment-receipts');
 const CLICKUP_API_TOKEN=process.env.CLICKUP_API_TOKEN;
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS'};
+// Fallback records for booked clients only. Closed inquiries (Rose & Josh) are
+// intentionally absent so a lost lead can never resurface through lookup.
 const STATIC={
  'ryan.nelson.jrn@gmail.com':{eventName:'Katie & Ryan Wedding',eventDate:'2026-10-09',eventType:'Wedding',venue:'Utah State Capitol',services:'DJ / Sound Direction, MC / Event Hosting, Audio / AV Production',totalFee:1912.5,deposit:965.25,portalUrl:'https://ampersoundmediagroup.com/client-portal/katie-ryan',signed:true},
  'jesseradike1@gmail.com':{eventName:'Jesse & Zariah Wedding',eventDate:'2027-04-28',eventType:'Wedding',venue:'Grand Falls',services:'DJ / Sound Direction, MC / Event Hosting',totalFee:1912.5,deposit:478.13,portalUrl:'https://ampersoundmediagroup.com/client-portal/jesse-zariah',signed:true,legacyPaidInstallments:2},
  'liffcakeparties@gmail.com':{eventName:'Angelica & Nathan Wedding',eventDate:'2026-09-05',eventType:'Wedding',venue:'Backyard',services:'DJ / Sound Direction, MC / Event Hosting',totalFee:900,deposit:900,portalUrl:'https://ampersoundmediagroup.com/client-portal/angelica-nathan',signed:true},
  'jaylingoines131594@gmail.com':{eventName:'Delta Sigma Theta Farwest Regional After Party',eventDate:'2026-09-05',eventType:'Private Party',venue:'Drift Lounge',services:'DJ / Sound Direction',totalFee:400,deposit:400,portalUrl:'https://ampersoundmediagroup.com/client-portal/jaylin-goines',signed:true},
- 'rose.josh.home@gmail.com':{eventName:'Rose & Josh Wedding',eventDate:'2027-08-27',eventType:'Wedding',venue:'The Castle at Wadley Farms, Lindon, Utah',services:'MC / Event Hosting, DJ / Sound Direction, Timeline & Run-of-Show Coordination',totalFee:1350,deposit:675,portalUrl:'https://ampersoundmediagroup.com/client-portal/rose-josh'},
  'angelahussain99@gmail.com':{eventName:'Angela & Joe Wedding',eventDate:'2027-05-28',eventType:'Wedding',venue:'Red Butte Garden, Salt Lake City, Utah',services:'MC / Event Hosting, DJ / Sound Direction, Ceremony Sound, Timeline & Run-of-Show Coordination',totalFee:1275,deposit:637.5,portalUrl:'https://ampersoundmediagroup.com/client-portal/angela-joe',signed:true}
 };
 STATIC['kategeis@hotmail.com']=STATIC['ryan.nelson.jrn@gmail.com'];STATIC['ashleyveenendaal23@gmail.com']=STATIC['ryan.nelson.jrn@gmail.com'];STATIC['zlj7123@gmail.com']=STATIC['jesseradike1@gmail.com'];
