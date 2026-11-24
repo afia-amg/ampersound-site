@@ -4,7 +4,7 @@ const {api,listTasks,scalarField,AGREEMENTS_LIST,AGREEMENT_FIELDS}=require('./_i
 const PREFIX='AMG_STRIPE_RECEIPT_V1:',SIGNED_MARK='Agreement signed digitally',PAYMENTS_LIST='901422326497';
 const PORTALS={
  'rose-josh':{email:'rose.josh.home@gmail.com',taskId:'86bct9jkz',linkId:'plink_1UVEajBKPpxdHQElGhLmUODv',amount:67500},
- 'angela-joe':{email:'angelahussain99@gmail.com',taskId:'86bctjffd',linkId:'plink_1UVa9PBKPpxdHQEl78mAIESl',amount:63750},
+ 'angela-joe':{email:'angelahussain99@gmail.com',taskId:'86bctjffd',linkId:'plink_1UVa9PBKPpxdHQEl78mAIESl',amount:63750,installments:[{num:2,taskId:'86bd0phz5',amount:63750}]},
  'acs-hope-gala':{email:'averiel.bailey@cancer.org',taskId:'86bcxhw1t',paymentMethod:'external',amount:165000},
  'jaylin-goines':{email:'jaylingoines131594@gmail.com',legacyBooked:true},'portal-test':{email:'signature-test@ampersoundmediagroup.com',taskId:'86bct9u1m',legacyBooked:true},
  'angelica-nathan':{email:'liffcakeparties@gmail.com',legacyBooked:true},'katie-ryan':{email:'ryan.nelson.jrn@gmail.com',legacyBooked:true},
@@ -21,15 +21,12 @@ async function receiptsForAgreement(agreementId,installmentIds=[]){const ids=[ag
 function iso(v){const d=new Date(String(v||'').replace(/\s+at\s+/i,' ').replace(/\*/g,'').trim());return Number.isNaN(d.getTime())?null:d.toISOString()}
 function isSignatureReset(value){
  const t=String(value||'').replace(/\r\n/g,'\n').trim();
- // Explicit control record only. Mentions or quotes in ordinary notes do not count.
  if(t==='AMG_SIGNATURE_RESET_V1')return true;
- // Compatibility with the historical Hope Gala reset record already on file.
  return /^Previous digital signature \(portal reset to unsigned at Afia's request on [A-Z][a-z]{2} \d{1,2}, \d{4}\)\nHistorical record only\. A new signature is required\.\nSigned by: [^\n]+\nDate: [^\n]+(?:\n|$)/.test(t);
 }
 async function signatureRecord(task){
  const status=String(task.status&&task.status.status||'').toLowerCase();
  if(task.archived||['lost','closed [lost]','cancelled','canceled','declined'].includes(status))return null;
- // Comments arrive newest first. A reset invalidates older signatures.
  for(const c of await comments(task.id)){
   const t=text(c);
   if(isSignatureReset(t))return null;
@@ -51,13 +48,25 @@ function validateInstallment(task,agreement,identity){
  if(!Number.isInteger(number)||number<1)return false;
  const named=/\bPayment\s+(\d+)\b/i.exec(task.name||'');
  if(!named||Number(named[1])!==number)return false;
- // Missing event fields on a Payments task may inherit from a verified live
- // Agreement relationship or an exact server-owned mapping, never from amount alone.
  const own=taskIdentity(task,AGREEMENT_FIELDS);
  if((own.email&&own.email!==expected.email)||(own.date&&own.date!==expected.date)||(own.type&&own.type!==expected.type))return false;
  const mapped=Object.values(PORTALS).some(p=>p.taskId===agreement.id&&(p.installments||[]).some(i=>i.taskId===task.id&&i.num===number));
  const linked=(a,b)=>(a.linked_tasks||[]).some(x=>String(x.task_id||x.id||'')===b);
  return mapped||linked(task,agreement.id)||linked(agreement,task.id);
+}
+// Only the operator-controlled ClickUp field is accepted for the explicitly
+// mapped external-payment exception. Browser payloads/localStorage never count.
+function externalPaymentConfirmed(task,config){
+ if(!task)return false;
+ const c=config||Object.values(PORTALS).find(p=>p.taskId===task.id);
+ if(!c||c.paymentMethod!=='external'||c.taskId!==task.id||task.archived)return false;
+ if(['lost','closed [lost]','cancelled','canceled','declined'].includes(String(task.status&&task.status.status||'').toLowerCase()))return false;
+ if(String(scalarField(task,AGREEMENT_FIELDS.email)||'').trim().toLowerCase()!==c.email)return false;
+ if(Math.round(Number(scalarField(task,AGREEMENT_FIELDS.total))*100)!==c.amount)return false;
+ const id='96105ecf-6396-4fb1-90aa-93b37c9dfc48';
+ const raw=(task.custom_fields||[]).find(f=>f.id===id);
+ const value=String(scalarField(task,id)||'').trim().toLowerCase();
+ return ['payment recieved','payment received'].includes(value)||!!(raw&&raw.value==='7601cdf4-5cee-49ef-a8bf-802350a5bdcc');
 }
 async function bookingState(config,task){
  if(!task)return{verified:false,unlocked:false,signed:false,source:'stripe-webhook'};
@@ -68,12 +77,16 @@ async function bookingState(config,task){
  if(config.legacyBooked)return{verified:false,unlocked:true,signed:true,source:'existing-booking'};
  const sig=await signatureRecord(task);
  const signedFields={signed:!!sig,signedName:sig?sig.signedName:null,signedAt:sig?sig.signedAt:null};
- // ACH/Coupa is a human-verified external-payment exception, not Stripe.
- if(config.paymentMethod==='external')return{verified:false,unlocked:false,source:'external-payment',...signedFields};
+ if(config.paymentMethod==='external'){
+  const confirmed=externalPaymentConfirmed(task,config);
+  // existing-booking is the engine's explicit non-Stripe access path. Never
+  // label an operator-confirmed ACH as a verified Stripe receipt.
+  return{verified:false,unlocked:!!sig&&confirmed,source:confirmed?'existing-booking':'external-payment',paymentMethod:'external',confirmationSource:confirmed?'operator-confirmed-ach':null,...signedFields};
+ }
  const expected=config.amount||Math.round(Number(scalarField(task,AGREEMENT_FIELDS.deposit))*100);
  if(!Number.isInteger(expected)||expected<=0)throw Error('Missing expected deposit');
  const rr=await receiptsForAgreement(task.id,(config.installments||[]).map(i=>i.taskId));
  const receipt=rr.find(r=>r.amount===expected&&(!config.linkId||r.paymentLink===config.linkId));
  return{verified:!!receipt,unlocked:!!sig&&!!receipt,source:'stripe-webhook',paidAt:receipt?receipt.paidAt:null,...signedFields};
 }
-module.exports={PORTALS,PAYMENTS_LIST,api,seal,unseal,receipts,receiptsForAgreement,findAgreement,signatureRecord,comments,text,validateInstallment,bookingState};
+module.exports={PORTALS,PAYMENTS_LIST,api,seal,unseal,receipts,receiptsForAgreement,findAgreement,signatureRecord,comments,text,validateInstallment,bookingState,externalPaymentConfirmed};
