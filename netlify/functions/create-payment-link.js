@@ -31,7 +31,9 @@ exports.handler=async event=>{
  const agreementId=agreementTaskId||(installmentTaskId?'':taskId||'');
  const installmentId=installmentTaskId||((installment!=null&&taskId&&agreementTaskId&&taskId!==agreementTaskId)?taskId:'');
  const metadata={client:clientName,event:eventName||'',event_date:eventDate||'',event_type:eventType||'',email:email||'',taskId:taskId||'',agreement_task_id:agreementId,installment_task_id:installmentId,installment:installment==null?'':String(installment),lead_task_id:leadTaskId||''};
- const name=clientName+' - '+(eventName||'Event')+' Deposit';
+ // An explicit zero balance means this one payment covers the whole fee.
+ const fullPayment=balance!==undefined&&balance!==null&&balance!==''&&Number(balance)===0;
+ const name=clientName+' - '+(eventName||'Event')+(fullPayment?' Payment':' Deposit');
  const redirect=SITE_URL+'/booking-confirmed?'+new URLSearchParams({event:eventName||'',date:eventDate||'',venue:venue||'',services:services||'',paid:'$'+Number(amount).toLocaleString(),balance:balance?'$'+Number(balance).toLocaleString():'$0'}).toString();
  try{
   const priceBody=new URLSearchParams({unit_amount:String(cents),currency:'usd','product_data[name]':name});
