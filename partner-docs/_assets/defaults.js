@@ -44,7 +44,7 @@ window.AMG = (function () {
         links: [{ label: "indigoreimagined.com", href: "https://indigoreimagined.com" },
                 { label: "(801) 654-8571", href: "tel:+18016548571" }] }] },
     { group: "Catering", items: [
-      { name: "Killa Nikkei", role: "Japanese-Peruvian catering \u00b7 Sebastian Consiglieri",
+      { name: "Killa Nikkei", role: "Japanese-Peruvian catering · Sebastian Consiglieri",
         blurb: "Nikkei cuisine that gives a reception a genuine centerpiece.",
         links: [{ label: "killanikkei.com", href: "https://killanikkei.com" },
                 { label: "(801) 366-6070", href: "tel:+18013666070" }] }] },
@@ -74,8 +74,6 @@ window.AMG = (function () {
     ["open", "Open requests, bring on the chaos"],
   ];
 
-  // spec.moments lets a portal rename a field (garter toss) or add one
-  // (karaoke) without restating the whole list.
   function momentFields(spec) {
     var f = [
       { key: "aisle", label: "Aisle Walk / Processional", hint: spec.aisleHint || "" },
@@ -91,10 +89,7 @@ window.AMG = (function () {
     return f.concat(spec.extraMoments || []);
   }
 
-  // One agreement for every wedding portal. Client pages pass agreementTerms
-  // (their facts only); the clauses, order, and policy numbers stay identical.
-  // Numbers are always written as numerals. {{total}}, {{deposit}},
-  // {{balance}}, {{travel}}, and {{option}} are filled in by portal.js.
+  // Standard clauses are unchanged by the November 23 payment repairs.
   function standardAgreement(t) {
     var rate = t.overtimeRate || 150;
     var c = [
@@ -124,8 +119,6 @@ window.AMG = (function () {
     };
   }
 
-  // Proposal sections portal.js renders when present. These were previously
-  // dropped here, so pages that defined them never showed them.
   var PROPOSAL_EXTRAS = ["agendaNeeds", "runOfShow", "runOfShowNote", "unbundled",
     "playbookIntro", "playbookLead", "playbook", "playbookClose"];
 
@@ -151,7 +144,6 @@ window.AMG = (function () {
         notes: spec.songNotes || "",
       },
       timelineSeed: { moments: spec.timeline, notes: spec.timelineNotes || "" },
-      // Proposal-mode extras, ignored in overview mode.
       heard: spec.heard,
       chooserIntro: spec.chooserIntro,
       staffingOptions: spec.staffingOptions,
@@ -165,4 +157,16 @@ window.AMG = (function () {
   }
 
   return { vendors: VENDORS, weddingLabels: WEDDING_LABELS, wedding: wedding, standardAgreement: standardAgreement };
+})();
+
+// The signed Angela/Joe contract stays unchanged. A separate account summary
+// reads server-confirmed deposits and balance receipts instead of browser claims.
+(function(){
+ if(typeof document==='undefined'||!document.addEventListener)return;
+ function loadFinance(){
+  if(!window.PORTAL||window.PORTAL.slug!=='angela-joe'||document.getElementById('portal-finance-script'))return;
+  var script=document.createElement('script');script.id='portal-finance-script';script.src='/partner-docs/_assets/portal-finance.js';document.head.appendChild(script);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadFinance);
+ else if(document.readyState==='interactive'||document.readyState==='complete')setTimeout(loadFinance,0);
 })();
