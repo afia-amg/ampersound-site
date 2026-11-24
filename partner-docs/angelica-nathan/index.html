@@ -22,9 +22,7 @@ window.PORTAL = AMG.wedding({
   "name": "Angelica & Nathan",
   "contacts": "Carla Lifferth",
   "primaryEmail": "liffcakeparties@gmail.com",
-  "allEmails": [
-   "liffcakeparties@gmail.com"
-  ],
+  "allEmails": ["liffcakeparties@gmail.com"],
   "eventDate": "2026-09-05",
   "eventDateLong": "Saturday, September 5, 2026",
   "badge": "Sep 5, 2026",
@@ -33,10 +31,7 @@ window.PORTAL = AMG.wedding({
   "guests": "~75",
   "packageName": "DJ + MC Custom",
   "hours": "5.5 hours",
-  "services": [
-   "DJ / Sound Direction",
-   "MC / Event Hosting"
-  ],
+  "services": ["DJ / Sound Direction","MC / Event Hosting"],
   "inclusions": [
    "Adam Roberts on decks, Afia Chin-Roberts on the mic",
    "Professional sound system for ceremony through send-off",
@@ -45,13 +40,8 @@ window.PORTAL = AMG.wedding({
    "Ceremony, cocktail hour, dinner, and reception coverage"
   ]
  },
- "pricing": {
-  "total": 900,
-  "deposit": 900,
-  "balance": 0,
-  "balanceDue": null,
-  "discountLabel": "Community rate"
- },
+ "pricing": {"total":900,"deposit":900,"balance":0,"balanceDue":null,"discountLabel":"Community rate"},
+ "paymentLink": "#",
  "aisleHint": "Bride entrance",
  "exitHint": "Sparkler exit",
  "moments": {
@@ -64,18 +54,8 @@ window.PORTAL = AMG.wedding({
   "bouquet": "Single Ladies - Beyonce",
   "exit": "Don't Stop Believin' - Journey (sparkler exit)"
  },
- "mustPlay": [
-  "September - Earth, Wind & Fire",
-  "Suavemente - Elvis Crespo",
-  "Cupid Shuffle - Cupid",
-  "I Gotta Feeling - Black Eyed Peas",
-  "Electric Slide - Marcia Griffiths",
-  "Wobble Baby - V.I.C."
- ],
- "dontPlay": [
-  "Chicken Dance",
-  "Macarena"
- ],
+ "mustPlay": ["September - Earth, Wind & Fire","Suavemente - Elvis Crespo","Cupid Shuffle - Cupid","I Gotta Feeling - Black Eyed Peas","Electric Slide - Marcia Griffiths","Wobble Baby - V.I.C."],
+ "dontPlay": ["Chicken Dance","Macarena"],
  "songNotes": "Angelica loves Latin music: sprinkle in bachata and salsa during dancing. Nathan is into classic rock and 90s hip hop. Mix of both worlds on the dance floor!",
  "timeline": [
   { "time": "3:30 PM", "event": "AMG arrival and sound setup" },
@@ -100,5 +80,21 @@ window.PORTAL = AMG.wedding({
 });
 </script>
 <script src="/partner-docs/_assets/portal.js"></script>
+<script>
+/* Afia confirmed full payment was due at late signing, not a split deposit. */
+(function(){
+ var main=document.getElementById('main');
+ function patch(){
+  main.querySelectorAll('.row .rl p').forEach(function(p){
+   if(p.textContent==='Deposit received'){
+    p.textContent='Full payment received';
+    var note=p.parentElement.querySelector('small');
+    if(note)note.textContent='Full amount due at late signing; paid in full';
+   }
+  });
+ }
+ new MutationObserver(patch).observe(main,{childList:true,subtree:true});patch();
+})();
+</script>
 </body>
 </html>
