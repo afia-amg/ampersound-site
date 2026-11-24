@@ -8,7 +8,7 @@
     "jesse-zariah": { "kind": "client", "stage": "booked", "payment": "installments", "agreementTaskId": "86bb71btb" },
     "katie-ryan": { "kind": "client", "stage": "paid", "payment": "legacy" },
     "rose-josh": { "kind": "client", "stage": "closed" },
-    "vessel-kitchen-herriman": { "kind": "client", "stage": "draft", "payment": "stripe", "source": "clickup" },
+    "vessel-kitchen-herriman": { "kind": "client", "stage": "awaiting-signature", "payment": "stripe", "source": "clickup", "agreementTaskId": "86bd6ht2z" },
     "donnielle": { "kind": "partner" },
     "portal-test": { "kind": "test" },
     "portal-pilot": { "kind": "test", "source": "clickup" }
