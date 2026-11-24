@@ -21,7 +21,9 @@
  * comes from the Vessel Kitchen agreement in ClickUp (Portal Slug:
  * vessel-kitchen-herriman). Tokens like {{deposit}} are filled from that agreement.
  * Built from the quote Aubrey accepted on GigSalad on Nov 20, 2026: Adam live-mixing
- * with a full sound system. The 4-hour scope replaces the 3-hour GigSalad boilerplate. */
+ * with a full sound system. The 4-hour scope replaces the 3-hour GigSalad boilerplate.
+ * Nov 24, 2026: Afia set the full fee due at signing. The contract wording follows the
+ * agreement: when Balance Due is 0 it reads as one payment, not a 50% deposit. */
 window.PORTAL = {
  "slug": "vessel-kitchen-herriman",
  "source": "clickup",
@@ -50,12 +52,13 @@ window.PORTAL = {
   ]
  },
  "nextStep": {
-  "body": "Read the agreement, sign it here, and pay the {{deposit}} deposit to lock in {{dateShort}}. Questions first? Email Afia.",
+  "body": "Read the agreement, sign it here, and pay {{deposit}} to lock in {{dateShort}}. Questions first? Email Afia.",
   "callLabel": "Email Afia",
   "callUrl": "mailto:afia@ampersoundmediagroup.com?subject=Vessel%20Kitchen%20VIP%20Grand%20Opening"
  },
  "agreement": function (P) {
   var c = P.client;
+  var paidAtSigning = Number(P.pricing.balance) === 0;
   var a = AMG.standardAgreement({
    client: c.name,
    eventDateLong: c.eventDateLong,
@@ -74,6 +77,8 @@ window.PORTAL = {
   a.clauses = a.clauses.map(function (cl) {
    if (cl.title === "Travel") return { title: cl.title, body: "No travel fee applies. Vessel Kitchen in Herriman is within 50 miles of Salt Lake City." };
    if (cl.title === "Timeline & Coordination") return { title: cl.title, body: "This is a DJ-only engagement. Ampersound does not provide MC or event planning services. Ampersound follows Client's run of show and takes cues from Client's day-of contact. The final run of show is locked 14 days before the event." };
+   if (paidAtSigning && cl.title === "Compensation") return { title: cl.title, body: "Total fee: {{total}}, paid in full upon signing. Because the event is less than three weeks away, there is no separate deposit or balance." };
+   if (paidAtSigning && cl.title === "Deposit & Date Reservation") return { title: "Payment & Date Reservation", body: "The {{total}} payment reserves " + c.eventDateLong + " exclusively for Client. The date is confirmed once payment is received. If Client cancels, refunds follow the Cancellation by Client terms below." };
    return cl;
   });
   return a;
