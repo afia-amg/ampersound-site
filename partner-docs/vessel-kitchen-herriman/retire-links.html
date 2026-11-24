@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><title>Retire old links</title></head>
+<body>
+<p>Internal cleanup: switches off Vessel Kitchen's two replaced Stripe links. Removed after use.</p>
+<button type="button" id="go">Deactivate old links</button>
+<pre id="out"></pre>
+<script>
+document.getElementById('go').addEventListener('click',function(){
+ this.disabled=true;document.getElementById('out').textContent='working';
+ fetch('/.netlify/functions/vessel-retire-links',{method:'POST'})
+ .then(function(r){return r.text().then(function(t){return r.status+' '+t;});})
+ .then(function(t){document.getElementById('out').textContent=t;})
+ .catch(function(e){document.getElementById('out').textContent='ERR '+e;});
+});
+</script>
+</body></html>
