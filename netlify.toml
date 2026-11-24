@@ -12,31 +12,264 @@
   [headers.values]
     Cache-Control = "no-store"
 
-# Retired legacy pages. Angelica & Nathan are booked and their event has passed,
-# so the old quote and signing pages send them to their portal instead of
-# offering a fresh signature. The files stay in the repo for the legacy tests.
+# Retired signing/quote pages go directly to the canonical client portal.
 [[redirects]]
   from = "/partner-docs/angelica-nathan/sign"
-  to = "/partner-docs/angelica-nathan/"
+  to = "/client-portal/angelica-nathan/"
   status = 301
   force = true
 
 [[redirects]]
   from = "/partner-docs/angelica-nathan/sign.html"
-  to = "/partner-docs/angelica-nathan/"
+  to = "/client-portal/angelica-nathan/"
   status = 301
   force = true
 
 [[redirects]]
   from = "/partner-docs/angelica-nathan/quote"
-  to = "/partner-docs/angelica-nathan/"
+  to = "/client-portal/angelica-nathan/"
   status = 301
   force = true
 
 [[redirects]]
   from = "/partner-docs/angelica-nathan/quote.html"
-  to = "/partner-docs/angelica-nathan/"
+  to = "/client-portal/angelica-nathan/"
   status = 301
+  force = true
+
+[[redirects]]
+  from = "/client-portal/angelica-nathan/sign"
+  to = "/client-portal/angelica-nathan/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/client-portal/angelica-nathan/sign.html"
+  to = "/client-portal/angelica-nathan/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/client-portal/angelica-nathan/quote"
+  to = "/client-portal/angelica-nathan/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/client-portal/angelica-nathan/quote.html"
+  to = "/client-portal/angelica-nathan/"
+  status = 301
+  force = true
+
+# Client-facing URLs. Physical source pages and shared assets stay in place:
+# no duplicated client data, changed slugs, or payment/signature identifiers.
+# These explicit allowlists leave Donnielle's partner deliverables and portal-test alone.
+[[redirects]]
+  from = "/partner-docs/acs-hope-gala"
+  to = "/client-portal/acs-hope-gala/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partner-docs/acs-hope-gala/*"
+  to = "/client-portal/acs-hope-gala/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/client-portal/acs-hope-gala"
+  to = "/partner-docs/acs-hope-gala/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/acs-hope-gala/"
+  to = "/partner-docs/acs-hope-gala/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/acs-hope-gala/*"
+  to = "/partner-docs/acs-hope-gala/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/angela-joe"
+  to = "/client-portal/angela-joe/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partner-docs/angela-joe/*"
+  to = "/client-portal/angela-joe/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/client-portal/angela-joe"
+  to = "/partner-docs/angela-joe/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/angela-joe/"
+  to = "/partner-docs/angela-joe/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/angela-joe/*"
+  to = "/partner-docs/angela-joe/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/angelica-nathan"
+  to = "/client-portal/angelica-nathan/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partner-docs/angelica-nathan/*"
+  to = "/client-portal/angelica-nathan/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/client-portal/angelica-nathan"
+  to = "/partner-docs/angelica-nathan/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/angelica-nathan/"
+  to = "/partner-docs/angelica-nathan/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/angelica-nathan/*"
+  to = "/partner-docs/angelica-nathan/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/jaylin-goines"
+  to = "/client-portal/jaylin-goines/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partner-docs/jaylin-goines/*"
+  to = "/client-portal/jaylin-goines/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/client-portal/jaylin-goines"
+  to = "/partner-docs/jaylin-goines/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/jaylin-goines/"
+  to = "/partner-docs/jaylin-goines/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/jaylin-goines/*"
+  to = "/partner-docs/jaylin-goines/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/jesse-zariah"
+  to = "/client-portal/jesse-zariah/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partner-docs/jesse-zariah/*"
+  to = "/client-portal/jesse-zariah/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/client-portal/jesse-zariah"
+  to = "/partner-docs/jesse-zariah/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/jesse-zariah/"
+  to = "/partner-docs/jesse-zariah/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/jesse-zariah/*"
+  to = "/partner-docs/jesse-zariah/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/katie-ryan"
+  to = "/client-portal/katie-ryan/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partner-docs/katie-ryan/*"
+  to = "/client-portal/katie-ryan/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/client-portal/katie-ryan"
+  to = "/partner-docs/katie-ryan/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/katie-ryan/"
+  to = "/partner-docs/katie-ryan/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/katie-ryan/*"
+  to = "/partner-docs/katie-ryan/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/rose-josh"
+  to = "/client-portal/rose-josh/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partner-docs/rose-josh/*"
+  to = "/client-portal/rose-josh/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/client-portal/rose-josh"
+  to = "/partner-docs/rose-josh/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/rose-josh/"
+  to = "/partner-docs/rose-josh/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/rose-josh/*"
+  to = "/partner-docs/rose-josh/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/partner-docs/vessel-kitchen-herriman"
+  to = "/client-portal/vessel-kitchen-herriman/"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/partner-docs/vessel-kitchen-herriman/*"
+  to = "/client-portal/vessel-kitchen-herriman/:splat"
+  status = 301
+  force = true
+[[redirects]]
+  from = "/client-portal/vessel-kitchen-herriman"
+  to = "/partner-docs/vessel-kitchen-herriman/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/vessel-kitchen-herriman/"
+  to = "/partner-docs/vessel-kitchen-herriman/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/client-portal/vessel-kitchen-herriman/*"
+  to = "/partner-docs/vessel-kitchen-herriman/:splat"
+  status = 200
   force = true
 
 # Cue Sheet: private vendor links and the coordinator console.
