@@ -1,6 +1,7 @@
 'use strict';
 const STRIPE_SECRET_KEY=process.env.STRIPE_SECRET_KEY;
-const SITE_URL=process.env.SITE_URL||'https://ampersoundmediagroup.com';
+// Stripe only accepts a full https redirect, so a bare or http SITE_URL falls back to the live domain.
+const SITE_URL=/^https:\/\/[^\s/]+/.test(process.env.SITE_URL||'')?String(process.env.SITE_URL).replace(/\/+$/,''):'https://ampersoundmediagroup.com';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS'};
 const PAYMENT_LINK_FIELD='959cae43-8c7a-43b4-b0ce-2513b311b227',STRIPE_LINK_ID_FIELD='0ad085ae-ef3b-4aaa-b251-895a5536a443';
 // Phase 2: a new deposit link is written straight onto its ClickUp agreement, so the
@@ -17,6 +18,8 @@ async function saveToAgreement(agreementId,cents,link){
  await api('/task/'+encodeURIComponent(t.id)+'/field/'+STRIPE_LINK_ID_FIELD,{method:'POST',body:JSON.stringify({value:link.id})});
  return true;
 }
+// Stripe's error code and parameter name only; never the key or request body.
+async function stripeReason(r){try{const j=await r.json(),e=j&&j.error||{};return [e.code,e.param].filter(Boolean).join(' ')||String(r.status);}catch(_){return String(r.status);}}
 exports.handler=async event=>{
  if(event.httpMethod==='OPTIONS')return{statusCode:204,headers,body:''};
  if(event.httpMethod!=='POST')return{statusCode:405,headers,body:JSON.stringify({message:'Method not allowed'})};
@@ -32,14 +35,14 @@ exports.handler=async event=>{
  const redirect=SITE_URL+'/booking-confirmed?'+new URLSearchParams({event:eventName||'',date:eventDate||'',venue:venue||'',services:services||'',paid:'$'+Number(amount).toLocaleString(),balance:balance?'$'+Number(balance).toLocaleString():'$0'}).toString();
  try{
   const priceBody=new URLSearchParams({unit_amount:String(cents),currency:'usd','product_data[name]':name});
-  for(const[k,v]of Object.entries(metadata))priceBody.set('product_data[metadata]['+k+']',v);
+  for(const[k,v]of Object.entries(metadata))if(v)priceBody.set('product_data[metadata]['+k+']',String(v).slice(0,500));
   let r=await fetch('https://api.stripe.com/v1/prices',{method:'POST',headers:{Authorization:'Bearer '+STRIPE_SECRET_KEY,'Content-Type':'application/x-www-form-urlencoded'},body:priceBody});
-  if(!r.ok)return{statusCode:502,headers,body:JSON.stringify({message:'Failed to create Stripe price'})};
+  if(!r.ok)return{statusCode:502,headers,body:JSON.stringify({message:'Failed to create Stripe price',reason:await stripeReason(r)})};
   const price=await r.json();
   const linkBody=new URLSearchParams({'line_items[0][price]':price.id,'line_items[0][quantity]':'1','payment_method_types[0]':'card','payment_method_types[1]':'us_bank_account','after_completion[type]':'redirect','after_completion[redirect][url]':redirect});
-  for(const[k,v]of Object.entries(metadata))linkBody.set('metadata['+k+']',v);
+  for(const[k,v]of Object.entries(metadata))if(v)linkBody.set('metadata['+k+']',String(v).slice(0,500));
   r=await fetch('https://api.stripe.com/v1/payment_links',{method:'POST',headers:{Authorization:'Bearer '+STRIPE_SECRET_KEY,'Content-Type':'application/x-www-form-urlencoded'},body:linkBody});
-  if(!r.ok)return{statusCode:502,headers,body:JSON.stringify({message:'Failed to create Stripe payment link'})};
+  if(!r.ok)return{statusCode:502,headers,body:JSON.stringify({message:'Failed to create Stripe payment link',reason:await stripeReason(r)})};
   const link=await r.json();
   let savedToAgreement=false;
   if(!installmentId){try{savedToAgreement=await saveToAgreement(agreementId,cents,link);}catch(e){console.error('Agreement link save skipped:',e.message);}}
